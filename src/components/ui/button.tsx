@@ -8,7 +8,10 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground [a]:hover:bg-primary/80",
+        default:
+          "bg-clama-gold text-clama-night hover:bg-clama-gold-soft focus-visible:ring-clama-gold focus-visible:ring-offset-clama-night",
+        gold:
+          "bg-clama-gold text-clama-night hover:bg-clama-gold-soft focus-visible:ring-clama-gold focus-visible:ring-offset-clama-night",
         outline:
           "border-border bg-background hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50",
         secondary:

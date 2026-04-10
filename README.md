@@ -1,73 +1,74 @@
-# React + TypeScript + Vite
+# Clama Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Frontend do Clama - plataforma de orações personalizadas.
 
-Currently, two official plugins are available:
+## URLs
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- **Produção:** `https://clama.vercel.app` (atualizar após configurar Vercel)
+- **Local:** `http://localhost:5173`
 
-## React Compiler
+## Desenvolvimento Local
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+```bash
+# Instalar dependências
+npm install
 
-## Expanding the ESLint configuration
+# Iniciar servidor de desenvolvimento
+npm run dev
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+# Rodar testes
+npm run test
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+# Build de produção
+npm run build
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+# Lint
+npm run lint
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Variáveis de Ambiente
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+Criar arquivo `.env.local` baseado em `.env.example`:
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+| Variável | Descrição | Exemplo |
+|---|---|---|
+| `VITE_API_URL` | URL base da API backend | `http://localhost:8000` |
+
+### Configuração Vercel
+
+Configurar no dashboard do Vercel:
+- `VITE_API_URL`: URL pública do backend Railway
+
+## Estrutura do Projeto
+
+```
+src/
+  pages/           # Componentes de página (1 por rota)
+  components/
+    ui/            # Primitivos shadcn/ui
+    clama/         # Composições de domínio do Clama
+    utility/       # Helpers visuais reutilizáveis
+  hooks/           # Custom React hooks
+  lib/             # Utilitários puros (api.ts, utils.ts)
+  types/           # TypeScript type definitions
+  data/            # Conteúdo estático
+  styles/          # CSS global (Tailwind)
+```
+
+## Stack
+
+- React 19 + TypeScript (strict mode)
+- Vite 8
+- Tailwind CSS 3
+- shadcn/ui (Radix primitives)
+- React Router 7
+- Vitest + React Testing Library
+
+## Deploy
+
+Push em `main` dispara deploy automático no Vercel.
+
+Para forçar redeploy:
+```bash
+git commit --allow-empty -m "trigger deploy" && git push
 ```
