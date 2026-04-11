@@ -14,12 +14,25 @@ const telefoneRequired = z
     message: "Precisamos de um telefone válido.",
   });
 
+const cpfCnpjSchema = z
+  .string()
+  .min(1, "Por favor, digite seu CPF ou CNPJ.")
+  .refine(
+    (v) => {
+      const digits = v.replace(/\D/g, "");
+      return digits.length === 11 || digits.length === 14;
+    },
+    { message: "CPF deve ter 11 dígitos ou CNPJ deve ter 14 dígitos." }
+  )
+  .transform((v) => v.replace(/\D/g, "")); // Remove mask before sending
+
 const baseSchema = {
   nome: z
     .string()
     .min(2, "Conta um pouco de você no nome — pelo menos 2 letras.")
     .max(120, "Nome muito longo."),
   email: z.string().email("Confira seu e-mail — parece que faltou algo."),
+  cpf_cnpj: cpfCnpjSchema,
   idade: z.coerce
     .number()
     .int()

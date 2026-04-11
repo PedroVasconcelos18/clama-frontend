@@ -17,6 +17,7 @@ import {
   type CanalEntrega,
 } from "@/components/clama/ChannelToggle";
 import { Divider } from "@/components/utility/Divider";
+import { Footer } from "@/components/clama/Footer";
 import PastoralAlert from "@/components/utility/PastoralAlert";
 import LoadingSpinner from "@/components/utility/LoadingSpinner";
 import { Button } from "@/components/ui/button";
@@ -53,6 +54,7 @@ export default function FazerPedido() {
   // Submit state
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [isFormValid, setIsFormValid] = useState(false);
 
   // Load planos on mount
   useEffect(() => {
@@ -128,9 +130,14 @@ export default function FazerPedido() {
         { method: "POST" }
       );
 
-      // Step 3: Clear draft and redirect
+      // Step 3: Clear draft, open payment in new tab, redirect to confirmation
       clearDraft();
-      window.location.href = checkout_url;
+
+      // Abre pagamento em nova aba
+      window.open(checkout_url, "_blank", "noopener,noreferrer");
+
+      // Redireciona página atual para confirmação (aguardando pagamento)
+      window.location.href = `/confirmacao?pedido_id=${id}`;
     } catch (err) {
       const error = err as PastoralApiError;
       setSubmitError(error.pastoralMessage);
@@ -228,8 +235,8 @@ export default function FazerPedido() {
               <PrayerForm
                 planos={planos}
                 onSubmit={handleFormSubmit}
-                isSubmitting={isSubmitting}
                 requireTelefone={draft.canal === "WHATSAPP"}
+                onValidityChange={setIsFormValid}
               />
             </section>
 
@@ -262,9 +269,38 @@ export default function FazerPedido() {
                 onChange={handleOfferingChange}
               />
             </section>
+
+            {/* Submit Button & Privacy Note */}
+            <section className="mt-8 mb-8">
+              <Button
+                type="submit"
+                form="prayer-form"
+                variant="gold"
+                size="lg"
+                disabled={isSubmitting || !isFormValid || (!draft.offering.selectedPlanId && !draft.offering.valorLivre)}
+                className="w-full h-12 text-[1.05rem] font-bold rounded-full"
+              >
+                {isSubmitting ? (
+                  <>
+                    <LoadingSpinner size={20} className="mr-2" />
+                    Enviando...
+                  </>
+                ) : (
+                  "🙏 Gerar minha oração"
+                )}
+              </Button>
+
+              <p className="font-sans text-[0.75rem] text-[#aaa] text-center leading-relaxed mt-4">
+                Seus dados são tratados com sigilo e respeito.
+                <br />
+                Jamais compartilhamos suas informações.
+              </p>
+            </section>
           </div>
         )}
       </main>
+
+      <Footer />
     </div>
   );
 }

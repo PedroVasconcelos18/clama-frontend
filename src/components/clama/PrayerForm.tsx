@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -19,20 +19,42 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select } from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
-import LoadingSpinner from "@/components/utility/LoadingSpinner";
+
+/**
+ * Aplica máscara de CPF (000.000.000-00) ou CNPJ (00.000.000/0000-00)
+ * baseado na quantidade de dígitos.
+ */
+function maskCpfCnpj(value: string): string {
+  const digits = value.replace(/\D/g, "");
+
+  if (digits.length <= 11) {
+    // CPF: 000.000.000-00
+    return digits
+      .replace(/(\d{3})(\d)/, "$1.$2")
+      .replace(/(\d{3})(\d)/, "$1.$2")
+      .replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+  } else {
+    // CNPJ: 00.000.000/0000-00
+    return digits
+      .slice(0, 14)
+      .replace(/(\d{2})(\d)/, "$1.$2")
+      .replace(/(\d{3})(\d)/, "$1.$2")
+      .replace(/(\d{3})(\d)/, "$1/$2")
+      .replace(/(\d{4})(\d{1,2})$/, "$1-$2");
+  }
+}
 
 interface PrayerFormProps {
   planos: Plan[];
   onSubmit: (data: PedidoFormData) => void;
-  isSubmitting: boolean;
   requireTelefone?: boolean;
+  onValidityChange?: (isValid: boolean) => void;
 }
 
 export function PrayerForm({
   onSubmit,
-  isSubmitting,
   requireTelefone = false,
+  onValidityChange,
 }: PrayerFormProps) {
   const schema = useMemo(
     () => getPedidoSchema(requireTelefone),
@@ -41,15 +63,25 @@ export function PrayerForm({
 
   const form = useForm<PedidoFormInput, unknown, PedidoFormData>({
     resolver: zodResolver(schema),
-    mode: "onBlur",
+    mode: "onChange",
     defaultValues: {
       nome: "",
       email: "",
+      cpf_cnpj: "",
       telefone: "",
       pedido_oracao: "",
       consent_aceito: false,
     },
   });
+
+  // Handler para aplicar máscara no CPF/CNPJ
+  const handleCpfCnpjChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const masked = maskCpfCnpj(e.target.value);
+      form.setValue("cpf_cnpj", masked, { shouldValidate: true });
+    },
+    [form]
+  );
 
   // Re-validate telefone when requireTelefone changes
   useEffect(() => {
@@ -57,6 +89,11 @@ export function PrayerForm({
       form.trigger("telefone");
     }
   }, [requireTelefone, form]);
+
+  // Notify parent of validity changes
+  useEffect(() => {
+    onValidityChange?.(form.formState.isValid);
+  }, [form.formState.isValid, onValidityChange]);
 
   const handleSubmit = form.handleSubmit((data) => {
     const cleanedData: PedidoFormData = {
@@ -75,7 +112,7 @@ export function PrayerForm({
 
   return (
     <Form {...form}>
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form id="prayer-form" onSubmit={handleSubmit} className="space-y-4">
         {/* Nome */}
         <FormField
           control={form.control}
@@ -156,6 +193,28 @@ export function PrayerForm({
                   placeholder="seu@email.com.br"
                   className={inputClass}
                   {...field}
+                />
+              </FormControl>
+              <FormMessage className="text-[#8a5cf6] text-sm" />
+            </FormItem>
+          )}
+        />
+
+        {/* CPF/CNPJ */}
+        <FormField
+          control={form.control}
+          name="cpf_cnpj"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className={labelClass}>CPF ou CNPJ</FormLabel>
+              <FormControl>
+                <Input
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="000.000.000-00"
+                  className={inputClass}
+                  {...field}
+                  onChange={handleCpfCnpjChange}
                 />
               </FormControl>
               <FormMessage className="text-[#8a5cf6] text-sm" />
@@ -259,30 +318,6 @@ export function PrayerForm({
           )}
         />
 
-        {/* Submit Button */}
-        <Button
-          type="submit"
-          variant="gold"
-          size="lg"
-          disabled={isSubmitting || !form.formState.isValid}
-          className="w-full h-12 text-[1.05rem] font-bold rounded-full mt-6"
-        >
-          {isSubmitting ? (
-            <>
-              <LoadingSpinner size={20} className="mr-2" />
-              Enviando...
-            </>
-          ) : (
-            "🙏 Gerar minha oração"
-          )}
-        </Button>
-
-        {/* Privacy Note */}
-        <p className="font-sans text-[0.75rem] text-[#aaa] text-center leading-relaxed">
-          Seus dados são tratados com sigilo e respeito.
-          <br />
-          Jamais compartilhamos suas informações.
-        </p>
       </form>
     </Form>
   );
