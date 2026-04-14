@@ -1,5 +1,4 @@
 import { cn } from "@/lib/utils";
-import { MSG_WHATSAPP_HINT } from "@/lib/pastoral_messages";
 
 export type CanalEntrega = "EMAIL" | "WHATSAPP";
 
