@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 
 import { StickyNav } from "@/components/clama/StickyNav";
+import { Footer } from "@/components/clama/Footer";
 import { VerseCard } from "@/components/clama/VerseCard";
 import { Button } from "@/components/ui/button";
 
@@ -49,6 +50,8 @@ export default function Cancelado() {
           </Link>
         </div>
       </main>
+
+      <Footer />
     </div>
   );
 }

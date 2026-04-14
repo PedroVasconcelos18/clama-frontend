@@ -14,6 +14,7 @@ import {
 } from "@/lib/pastoral_messages";
 
 import { StickyNav } from "@/components/clama/StickyNav";
+import { Footer } from "@/components/clama/Footer";
 import PastoralAlert from "@/components/utility/PastoralAlert";
 import LoadingSpinner from "@/components/utility/LoadingSpinner";
 
@@ -251,6 +252,8 @@ export default function Confirmacao() {
           </>
         )}
       </main>
+
+      <Footer />
     </div>
   );
 }

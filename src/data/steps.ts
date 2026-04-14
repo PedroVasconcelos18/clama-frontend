@@ -18,7 +18,7 @@ export const steps: Step[] = [
   {
     number: 3,
     title: "Receba sua oração",
-    description: "Uma oração poderosa e personalizada chega ao seu e-mail ou WhatsApp.",
+    description: "Uma oração poderosa e personalizada chega ao seu e-mail.",
   },
   {
     number: 4,

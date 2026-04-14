@@ -1,0 +1,19 @@
+# Robots.txt for clama.me
+
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://clama.me/sitemap.xml
+
+# Disallow admin and private routes
+Disallow: /admin
+Disallow: /admin/*
+Disallow: /api/
+Disallow: /_dev
+
+# Allow search engines to crawl main pages
+Allow: /
+Allow: /fazer-pedido
+Allow: /privacidade
+Allow: /termos

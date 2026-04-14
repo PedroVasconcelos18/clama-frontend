@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from "react";
-import { Link } from "react-router-dom";
 import { toast } from "sonner";
 
 import { apiFetch, PastoralApiError } from "@/lib/api";
@@ -17,6 +16,7 @@ import {
   type CanalEntrega,
 } from "@/components/clama/ChannelToggle";
 import { Divider } from "@/components/utility/Divider";
+import { StickyNav } from "@/components/clama/StickyNav";
 import { Footer } from "@/components/clama/Footer";
 import PastoralAlert from "@/components/utility/PastoralAlert";
 import LoadingSpinner from "@/components/utility/LoadingSpinner";
@@ -163,21 +163,7 @@ export default function FazerPedido() {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Header */}
-      <header className="sticky top-0 z-50 bg-[rgba(26,10,46,0.97)] py-[0.9rem] px-6">
-        <div className="max-w-[580px] mx-auto flex items-center justify-between">
-          <Link
-            to="/"
-            className="font-serif text-[1.4rem] font-bold text-clama-gold cursor-pointer hover:opacity-80 transition-opacity"
-            aria-label="Voltar para a página inicial"
-          >
-            ← Clama
-          </Link>
-          <div className="font-sans text-[0.78rem] text-white/45 tracking-[1px]">
-            CADASTRO
-          </div>
-        </div>
-      </header>
+      <StickyNav />
 
       <main className="max-w-[580px] mx-auto px-6 py-8">
         {/* Form Header */}
