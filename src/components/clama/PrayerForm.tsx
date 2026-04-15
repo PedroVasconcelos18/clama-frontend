@@ -164,7 +164,7 @@ export function PrayerForm({
                 <FormLabel className={labelClass}>Sexo</FormLabel>
                 <FormControl>
                   <Select
-                    className={`w-full py-2 px-3 border-[1.5px] border-[#e0d8f0] rounded-[10px] text-[0.9rem] font-sans text-clama-night bg-white outline-none focus:border-[#8a5cf6] appearance-none bg-[url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23888' fill='none' stroke-width='1.5'/%3E%3C/svg%3E")] bg-no-repeat bg-[right_0.75rem_center]`}
+                    className={`${inputClass} appearance-none bg-[url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23888' fill='none' stroke-width='1.5'/%3E%3C/svg%3E")] bg-no-repeat bg-[right_1rem_center]`}
                     {...field}
                     value={field.value ?? ""}
                   >
