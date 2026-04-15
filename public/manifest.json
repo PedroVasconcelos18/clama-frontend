@@ -1,0 +1,27 @@
+{
+  "name": "Clama - Oração Personalizada",
+  "short_name": "Clama",
+  "description": "Envie sua oração e receba uma resposta espiritual personalizada. Deus te ouve e nós intercedemos por você.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1a0a2e",
+  "theme_color": "#0D1117",
+  "orientation": "portrait-primary",
+  "lang": "pt-BR",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["lifestyle", "utilities"],
+  "prefer_related_applications": false
+}

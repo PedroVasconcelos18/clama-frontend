@@ -40,7 +40,10 @@ const baseSchema = {
     .max(120, "Idade parece estar incorreta.")
     .optional()
     .or(z.literal("")),
-  sexo: z.enum(["feminino", "masculino", "nao_informado"]).optional(),
+  sexo: z
+    .enum(["feminino", "masculino", "nao_informado"], {
+      error: "Por favor, selecione o sexo.",
+    }),
   pedido_oracao: z
     .string()
     .max(2000, "Seu pedido está um pouco longo — tente resumir.")
