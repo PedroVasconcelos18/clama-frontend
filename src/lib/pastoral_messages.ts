@@ -123,7 +123,7 @@ export const MSG_ORACAO_ENVIADA_WHATSAPP =
 /** Mensagem de erro definitivo na confirmação */
 export const MSG_ERRO_DEFINITIVO =
   "Tivemos um soluço — vamos reenviar logo. " +
-  "Se demorar, escreva pra contato@clama.com.br.";
+  "Se demorar, escreva pra contato@clama.me.";
 
 // =============================================================================
 // VALIDAÇÃO DE TELEFONE

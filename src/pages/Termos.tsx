@@ -93,7 +93,7 @@ export default function Termos() {
           </p>
           <p className="text-clama-night/80 mb-4">
             O tratamento de dados pessoais realizado pela Clama observa as disposições da Lei nº 13.709/2018 (LGPD). O canal de contato para exercício dos direitos do titular e esclarecimentos sobre o tratamento de dados está disponível em:{" "}
-            <a href="mailto:privacidade@clama.com.br" className="text-clama-accent hover:underline">privacidade@clama.com.br</a>. A Política de Privacidade completa e atualizada está disponível em:{" "}
+            <a href="mailto:privacidade@clama.me" className="text-clama-accent hover:underline">privacidade@clama.me</a>. A Política de Privacidade completa e atualizada está disponível em:{" "}
             <Link to="/privacidade" className="text-clama-accent hover:underline">clama.me/privacidade</Link>.
           </p>
 
@@ -231,7 +231,7 @@ export default function Termos() {
           <h3 className="font-serif text-clama-night text-lg mt-6 mb-3">8.3 Direitos do titular</h3>
           <p className="text-clama-night/80 mb-6">
             O Usuário, na qualidade de titular de dados pessoais, poderá a qualquer momento: confirmar a existência de tratamento; acessar seus dados; solicitar correção de dados incompletos ou inexatos; solicitar a anonimização, bloqueio ou eliminação de dados desnecessários; solicitar a portabilidade dos dados; e revogar o consentimento, sem prejuízo das obrigações já executadas. Solicitações relacionadas ao tratamento de dados pessoais devem ser enviadas para:{" "}
-            <a href="mailto:privacidade@clama.com.br" className="text-clama-accent hover:underline">privacidade@clama.com.br</a>. O prazo de resposta é de até 15 (quinze) dias úteis, conforme art. 18 da LGPD.
+            <a href="mailto:privacidade@clama.me" className="text-clama-accent hover:underline">privacidade@clama.me</a>. O prazo de resposta é de até 15 (quinze) dias úteis, conforme art. 18 da LGPD.
           </p>
 
           {/* Seção 9 */}
@@ -260,7 +260,7 @@ export default function Termos() {
           <h3 className="font-serif text-clama-night text-lg mt-6 mb-3">9.5 Canal de contato e suporte</h3>
           <p className="text-clama-night/80 mb-6">
             Para dúvidas, reclamações, exercício de direitos de titular de dados ou qualquer comunicação relativa a estes Termos, o Usuário pode entrar em contato pelo e-mail:{" "}
-            <a href="mailto:contato@clama.com.br" className="text-clama-accent hover:underline">contato@clama.com.br</a>. O prazo de resposta é de até 5 dias úteis. O Usuário poderá também registrar reclamações por meio da plataforma oficial Consumidor.gov.br, nos termos da legislação consumerista vigente.
+            <a href="mailto:contato@clama.me" className="text-clama-accent hover:underline">contato@clama.me</a>. O prazo de resposta é de até 5 dias úteis. O Usuário poderá também registrar reclamações por meio da plataforma oficial Consumidor.gov.br, nos termos da legislação consumerista vigente.
           </p>
 
           {/* Declaração final */}

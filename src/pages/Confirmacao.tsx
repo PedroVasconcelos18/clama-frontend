@@ -232,7 +232,7 @@ export default function Confirmacao() {
             {/* Contact button for errors */}
             {statusInfo.isError && pedidoId && (
               <a
-                href={`mailto:contato@clama.com.br?subject=Pedido%20${pedidoId.slice(0, 8)}`}
+                href={`mailto:contato@clama.me?subject=Pedido%20${pedidoId.slice(0, 8)}`}
                 className="inline-block mb-4"
               >
                 <button className="bg-white text-clama-night border-[1.5px] border-clama-night py-[0.85rem] px-8 text-[0.95rem] font-semibold font-sans rounded-full hover:bg-[#f9f5ff] transition-colors">

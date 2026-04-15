@@ -15,7 +15,7 @@ export function Footer() {
       <p className="font-sans text-[0.78rem] text-white/35 leading-relaxed">
         Seu oratório digital • Intercedemos por você 24h
         <br />
-        contato@clama.com.br
+        contato@clama.me
       </p>
     </footer>
   );

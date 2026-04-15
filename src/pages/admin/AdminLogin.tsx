@@ -78,7 +78,7 @@ export default function AdminLogin() {
               <Input
                 id="email"
                 type="email"
-                placeholder="admin@clama.com.br"
+                placeholder="admin@clama.me"
                 className="bg-clama-night border-clama-gold/30 text-clama-cream placeholder:text-clama-cream/40 focus:border-clama-gold"
                 {...register("email")}
               />

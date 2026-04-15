@@ -41,8 +41,8 @@ export default function Privacidade() {
           </p>
           <p className="text-clama-night/80 mb-6">
             O Usuário poderá entrar em contato com a Clama para quaisquer questões relacionadas à privacidade e ao tratamento de seus dados pessoais pelo endereço de e-mail{" "}
-            <a href="mailto:privacidade@clama.com.br" className="text-clama-accent hover:underline">privacidade@clama.com.br</a>. Para suporte geral, o canal é{" "}
-            <a href="mailto:contato@clama.com.br" className="text-clama-accent hover:underline">contato@clama.com.br</a>. A versão atualizada desta Política estará sempre disponível em clama.me/privacidade.
+            <a href="mailto:privacidade@clama.me" className="text-clama-accent hover:underline">privacidade@clama.me</a>. Para suporte geral, o canal é{" "}
+            <a href="mailto:contato@clama.me" className="text-clama-accent hover:underline">contato@clama.me</a>. A versão atualizada desta Política estará sempre disponível em clama.me/privacidade.
           </p>
 
           {/* Seção 2 */}
@@ -103,7 +103,7 @@ export default function Privacidade() {
           </p>
           <p className="text-clama-night/80 mb-4">
             O <strong>consentimento</strong>, previsto no art. 7º, inciso I, da LGPD, é a base legal utilizada para o tratamento dos dados opcionais de idade e sexo, bem como, de forma específica e destacada, para o tratamento dos dados sensíveis contidos no conteúdo do Pedido, conforme exigência do art. 11, inciso I, da mesma lei. O Usuário pode revogar o consentimento a qualquer tempo, por procedimento simples e gratuito, sem prejuízo da licitude dos tratamentos realizados anteriormente à revogação. Caso o Usuário não deseje que seus dados permaneçam armazenados nos sistemas da Clama, deverá entrar em contato com o suporte pelo e-mail{" "}
-            <a href="mailto:privacidade@clama.com.br" className="text-clama-accent hover:underline">privacidade@clama.com.br</a>{" "}
+            <a href="mailto:privacidade@clama.me" className="text-clama-accent hover:underline">privacidade@clama.me</a>{" "}
             para solicitar a remoção de seus dados, que será processada nos termos do art. 18 da LGPD e dos prazos de retenção obrigatória previstos nesta Política. A revogação do consentimento para dados essenciais à execução do Serviço implicará a impossibilidade de sua prestação.
           </p>
           <p className="text-clama-night/80 mb-4">
@@ -174,7 +174,7 @@ export default function Privacidade() {
           </p>
           <p className="text-clama-night/80 mb-6">
             Para exercer qualquer dos direitos acima, o Usuário deve enviar solicitação ao e-mail{" "}
-            <a href="mailto:privacidade@clama.com.br" className="text-clama-accent hover:underline">privacidade@clama.com.br</a>, identificando-se adequadamente e descrevendo o direito que deseja exercer. O prazo de resposta é de até quinze dias úteis, conforme art. 18, §3º, da LGPD. O Usuário poderá, ainda, apresentar reclamação diretamente à Autoridade Nacional de Proteção de Dados (ANPD), por meio dos canais oficiais disponíveis em gov.br/anpd, nos termos do art. 18, §1º, da LGPD.
+            <a href="mailto:privacidade@clama.me" className="text-clama-accent hover:underline">privacidade@clama.me</a>, identificando-se adequadamente e descrevendo o direito que deseja exercer. O prazo de resposta é de até quinze dias úteis, conforme art. 18, §3º, da LGPD. O Usuário poderá, ainda, apresentar reclamação diretamente à Autoridade Nacional de Proteção de Dados (ANPD), por meio dos canais oficiais disponíveis em gov.br/anpd, nos termos do art. 18, §1º, da LGPD.
           </p>
 
           {/* Seção 10 */}
@@ -205,7 +205,7 @@ export default function Privacidade() {
           </p>
           <p className="text-clama-night/80 mb-6">
             Caso a Clama tome conhecimento de que dados pessoais de menores foram coletados sem o consentimento de seus responsáveis legais, tais dados serão imediatamente eliminados de seus sistemas, nos termos do art. 14 da LGPD, que dispõe sobre o tratamento de dados pessoais de crianças e adolescentes. Responsáveis legais que identifiquem situação dessa natureza poderão comunicá-la pelo e-mail{" "}
-            <a href="mailto:privacidade@clama.com.br" className="text-clama-accent hover:underline">privacidade@clama.com.br</a>.
+            <a href="mailto:privacidade@clama.me" className="text-clama-accent hover:underline">privacidade@clama.me</a>.
           </p>
 
           {/* Seção 13 */}
@@ -235,7 +235,7 @@ export default function Privacidade() {
               Política de Privacidade e Proteção de Dados — Versão {VERSAO} — Abril de 2026
             </p>
             <p className="text-clama-night/60 text-sm">
-              <a href="mailto:privacidade@clama.com.br" className="text-clama-accent hover:underline">privacidade@clama.com.br</a>{" "}
+              <a href="mailto:privacidade@clama.me" className="text-clama-accent hover:underline">privacidade@clama.me</a>{" "}
               | clama.me/privacidade
             </p>
           </div>
