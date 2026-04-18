@@ -169,10 +169,10 @@ export default function FazerPedido() {
         {/* Form Header */}
         <div className="text-center mb-8">
           <h2 className="font-serif text-clama-night text-[1.6rem] mb-1">
-            Faça seu pedido
+            Leve seu clamor
           </h2>
           <p className="font-sans text-[#888] text-[0.88rem]">
-            Preencha seus dados para receber sua oração personalizada
+            Preencha seus dados para receber uma oração personalizada, com cuidado e fundamento bíblico.
           </p>
         </div>
 
@@ -242,10 +242,10 @@ export default function FazerPedido() {
 
             <Divider />
 
-            {/* Section: Oferta */}
+            {/* Section: Contribuição */}
             <section>
               <div className="font-sans text-[0.72rem] font-bold tracking-[2px] uppercase text-[#8a5cf6] mb-4">
-                Escolha sua oferta
+                Escolha sua contribuição
               </div>
 
               <OfferingCards
@@ -272,7 +272,7 @@ export default function FazerPedido() {
                     Enviando...
                   </>
                 ) : (
-                  "🙏 Gerar minha oração"
+                  "Levar meu clamor"
                 )}
               </Button>
 

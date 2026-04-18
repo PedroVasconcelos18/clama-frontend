@@ -49,7 +49,7 @@ function getStatusMessage(
     case "gerando_oracao":
     case "oracao_gerada":
       return {
-        title: "Seu pedido foi enviado ao céu",
+        title: "Seu clamor foi recebido",
         message: isEmail ? MSG_CONFIRMACAO_EMAIL : MSG_CONFIRMACAO_WHATSAPP,
         isComplete: false,
         isError: false,
@@ -81,7 +81,7 @@ function getStatusMessage(
       };
     default:
       return {
-        title: "Seu pedido foi enviado ao céu",
+        title: "Seu clamor foi recebido",
         message: MSG_GERANDO_ORACAO,
         isComplete: false,
         isError: false,
@@ -204,8 +204,7 @@ export default function Confirmacao() {
                 {statusInfo.message}
                 {!statusInfo.isComplete && (
                   <>
-                    {" "}Enquanto aguarda, declare em voz alta:{" "}
-                    <em>"Eu creio e recebo!"</em>
+                    {" "}Enquanto aguarda, respire e se coloque em silêncio — o Deus que ouve o clamor do povo caminha com você.
                   </>
                 )}
               </p>
@@ -214,10 +213,10 @@ export default function Confirmacao() {
             {/* Verse Card */}
             <div className="border border-[#e0d8f0] rounded-xl p-5 bg-clama-cream mb-8">
               <p className="font-serif text-[#444] text-[0.95rem] italic leading-relaxed">
-                "Portanto, eu vos digo que tudo o que pedirdes em oração, crede que recebestes, e ter-lo-eis."
+                "O Espírito do Senhor está sobre mim, porque me ungiu para evangelizar os pobres. Enviou-me para proclamar libertação aos cativos."
               </p>
               <p className="font-sans text-[#8a5cf6] text-[0.78rem] tracking-[1px] uppercase mt-2">
-                Marcos 11:24
+                Lucas 4:18
               </p>
             </div>
 
@@ -245,7 +244,7 @@ export default function Confirmacao() {
             <div>
               <Link to="/">
                 <button className="bg-white text-clama-night border-[1.5px] border-clama-night py-[0.85rem] px-8 text-[0.95rem] font-semibold font-sans rounded-full hover:bg-[#f9f5ff] transition-colors">
-                  Fazer outro pedido
+                  Levar outro clamor
                 </button>
               </Link>
             </div>

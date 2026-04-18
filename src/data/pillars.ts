@@ -6,23 +6,23 @@ export interface Pillar {
 
 export const pillars: Pillar[] = [
   {
-    tag: "Propósito",
-    texto: "Porque sou eu que conheço os planos que tenho para você, planos de prosperidade e não de calamidade, planos de dar a você esperança e um futuro.",
-    referencia: "Jeremias 29:11",
+    tag: "Dignidade",
+    texto: "Criou Deus o ser humano à sua imagem, à imagem de Deus o criou; homem e mulher os criou.",
+    referencia: "Gênesis 1:27",
   },
   {
-    tag: "Trabalho",
-    texto: "Tudo o que você fizer, faça com todo o seu coração, como para o Senhor, e não para os homens.",
-    referencia: "Colossenses 3:23",
+    tag: "Justiça",
+    texto: "Corra, porém, o juízo como as águas, e a justiça como ribeiro perene.",
+    referencia: "Amós 5:24",
   },
   {
-    tag: "Perseverança",
-    texto: "E não nos cansemos de fazer o bem, porque a seu tempo ceifaremos, se não desfalecermos.",
-    referencia: "Gálatas 6:9",
+    tag: "Comunhão",
+    texto: "Todos os que criam estavam juntos e tinham tudo em comum. Vendiam suas propriedades e bens, distribuindo-os conforme a necessidade de cada um.",
+    referencia: "Atos 2:44-45",
   },
   {
-    tag: "Aprendizado",
-    texto: "Instruí no caminho em que deve andar; e até quando envelhecer não se desviará dele.",
-    referencia: "Provérbios 22:6",
+    tag: "Encontro com o outro",
+    texto: "Em verdade vos digo: sempre que o fizestes a um destes meus pequeninos irmãos, a mim o fizestes.",
+    referencia: "Mateus 25:40",
   },
 ];

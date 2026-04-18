@@ -257,10 +257,10 @@ export function PrayerForm({
           name="pedido_oracao"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className={labelClass}>Escreva sua demanda</FormLabel>
+              <FormLabel className={labelClass}>Escreva seu clamor</FormLabel>
               <FormControl>
                 <Textarea
-                  placeholder="Conte o que está no seu coração. Pode ser uma cura, uma bênção financeira, restauração, proteção, direção... Deus está ouvindo."
+                  placeholder="Conte o que está no seu coração. Sua dor, sua indignação, sua esperança — tudo o que pede libertação. Deus ouve o clamor do povo."
                   rows={5}
                   className={`${inputClass} font-serif leading-relaxed resize-y min-h-[120px]`}
                   {...field}
@@ -272,7 +272,7 @@ export function PrayerForm({
         />
 
         <p className="font-sans text-[0.78rem] text-[#aaa] leading-relaxed mb-6">
-          Ou simplesmente feche os olhos, pense no seu pedido e clique em gerar — Ele já sabe.
+          Sua dor, sua indignação, sua esperança são sagradas. Deus ouve desde o fundo do poço — e do fundo da história.
         </p>
 
         {/* Consent Checkbox */}
@@ -295,23 +295,23 @@ export function PrayerForm({
                   htmlFor="consent_aceito"
                   className="text-sm text-clama-night/80 leading-relaxed cursor-pointer"
                 >
-                  Li e concordo com a{" "}
-                  <Link
-                    to="/privacidade"
-                    target="_blank"
-                    className="text-[#8a5cf6] hover:underline"
-                  >
-                    Política de Privacidade
-                  </Link>{" "}
-                  e os{" "}
+                  Li e concordo com os{" "}
                   <Link
                     to="/termos"
                     target="_blank"
                     className="text-[#8a5cf6] hover:underline"
                   >
                     Termos de Uso
+                  </Link>{" "}
+                  e a{" "}
+                  <Link
+                    to="/privacidade"
+                    target="_blank"
+                    className="text-[#8a5cf6] hover:underline"
+                  >
+                    Política de Privacidade
                   </Link>
-                  .
+                  . Autorizo o uso do conteúdo do meu pedido exclusivamente para geração da oração personalizada.
                 </label>
               </div>
               <FormMessage className="text-[#8a5cf6] text-sm mt-2" />

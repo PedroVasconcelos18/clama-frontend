@@ -9,7 +9,7 @@ export function TestimonialsSection() {
       <div className="max-w-[780px] mx-auto text-center">
         {/* Eyebrow */}
         <p className="font-sans text-[0.9rem] text-[#888] tracking-[2px] uppercase mb-2">
-          Deus está agindo
+          Clamores que encontraram resposta
         </p>
 
         {/* Title */}
@@ -17,7 +17,7 @@ export function TestimonialsSection() {
           id="testimonials-title"
           className="font-serif text-clama-night text-[1.7rem] mb-10"
         >
-          Testemunhos que inspiram
+          Testemunhos de quem caminhou com a palavra
         </h2>
 
         {/* Testimonials Grid */}
@@ -52,6 +52,11 @@ export function TestimonialsSection() {
             </blockquote>
           ))}
         </div>
+
+        {/* Legal disclaimer — obrigatório por CDC art. 37 + Termos 2.2 */}
+        <p className="mt-8 font-sans text-[0.72rem] text-[#999] leading-relaxed max-w-[640px] mx-auto">
+          Relatos pessoais de usuários sobre sua experiência com o conteúdo recebido. O Clama é uma plataforma de conteúdo de apoio espiritual motivacional. Resultados individuais podem variar.
+        </p>
       </div>
     </section>
   );

@@ -20,9 +20,9 @@ export function Hero({ onCtaClick }: HeroProps) {
           Clama<span className="text-white">.</span>
         </div>
 
-        {/* Tagline */}
+        {/* Eyebrow */}
         <div className="font-sans text-[0.85rem] tracking-[4px] uppercase text-white/55 mb-8">
-          Seu pedido chega ao céu
+          O clamor que nasce do coração do povo
         </div>
 
         {/* Title */}
@@ -30,12 +30,12 @@ export function Hero({ onCtaClick }: HeroProps) {
           id="hero-title"
           className="font-serif text-white text-[2rem] leading-[1.25] mb-4 max-w-[480px] mx-auto"
         >
-          Envie sua oração e receba uma resposta espiritual personalizada
+          Oremos pela libertação do que te oprime — em você, nos seus e no mundo
         </h1>
 
         {/* Subtitle */}
-        <p className="font-sans text-white/70 text-base max-w-[380px] mx-auto mb-8 leading-relaxed">
-          Em qualquer momento, de qualquer lugar — Deus te ouve e nós intercedemos por você.
+        <p className="font-sans text-white/70 text-base max-w-[420px] mx-auto mb-8 leading-relaxed">
+          Deus não é o Deus dos poderosos. É o Deus que ouve os lamentos de todos, abraça a fragilidade humana e age com infinita ternura.
         </p>
 
         {/* CTA Button */}
@@ -45,17 +45,25 @@ export function Hero({ onCtaClick }: HeroProps) {
           onClick={onCtaClick}
           className="h-14 px-10 text-[1.05rem] font-bold rounded-full"
         >
-          Fazer meu pedido agora
+          Levar meu clamor
         </Button>
 
         {/* Verse */}
         <div className="mt-10">
           <VerseCard
-            verse="Clama a mim e te responderei, e te anunciarei coisas grandes e ocultas que não conheces."
-            reference="Jeremias 33:3"
+            verse="O Espírito do Senhor está sobre mim, porque me ungiu para evangelizar os pobres. Enviou-me para proclamar libertação aos cativos."
+            reference="Lucas 4:18"
             variant="hero"
           />
         </div>
+
+        {/* Boff citation */}
+        <p className="mt-6 font-serif text-white/60 text-[0.9rem] italic leading-relaxed max-w-[420px] mx-auto">
+          "Por trás de tudo existe uma Realidade de infinita ternura, uma Chama de inextinguível amor — e andamos na palma da mão de Deus."
+          <span className="block mt-2 not-italic font-sans text-clama-gold/80 text-[0.7rem] tracking-[1.5px] uppercase">
+            Leonardo Boff
+          </span>
+        </p>
       </div>
     </section>
   );

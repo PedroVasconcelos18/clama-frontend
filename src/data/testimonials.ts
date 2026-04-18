@@ -11,19 +11,19 @@ export interface Testimonial {
 
 export const testimonials: Testimonial[] = [
   {
-    text: "Estava desesperada com uma dívida enorme. Fiz meu pedido no Clama e em menos de 15 dias recebi uma proposta de emprego que mudou minha vida. Deus é fiel!",
+    text: "Cheguei aqui me sentindo esmagada pelo peso do mundo. A oração que recebi não me prometeu saída fácil — me devolveu dignidade e a coragem de caminhar. Reencontrei em mim uma ternura que eu achava perdida.",
     name: "Juliana M.",
     city: "São Paulo, SP",
     isIllustrative: true,
   },
   {
-    text: "Pedi restauração no meu casamento. A oração que recebi era tão específica que chorei. Hoje minha família está completamente restaurada. Glória a Deus!",
+    text: "A oração que recebi não prometeu milagre fácil. Falou do Deus que ouve o clamor e caminha com quem sofre. Saí do lugar do lamento solitário e encontrei a força de seguir em comunhão.",
     name: "Rodrigo & Ana Paula",
     city: "Goiânia, GO",
     isIllustrative: true,
   },
   {
-    text: "Meu negócio estava quebrando. Semeei minha oferta e declarei a oração todo dia. Em 30 dias, assinei meu maior contrato. O Clama me conectou com o sobrenatural.",
+    text: "Pedi por libertação do que me oprimia por dentro. A palavra que recebi me fez enxergar o outro — e, ao cuidar, fui cuidado. O Evangelho que liberta não adormece: desperta.",
     name: "Marcelo F.",
     city: "Belo Horizonte, MG",
     isIllustrative: true,

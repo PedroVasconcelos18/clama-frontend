@@ -4,7 +4,7 @@ import { StickyNav } from "@/components/clama/StickyNav";
 import { Hero } from "@/components/clama/Hero";
 import { StepsSection } from "@/components/clama/StepsSection";
 import { PillarsSection } from "@/components/clama/PillarsSection";
-import { TestimonialsSection } from "@/components/clama/TestimonialsSection";
+// import { TestimonialsSection } from "@/components/clama/TestimonialsSection";
 import { FinalCtaSection } from "@/components/clama/FinalCtaSection";
 import { Footer } from "@/components/clama/Footer";
 
@@ -27,7 +27,8 @@ export default function Landing() {
 
         <PillarsSection />
 
-        <TestimonialsSection />
+        {/* Testemunhos ocultos até termos relatos reais coletados com consentimento */}
+        {/* <TestimonialsSection /> */}
 
         <FinalCtaSection onCtaClick={handleCtaClick} />
       </main>

@@ -73,7 +73,7 @@ export function OfferingCards({
     <div className="space-y-4">
       <div
         role="radiogroup"
-        aria-label="Escolha sua oferta"
+        aria-label="Escolha sua contribuição"
         className="grid grid-cols-2 sm:grid-cols-4 gap-3"
       >
         {planos.map((plano) => {
@@ -133,7 +133,7 @@ export function OfferingCards({
             Livre
           </div>
           <div className="font-sans text-[0.75rem] text-[#888] mt-1 leading-snug">
-            Oferte conforme seu coração
+            Dê conforme o que o coração manda
           </div>
         </button>
       </div>
@@ -142,7 +142,7 @@ export function OfferingCards({
       {isValorLivreSelected && (
         <div className="max-w-[640px] mx-auto">
           <label className="font-sans text-[0.8rem] font-semibold text-clama-night tracking-[0.5px] uppercase block mb-1">
-            Valor da oferta (mín. R$ 20)
+            Valor da contribuição (mín. R$ 20)
           </label>
           <Input
             type="number"
@@ -152,7 +152,7 @@ export function OfferingCards({
             onChange={(e) => handleValorLivreChange(e.target.value)}
             placeholder="R$ 20,00"
             className="w-full py-3 px-4 border-[1.5px] border-[#e0d8f0] rounded-[10px] text-[0.95rem] font-sans text-clama-night bg-white outline-none focus:border-[#8a5cf6]"
-            aria-label="Valor da oferta em reais"
+            aria-label="Valor da contribuição em reais"
           />
           {valorLivreError && (
             <p className="text-sm text-[#8a5cf6] mt-2">{valorLivreError}</p>
