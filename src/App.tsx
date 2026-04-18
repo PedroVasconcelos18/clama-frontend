@@ -17,6 +17,7 @@ import DashboardPage from "@/pages/admin/DashboardPage"
 import PedidosListPage from "@/pages/admin/PedidosListPage"
 import PlanosPage from "@/pages/admin/PlanosPage"
 import PromptEditorPage from "@/pages/admin/PromptEditorPage"
+import DocumentosPage from "@/pages/admin/DocumentosPage"
 
 export default function App() {
   return (
@@ -46,11 +47,12 @@ export default function App() {
           <Route path="pedidos" element={<PedidosListPage />} />
           <Route path="planos" element={<PlanosPage />} />
           <Route path="prompts" element={<PromptEditorPage />} />
+          <Route path="documentos" element={<DocumentosPage />} />
         </Route>
 
         <Route path="*" element={<NotFound />} />
       </Routes>
-      <Toaster position="bottom-center" />
+      <Toaster />
     </AuthProvider>
   )
 }

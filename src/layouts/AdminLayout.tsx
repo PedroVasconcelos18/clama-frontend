@@ -6,6 +6,7 @@ import {
   FileText,
   CreditCard,
   MessageSquare,
+  FolderOpen,
   Menu,
   X,
   LogOut,
@@ -18,6 +19,7 @@ const navItems = [
   { to: "/admin/pedidos", icon: FileText, label: "Pedidos" },
   { to: "/admin/planos", icon: CreditCard, label: "Planos" },
   { to: "/admin/prompts", icon: MessageSquare, label: "Prompts" },
+  { to: "/admin/documentos", icon: FolderOpen, label: "Documentos" },
 ]
 
 export default function AdminLayout() {

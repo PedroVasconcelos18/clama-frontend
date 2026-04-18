@@ -87,3 +87,18 @@ export interface PreviewResponse {
     versao: number
   }
 }
+
+export interface AdminDocumentoContexto {
+  id: string
+  nome: string
+  descricao: string
+  tipo_mime: string
+  tamanho_bytes: number
+  tamanho_formatado: string
+  anthropic_file_id: string | null
+  data_sincronizacao: string | null
+  ativo: boolean
+  esta_sincronizado: boolean
+  created_at: string
+  updated_at: string
+}

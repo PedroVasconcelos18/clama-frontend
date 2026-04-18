@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { useForm } from "react-hook-form"
+import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { useAdminApi } from "@/hooks/useAdminApi"
@@ -18,9 +18,17 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog"
 import { cn } from "@/lib/utils"
-import { Plus, Edit, Power } from "lucide-react"
+import { Plus, Edit, Power, Filter } from "lucide-react"
 import { toast } from "sonner"
 import type { AdminPlano } from "@/types/admin.types"
+
+type StatusFilter = "todos" | "ativos" | "inativos"
+
+const STATUS_FILTER_OPTIONS: { value: StatusFilter; label: string }[] = [
+  { value: "todos", label: "Todos" },
+  { value: "ativos", label: "Ativos" },
+  { value: "inativos", label: "Inativos" },
+]
 
 const COMPLEXIDADE_OPTIONS = [
   { value: "simples", label: "Simples" },
@@ -30,11 +38,68 @@ const COMPLEXIDADE_OPTIONS = [
 
 const planoSchema = z.object({
   nome: z.string().min(1, "Nome é obrigatório"),
-  valor_reais: z.string().regex(/^\d+([,.]\d{2})?$/, "Valor deve ser no formato 20,00"),
+  valor_reais: z
+    .string()
+    .min(1, "Valor é obrigatório")
+    .refine(
+      (val) => {
+        // Remove pontos de milhar e troca vírgula por ponto
+        const normalized = val.replace(/\./g, "").replace(",", ".")
+        const num = parseFloat(normalized)
+        return !isNaN(num) && num >= 0.01
+      },
+      "Valor deve ser no mínimo R$ 0,01"
+    ),
   descricao: z.string().min(1, "Descrição é obrigatória"),
   complexidade: z.enum(["simples", "com_versiculo", "com_profecia_e_versiculos"]),
   ordem: z.coerce.number().int().min(1, "Ordem deve ser pelo menos 1"),
 })
+
+function formatCurrencyInput(value: string): string {
+  // Remove tudo que não é dígito ou vírgula
+  let cleaned = value.replace(/[^\d,]/g, "")
+
+  // Garante apenas uma vírgula
+  const parts = cleaned.split(",")
+  if (parts.length > 2) {
+    cleaned = parts[0] + "," + parts.slice(1).join("")
+  }
+
+  // Limita centavos a 2 dígitos
+  if (parts.length === 2 && parts[1].length > 2) {
+    cleaned = parts[0] + "," + parts[1].slice(0, 2)
+  }
+
+  // Separa parte inteira e decimal
+  let [intPart, decPart] = cleaned.split(",")
+
+  // Remove zeros à esquerda desnecessários na parte inteira
+  // Permite no máximo 2 zeros se não houver outro dígito (para casos como "00,20")
+  // Remove zeros extras além de 2
+  if (intPart.length > 2 && /^0+/.test(intPart)) {
+    // Remove todos os zeros à esquerda, mantendo pelo menos um dígito
+    intPart = intPart.replace(/^0+/, "") || "0"
+  } else if (intPart.length === 2 && intPart === "00") {
+    // Permite "00" para casos como "00,20"
+    intPart = "00"
+  } else if (intPart.length > 1 && intPart.startsWith("0") && intPart !== "00") {
+    // Caso como "01", "02" - remove o zero à esquerda
+    intPart = intPart.replace(/^0+/, "") || "0"
+  }
+
+  // Adiciona pontos de milhar na parte inteira (apenas se não começar com zeros)
+  const formattedInt = intPart.startsWith("0")
+    ? intPart
+    : intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ".")
+
+  return decPart !== undefined ? `${formattedInt},${decPart}` : formattedInt
+}
+
+function parseCurrencyToFloat(value: string): number {
+  // Remove pontos de milhar e troca vírgula por ponto
+  const normalized = value.replace(/\./g, "").replace(",", ".")
+  return parseFloat(normalized) || 0
+}
 
 type PlanoFormInput = z.input<typeof planoSchema>
 type PlanoFormData = z.output<typeof planoSchema>
@@ -47,11 +112,20 @@ export default function PlanosPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingPlano, setEditingPlano] = useState<AdminPlano | null>(null)
   const [confirmToggle, setConfirmToggle] = useState<AdminPlano | null>(null)
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("todos")
+
+  const filteredPlanos = planos.filter((plano) => {
+    if (statusFilter === "todos") return true
+    if (statusFilter === "ativos") return plano.ativo
+    if (statusFilter === "inativos") return !plano.ativo
+    return true
+  })
 
   const {
     register,
     handleSubmit,
     reset,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<PlanoFormInput, unknown, PlanoFormData>({
     resolver: zodResolver(planoSchema),
@@ -61,7 +135,9 @@ export default function PlanosPage() {
     setIsLoading(true)
     setError(null)
     try {
-      const data = await adminFetch<AdminPlano[]>("/api/admin/planos/")
+      const data = await adminFetch<AdminPlano[]>("/api/admin/planos/", {
+        showToast: false,
+      })
       setPlanos(data)
     } catch (err) {
       if (err instanceof PastoralApiError) {
@@ -92,7 +168,10 @@ export default function PlanosPage() {
 
   function openEditDialog(plano: AdminPlano) {
     setEditingPlano(plano)
-    const valorReais = (plano.valor_centavos / 100).toFixed(2).replace(".", ",")
+    // Formata valor com vírgula para decimais e ponto para milhares
+    const valorReais = formatCurrencyInput(
+      (plano.valor_centavos / 100).toFixed(2).replace(".", ",")
+    )
     reset({
       nome: plano.nome,
       valor_reais: valorReais,
@@ -104,9 +183,7 @@ export default function PlanosPage() {
   }
 
   async function onSubmit(data: PlanoFormData) {
-    const valorCentavos = Math.round(
-      parseFloat(data.valor_reais.replace(",", ".")) * 100
-    )
+    const valorCentavos = Math.round(parseCurrencyToFloat(data.valor_reais) * 100)
 
     const payload = {
       nome: data.nome,
@@ -132,12 +209,8 @@ export default function PlanosPage() {
       }
       setIsDialogOpen(false)
       loadPlanos()
-    } catch (err) {
-      if (err instanceof PastoralApiError) {
-        toast.error(err.pastoralMessage)
-      } else {
-        toast.error("Erro ao salvar plano.")
-      }
+    } catch {
+      // Toast de erro já exibido automaticamente pelo adminFetch
     }
   }
 
@@ -157,12 +230,8 @@ export default function PlanosPage() {
       }
       setConfirmToggle(null)
       loadPlanos()
-    } catch (err) {
-      if (err instanceof PastoralApiError) {
-        toast.error(err.pastoralMessage)
-      } else {
-        toast.error("Erro ao alterar status do plano.")
-      }
+    } catch {
+      // Toast de erro já exibido automaticamente pelo adminFetch
     }
   }
 
@@ -179,18 +248,43 @@ export default function PlanosPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <h1 className="text-2xl font-serif text-clama-gold">Planos</h1>
-        <Button onClick={openNewDialog}>
-          <Plus className="w-4 h-4 mr-2" />
-          Novo Plano
-        </Button>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <Filter className="w-4 h-4 text-clama-cream/50" />
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
+              className="h-9 pl-4 rounded-lg bg-clama-night border border-clama-gold/30 text-clama-cream text-sm focus:outline-none focus:border-clama-gold"
+            >
+              {STATUS_FILTER_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <Button onClick={openNewDialog}>
+            <Plus className="w-4 h-4 mr-2" />
+            Novo Plano
+          </Button>
+        </div>
       </div>
 
       {error && <PastoralAlert variant="error">{error}</PastoralAlert>}
 
       {/* Plans Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {planos.map((plano) => (
-          <div
+      {filteredPlanos.length === 0 ? (
+        <div className="text-center py-12 text-clama-cream/50">
+          {statusFilter === "todos"
+            ? "Nenhum plano cadastrado."
+            : statusFilter === "ativos"
+              ? "Nenhum plano ativo."
+              : "Nenhum plano inativo."}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filteredPlanos.map((plano) => (
+            <div
             key={plano.id}
             className={cn(
               "bg-clama-night-deep border rounded-clama-card p-4 transition-opacity",
@@ -247,8 +341,9 @@ export default function PlanosPage() {
               </Button>
             </div>
           </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
       {/* Form Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -283,11 +378,22 @@ export default function PlanosPage() {
               <Label htmlFor="valor_reais" className="text-clama-cream/80">
                 Valor (R$)
               </Label>
-              <Input
-                id="valor_reais"
-                placeholder="20,00"
-                {...register("valor_reais")}
-                className="bg-clama-night border-clama-gold/30 text-clama-cream"
+              <Controller
+                name="valor_reais"
+                control={control}
+                render={({ field }) => (
+                  <Input
+                    id="valor_reais"
+                    placeholder="20,00"
+                    value={field.value || ""}
+                    onChange={(e) => {
+                      const formatted = formatCurrencyInput(e.target.value)
+                      field.onChange(formatted)
+                    }}
+                    onBlur={field.onBlur}
+                    className="bg-clama-night border-clama-gold/30 text-clama-cream"
+                  />
+                )}
               />
               {errors.valor_reais && (
                 <p className="text-red-400 text-sm">{errors.valor_reais.message}</p>
