@@ -19,9 +19,12 @@ export function FinalCtaSection({ onCtaClick }: FinalCtaSectionProps) {
           A oração que transforma é a que também liberta
         </h2>
 
-        {/* Boff citation */}
-        <p className="font-serif text-[#555] text-[0.95rem] italic leading-relaxed mb-8">
-          "O clamor dos pobres é a voz de Deus no mundo. E Deus, como nos diz Boff, não é solidão — é comunhão."
+        {/* Verse */}
+        <p className="font-serif text-[#555] text-[0.95rem] italic leading-relaxed mb-2">
+          "Clamam os justos, e o Senhor os ouve, e os livra de todas as suas angústias."
+        </p>
+        <p className="font-sans text-clama-gold text-[0.72rem] tracking-[1.5px] uppercase mb-8">
+          Salmo 34:17
         </p>
 
         {/* CTA Button */}

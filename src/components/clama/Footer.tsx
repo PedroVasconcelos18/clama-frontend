@@ -14,8 +14,6 @@ export function Footer() {
       {/* Tagline */}
       <p className="font-sans text-[0.78rem] text-white/45 leading-relaxed">
         Oração, justiça e ternura · Inspirado no Evangelho da Libertação
-        <br />
-        A partir da teologia de Leonardo Boff
       </p>
 
       {/* Legal links */}

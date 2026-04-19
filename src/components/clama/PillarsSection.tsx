@@ -43,15 +43,8 @@ export function PillarsSection() {
           ))}
         </div>
 
-        {/* Boff citation + institutional paragraph */}
+        {/* Institutional paragraph */}
         <div className="mt-10 text-left max-w-[560px] mx-auto">
-          <blockquote className="font-serif text-white/85 text-[0.95rem] italic leading-relaxed border-l-[3px] border-clama-gold/60 pl-5">
-            "A opção pelos pobres nasce da fé no Deus da vida, que ouve o clamor do oprimido e desce para libertá-lo."
-            <footer className="mt-2 not-italic font-sans text-clama-gold text-[0.7rem] tracking-[1.5px] uppercase">
-              Leonardo Boff
-            </footer>
-          </blockquote>
-
           <p className="mt-6 font-serif text-white/80 text-[0.95rem] leading-relaxed text-center">
             O Clama nasceu da convicção de que a oração não é fuga do mundo — é mergulho nele, com olhos abertos e coração partido pelo que parte o coração de Deus.
           </p>

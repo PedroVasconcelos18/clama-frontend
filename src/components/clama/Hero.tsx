@@ -57,13 +57,6 @@ export function Hero({ onCtaClick }: HeroProps) {
           />
         </div>
 
-        {/* Boff citation */}
-        <p className="mt-6 font-serif text-white/60 text-[0.9rem] italic leading-relaxed max-w-[420px] mx-auto">
-          "Por trás de tudo existe uma Realidade de infinita ternura, uma Chama de inextinguível amor — e andamos na palma da mão de Deus."
-          <span className="block mt-2 not-italic font-sans text-clama-gold/80 text-[0.7rem] tracking-[1.5px] uppercase">
-            Leonardo Boff
-          </span>
-        </p>
       </div>
     </section>
   );

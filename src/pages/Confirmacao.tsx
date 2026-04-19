@@ -204,7 +204,7 @@ export default function Confirmacao() {
                 {statusInfo.message}
                 {!statusInfo.isComplete && (
                   <>
-                    {" "}Enquanto aguarda, respire e se coloque em silêncio — o Deus que ouve o clamor do povo caminha com você.
+                    {" "}Enquanto aguarda, respire e se coloque em silêncio.
                   </>
                 )}
               </p>

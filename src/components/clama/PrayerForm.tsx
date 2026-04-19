@@ -260,7 +260,7 @@ export function PrayerForm({
               <FormLabel className={labelClass}>Escreva seu clamor</FormLabel>
               <FormControl>
                 <Textarea
-                  placeholder="Conte o que está no seu coração. Sua dor, sua indignação, sua esperança — tudo o que pede libertação. Deus ouve o clamor do povo."
+                  placeholder="Conte o que está no seu coração. Sua dor, sua indignação, sua esperança — tudo o que pede libertação."
                   rows={5}
                   className={`${inputClass} font-serif leading-relaxed resize-y min-h-[120px]`}
                   {...field}

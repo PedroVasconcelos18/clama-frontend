@@ -48,7 +48,7 @@ export default function Termos() {
             <li><strong>Serviço:</strong> produção e entrega de conteúdo textual digital de apoio espiritual, elaborado com auxílio de inteligência artificial, sem natureza religiosa vinculante, confessional ou sacramental.</li>
             <li><strong>Conteúdo Gerado:</strong> texto de caráter espiritual motivacional, produzido de forma automatizada a partir das informações fornecidas pelo Usuário, entregue exclusivamente por meios digitais (e-mail ou mensagem).</li>
             <li><strong>Pedido:</strong> solicitação formal do Usuário à geração de um Conteúdo Gerado, mediante o preenchimento do formulário eletrônico e o pagamento da contribuição correspondente.</li>
-            <li><strong>Contribuição:</strong> valor pago pelo Usuário como contraprestação pelo Serviço digital, a partir do mínimo de R$ 20,00 (vinte reais), não configurando doação, dízimo, oferta religiosa ou qualquer obrigação de natureza confessional.</li>
+            <li><strong>Contribuição:</strong> valor pago pelo Usuário como contraprestação pelo Serviço digital, a partir do mínimo de R$ 1,99 (um real e noventa e nove centavos), não configurando doação, dízimo, oferta religiosa ou qualquer obrigação de natureza confessional.</li>
           </ul>
 
           {/* Seção 2 */}
@@ -136,7 +136,7 @@ export default function Termos() {
 
           <h3 className="font-serif text-clama-night text-lg mt-6 mb-3">5.1 Valor e modalidades</h3>
           <p className="text-clama-night/80 mb-4">
-            A Contribuição mínima para acesso ao Serviço é de R$ 20,00 (vinte reais). O Clama disponibiliza opções sugeridas de R$ 20,00, R$ 50,00 e R$ 100,00, além de valor livre a critério do Usuário, sempre observado o mínimo estabelecido. Os pagamentos são processados por plataforma de pagamentos certificada (Asaas), mediante cartão de crédito, débito ou Pix.
+            A Contribuição mínima para acesso ao Serviço é de R$ 1,99 (um real e noventa e nove centavos). O Clama disponibiliza opções sugeridas de R$ 1,99, R$ 3,99 e R$ 5,99, além de valor livre a critério do Usuário, sempre observado o mínimo estabelecido. Os pagamentos são processados por plataforma de pagamentos certificada (Asaas), mediante cartão de crédito, débito ou Pix.
           </p>
 
           <h3 className="font-serif text-clama-night text-lg mt-6 mb-3">5.2 Natureza da contribuição</h3>
