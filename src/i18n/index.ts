@@ -49,7 +49,7 @@ export function detectLocale(): Locale {
  * Retorna as traduções para o idioma atual.
  */
 export function getTranslations(): Translations {
-  return locales[currentLocale]
+  return locales[currentLocale] as Translations
 }
 
 /**

@@ -66,12 +66,14 @@ function formatCurrencyInput(value: string): string {
   }
 
   // Limita centavos a 2 dígitos
-  if (parts.length === 2 && parts[1].length > 2) {
-    cleaned = parts[0] + "," + parts[1].slice(0, 2)
+  if (parts.length === 2 && parts[1] && parts[1].length > 2) {
+    cleaned = (parts[0] ?? "") + "," + parts[1].slice(0, 2)
   }
 
   // Separa parte inteira e decimal
-  let [intPart, decPart] = cleaned.split(",")
+  const splitParts = cleaned.split(",")
+  let intPart = splitParts[0] ?? ""
+  const decPart = splitParts[1]
 
   // Remove zeros à esquerda desnecessários na parte inteira
   // Permite no máximo 2 zeros se não houver outro dígito (para casos como "00,20")
