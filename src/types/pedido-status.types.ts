@@ -11,4 +11,5 @@ export interface PedidoStatus {
   id: string;
   status: PedidoStatusValue;
   canal_entrega: "email" | "whatsapp";
+  pastoral_message?: string | null;
 }

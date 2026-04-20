@@ -31,7 +31,8 @@ interface StatusInfo {
 
 function getStatusMessage(
   status: PedidoStatusValue | null,
-  canal: string
+  canal: string,
+  pastoralMessage?: string | null
 ): StatusInfo {
   const isEmail = canal === "email";
 
@@ -74,7 +75,7 @@ function getStatusMessage(
     case "erro":
       return {
         title: "Tivemos um soluço",
-        message: MSG_ERRO_DEFINITIVO,
+        message: pastoralMessage || MSG_ERRO_DEFINITIVO,
         isComplete: false,
         isError: true,
         isWaiting: false,
@@ -96,6 +97,7 @@ export default function Confirmacao() {
 
   const [status, setStatus] = useState<PedidoStatusValue | null>(null);
   const [canal, setCanal] = useState<string>("email");
+  const [pastoralMessage, setPastoralMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -114,6 +116,7 @@ export default function Confirmacao() {
         const data = await apiFetch<PedidoStatus>(`/api/pedidos/${pedidoId}/`);
         setStatus(data.status);
         setCanal(data.canal_entrega);
+        setPastoralMessage(data.pastoral_message ?? null);
         setIsLoading(false);
 
         // Stop polling when in terminal states
@@ -144,7 +147,7 @@ export default function Confirmacao() {
     };
   }, [pedidoId]);
 
-  const statusInfo = getStatusMessage(status, canal);
+  const statusInfo = getStatusMessage(status, canal, pastoralMessage);
 
   return (
     <div className="min-h-screen bg-white">

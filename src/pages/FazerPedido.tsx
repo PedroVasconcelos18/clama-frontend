@@ -113,15 +113,19 @@ export default function FazerPedido() {
         valor_centavos = draft.offering.valorLivre ?? 0;
       }
 
-      // Step 1: Create pedido
+      // Step 1: Create pedido — omite "plano" no Valor Livre (backend infere).
+      const payload: Record<string, unknown> = {
+        ...formData,
+        valor_centavos,
+        canal_entrega: draft.canal.toLowerCase(),
+      };
+      if (draft.offering.selectedPlanId) {
+        payload.plano = draft.offering.selectedPlanId;
+      }
+
       const { id } = await apiFetch<{ id: string }>("/api/pedidos/", {
         method: "POST",
-        body: JSON.stringify({
-          ...formData,
-          plano: draft.offering.selectedPlanId,
-          valor_centavos,
-          canal_entrega: draft.canal.toLowerCase(),
-        }),
+        body: JSON.stringify(payload),
       });
 
       // Step 2: Create checkout
