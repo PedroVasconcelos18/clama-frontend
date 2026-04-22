@@ -38,7 +38,7 @@ export default function Cancelado() {
 
         {/* CTA */}
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Link to="/fazer-pedido">
+          <Link to="/#fazer-pedido">
             <Button className="h-12 px-8 w-full sm:w-auto">
               Tentar novamente
             </Button>
