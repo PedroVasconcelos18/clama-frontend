@@ -204,7 +204,7 @@ export function PrayerForm({
         <FormField
           control={form.control}
           name="cpf_cnpj"
-          render={({ field }) => (
+          render={({ field, fieldState }) => (
             <FormItem>
               <FormLabel className={labelClass}>CPF ou CNPJ</FormLabel>
               <FormControl>
@@ -217,7 +217,10 @@ export function PrayerForm({
                   onChange={handleCpfCnpjChange}
                 />
               </FormControl>
-              <FormMessage className="text-[#8a5cf6] text-sm" />
+              {/* Mostra erro só após blur pra não piscar enquanto o usuário digita */}
+              {fieldState.isTouched && (
+                <FormMessage className="text-[#8a5cf6] text-sm" />
+              )}
             </FormItem>
           )}
         />

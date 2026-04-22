@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isValidCpfOrCnpj } from "@/lib/validators/cpfCnpj";
 
 const telefoneOptional = z
   .string()
@@ -24,6 +25,9 @@ const cpfCnpjSchema = z
     },
     { message: "CPF deve ter 11 dígitos ou CNPJ deve ter 14 dígitos." }
   )
+  .refine(isValidCpfOrCnpj, {
+    message: "CPF ou CNPJ inválido — confira os dígitos.",
+  })
   .transform((v) => v.replace(/\D/g, "")); // Remove mask before sending
 
 const baseSchema = {
