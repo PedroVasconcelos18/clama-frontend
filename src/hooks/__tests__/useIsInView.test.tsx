@@ -1,6 +1,6 @@
 import { renderHook, act } from "@testing-library/react";
 import { useRef } from "react";
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach, type MockInstance } from "vitest";
 import { useIsInView } from "../useIsInView";
 
 describe("useIsInView", () => {
@@ -15,16 +15,19 @@ describe("useIsInView", () => {
 
     vi.stubGlobal(
       "IntersectionObserver",
-      vi.fn(function (cb: IntersectionObserverCallback) {
+      vi.fn().mockImplementation(function (
+        this: IntersectionObserver,
+        cb: IntersectionObserverCallback,
+      ) {
         observerCallback = cb;
-        this.observe = mockObserve;
-        this.disconnect = mockDisconnect;
-        this.unobserve = vi.fn();
-        this.takeRecords = () => [];
-        this.root = null;
-        this.rootMargin = "";
-        this.thresholds = [];
-      })
+        (this as unknown as Record<string, unknown>).observe = mockObserve;
+        (this as unknown as Record<string, unknown>).disconnect = mockDisconnect;
+        (this as unknown as Record<string, unknown>).unobserve = vi.fn();
+        (this as unknown as Record<string, unknown>).takeRecords = () => [];
+        (this as unknown as Record<string, unknown>).root = null;
+        (this as unknown as Record<string, unknown>).rootMargin = "";
+        (this as unknown as Record<string, unknown>).thresholds = [];
+      }),
     );
   });
 
@@ -83,13 +86,13 @@ describe("useIsInView", () => {
   });
 
   it("uses default threshold 0.15 when none is provided", () => {
-    const ctor = globalThis.IntersectionObserver as unknown as vi.Mock;
+    const ctor = globalThis.IntersectionObserver as unknown as MockInstance;
     renderHookWithElement();
     expect(ctor).toHaveBeenCalledWith(expect.any(Function), { threshold: 0.15 });
   });
 
   it("forwards custom threshold to the observer", () => {
-    const ctor = globalThis.IntersectionObserver as unknown as vi.Mock;
+    const ctor = globalThis.IntersectionObserver as unknown as MockInstance;
     renderHookWithElement(0.5);
     expect(ctor).toHaveBeenCalledWith(expect.any(Function), { threshold: 0.5 });
   });
