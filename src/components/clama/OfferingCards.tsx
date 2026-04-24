@@ -18,7 +18,7 @@ interface OfferingCardsProps {
   onChange: (state: OfferingState) => void;
 }
 
-const VALOR_MINIMO_REAIS = 20;
+const VALOR_MINIMO_REAIS = 5.99;
 
 export function OfferingCards({
   planos,
@@ -55,7 +55,7 @@ export function OfferingCards({
     const numValue = parseFloat(value);
 
     if (isNaN(numValue) || numValue < VALOR_MINIMO_REAIS) {
-      setValorLivreError("O valor mínimo é R$20.");
+      setValorLivreError("O valor mínimo é R$ 5,99.");
       onChange({
         selectedPlanId: null,
         valorLivre: null,
@@ -142,15 +142,15 @@ export function OfferingCards({
       {isValorLivreSelected && (
         <div className="max-w-[640px] mx-auto">
           <label className="font-sans text-[0.8rem] font-semibold text-clama-night tracking-[0.5px] uppercase block mb-1">
-            Valor da contribuição (mín. R$ 20)
+            Valor da contribuição (mín. R$ 5,99)
           </label>
           <Input
             type="number"
             min={VALOR_MINIMO_REAIS}
-            step={1}
+            step={0.01}
             value={valorLivreInput}
             onChange={(e) => handleValorLivreChange(e.target.value)}
-            placeholder="R$ 20,00"
+            placeholder="R$ 5,99"
             className="w-full py-3 px-4 border-[1.5px] border-[#e0d8f0] rounded-[10px] text-[0.95rem] font-sans text-clama-night bg-white outline-none focus:border-[#8a5cf6]"
             aria-label="Valor da contribuição em reais"
           />
