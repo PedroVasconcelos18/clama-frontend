@@ -136,7 +136,7 @@ export default function Termos() {
 
           <h3 className="font-serif text-clama-night text-lg mt-6 mb-3">5.1 Valor e modalidades</h3>
           <p className="text-clama-night/80 mb-4">
-            A Contribuição mínima para acesso ao Serviço é de R$ 5,99 (cinco reais e noventa e nove centavos). O Clama disponibiliza opções sugeridas pelos planos vigentes e valor livre a critério do Usuário, sempre observado o mínimo estabelecido. Os pagamentos são processados por plataforma de pagamentos certificada (Asaas), mediante cartão de crédito, débito ou Pix.
+            A Contribuição mínima para acesso ao Serviço é de R$ 5,99 (cinco reais e noventa e nove centavos). O Clama disponibiliza opções sugeridas de R$ 5,99, R$ 6,99 e R$ 7,99, além de valor livre a critério do Usuário, sempre observado o mínimo estabelecido. Os pagamentos são processados por plataforma de pagamentos certificada (Asaas), mediante cartão de crédito, débito ou Pix.
           </p>
 
           <h3 className="font-serif text-clama-night text-lg mt-6 mb-3">5.2 Natureza da contribuição</h3>
