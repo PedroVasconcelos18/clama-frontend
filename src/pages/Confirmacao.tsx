@@ -15,6 +15,7 @@ import {
 
 import { StickyNav } from "@/components/clama/StickyNav";
 import { Footer } from "@/components/clama/Footer";
+import { WhatsAppShareButton } from "@/components/clama/WhatsAppShareButton";
 import PastoralAlert from "@/components/utility/PastoralAlert";
 import LoadingSpinner from "@/components/utility/LoadingSpinner";
 
@@ -98,6 +99,7 @@ export default function Confirmacao() {
   const [status, setStatus] = useState<PedidoStatusValue | null>(null);
   const [canal, setCanal] = useState<string>("email");
   const [pastoralMessage, setPastoralMessage] = useState<string | null>(null);
+  const [oracaoGerada, setOracaoGerada] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -117,6 +119,7 @@ export default function Confirmacao() {
         setStatus(data.status);
         setCanal(data.canal_entrega);
         setPastoralMessage(data.pastoral_message ?? null);
+        setOracaoGerada(data.oracao_gerada ?? "");
         setIsLoading(false);
 
         // Stop polling when in terminal states
@@ -213,6 +216,25 @@ export default function Confirmacao() {
               </p>
             )}
 
+            {/* Compartilhar no WhatsApp (logo após o aviso, antes da oração) */}
+            {status === "enviada" && oracaoGerada && (
+              <div className="mb-6">
+                <WhatsAppShareButton oracaoTexto={oracaoGerada} />
+              </div>
+            )}
+
+            {/* Prayer Card — só após entrega */}
+            {status === "enviada" && oracaoGerada && (
+              <div className="border border-clama-gold/40 rounded-xl p-6 bg-[#fffbee] mb-6 text-left">
+                <p className="font-sans text-clama-accent text-[0.78rem] tracking-[1px] uppercase mb-3">
+                  Sua oração
+                </p>
+                <p className="font-serif text-clama-night text-[1rem] leading-relaxed whitespace-pre-line">
+                  {oracaoGerada}
+                </p>
+              </div>
+            )}
+
             {/* Verse Card */}
             <div className="border border-[#e0d8f0] rounded-xl p-5 bg-clama-cream mb-8">
               <p className="font-serif text-[#444] text-[0.95rem] italic leading-relaxed">
@@ -241,6 +263,13 @@ export default function Confirmacao() {
                   Falar com a gente
                 </button>
               </a>
+            )}
+
+            {/* Compartilhar no WhatsApp (segunda CTA, após o versículo) */}
+            {status === "enviada" && oracaoGerada && (
+              <div className="mb-4">
+                <WhatsAppShareButton oracaoTexto={oracaoGerada} />
+              </div>
             )}
 
             {/* CTA */}
