@@ -3,6 +3,9 @@ import { Toaster } from "@/components/ui/sonner"
 import { AuthProvider } from "@/contexts/AuthContext"
 import { ProtectedRoute } from "@/components/admin/ProtectedRoute"
 import Landing from "@/pages/Landing"
+import PedidoGratuito from "@/pages/PedidoGratuito"
+import PedidoGratuitoConfirmar from "@/pages/PedidoGratuitoConfirmar"
+import PedidoGratuitoConfirmado from "@/pages/PedidoGratuitoConfirmado"
 import Confirmacao from "@/pages/Confirmacao"
 import Cancelado from "@/pages/Cancelado"
 import Privacidade from "@/pages/Privacidade"
@@ -24,6 +27,15 @@ export default function App() {
       <Routes>
         {/* Public routes */}
         <Route path="/" element={<Landing />} />
+        <Route path="/oracao-gratis" element={<PedidoGratuito />} />
+        <Route
+          path="/oracao-gratis/confirmar"
+          element={<PedidoGratuitoConfirmar />}
+        />
+        <Route
+          path="/oracao-gratis/confirmado"
+          element={<PedidoGratuitoConfirmado />}
+        />
         <Route path="/confirmacao" element={<Confirmacao />} />
         <Route path="/cancelado" element={<Cancelado />} />
         <Route path="/privacidade" element={<Privacidade />} />
