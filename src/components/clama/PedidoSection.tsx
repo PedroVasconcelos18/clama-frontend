@@ -1,8 +1,11 @@
 import { forwardRef, useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
 import { apiFetch, PastoralApiError } from "@/lib/api";
 import { useFormDraft } from "@/hooks/useFormDraft";
+import { useCustomerAuth } from "@/contexts/CustomerAuthContext";
+import { useCustomerApi } from "@/hooks/useCustomerApi";
 import { type Plan } from "@/types/plano.types";
 import { type PedidoFormData } from "@/lib/schemas/pedido";
 
@@ -33,6 +36,10 @@ const INITIAL_DRAFT: FormDraftState = {
 };
 
 export const PedidoSection = forwardRef<HTMLElement>((_props, ref) => {
+  const navigate = useNavigate();
+  const { isAuthenticated } = useCustomerAuth();
+  const { customerFetch } = useCustomerApi();
+
   const [planos, setPlanos] = useState<Plan[]>([]);
   const [isLoadingPlanos, setIsLoadingPlanos] = useState(true);
   const [planosError, setPlanosError] = useState<string | null>(null);
@@ -88,6 +95,12 @@ export const PedidoSection = forwardRef<HTMLElement>((_props, ref) => {
   };
 
   const handleFormSubmit = async (formData: PedidoFormData) => {
+    // Paywall: anônimos vão pra /login antes de criar pedido pago
+    if (!isAuthenticated) {
+      navigate("/login?next=/#pedido");
+      return;
+    }
+
     if (!draft.offering.selectedPlanId && !draft.offering.valorLivre) {
       setSubmitError("Por favor, escolha uma oferta para continuar.");
       return;
@@ -114,14 +127,15 @@ export const PedidoSection = forwardRef<HTMLElement>((_props, ref) => {
         payload.plano = draft.offering.selectedPlanId;
       }
 
-      const { id } = await apiFetch<{ id: string }>("/api/pedidos/", {
+      const { id } = await customerFetch<{ id: string }>("/api/pedidos/", {
         method: "POST",
         body: JSON.stringify(payload),
+        showToast: false,
       });
 
-      const { checkout_url } = await apiFetch<{ checkout_url: string }>(
+      const { checkout_url } = await customerFetch<{ checkout_url: string }>(
         `/api/pedidos/${id}/checkout/`,
-        { method: "POST" },
+        { method: "POST", showToast: false },
       );
 
       clearDraft();
@@ -223,27 +237,39 @@ export const PedidoSection = forwardRef<HTMLElement>((_props, ref) => {
             </section>
 
             <section className="mt-8 mb-8">
-              <Button
-                type="submit"
-                form="prayer-form"
-                variant="gold"
-                size="lg"
-                disabled={
-                  isSubmitting ||
-                  !isFormValid ||
-                  (!draft.offering.selectedPlanId && !draft.offering.valorLivre)
-                }
-                className="w-full h-12 text-[1.05rem] font-bold rounded-full"
-              >
-                {isSubmitting ? (
-                  <>
-                    <LoadingSpinner size={20} className="mr-2" />
-                    Enviando...
-                  </>
-                ) : (
-                  "Levar meu clamor"
-                )}
-              </Button>
+              {isAuthenticated ? (
+                <Button
+                  type="submit"
+                  form="prayer-form"
+                  variant="gold"
+                  size="lg"
+                  disabled={
+                    isSubmitting ||
+                    !isFormValid ||
+                    (!draft.offering.selectedPlanId && !draft.offering.valorLivre)
+                  }
+                  className="w-full h-12 text-[1.05rem] font-bold rounded-full"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <LoadingSpinner size={20} className="mr-2" />
+                      Enviando...
+                    </>
+                  ) : (
+                    "Levar meu clamor"
+                  )}
+                </Button>
+              ) : (
+                <Button
+                  type="button"
+                  variant="gold"
+                  size="lg"
+                  onClick={() => navigate("/login?next=/#pedido")}
+                  className="w-full h-12 text-[1.05rem] font-bold rounded-full"
+                >
+                  Entrar para fazer pedido
+                </Button>
+              )}
 
               <p className="font-sans text-[0.75rem] text-[#aaa] text-center leading-relaxed mt-4">
                 Seus dados são tratados com sigilo e respeito.

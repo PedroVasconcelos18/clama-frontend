@@ -4,6 +4,17 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 import Landing from "../Landing";
 import * as apiModule from "@/lib/api";
+import { CustomerAuthProvider } from "@/contexts/CustomerAuthContext";
+
+function renderLanding() {
+  return render(
+    <MemoryRouter>
+      <CustomerAuthProvider>
+        <Landing />
+      </CustomerAuthProvider>
+    </MemoryRouter>,
+  );
+}
 
 describe("Landing", () => {
   beforeEach(() => {
@@ -35,21 +46,13 @@ describe("Landing", () => {
   });
 
   it("renders PedidoSection at the bottom of the page", async () => {
-    const { container } = render(
-      <MemoryRouter>
-        <Landing />
-      </MemoryRouter>,
-    );
+    const { container } = renderLanding();
     const pedidoSection = container.querySelector("#fazer-pedido");
     expect(pedidoSection).not.toBeNull();
   });
 
   it("updates window.location.hash to #fazer-pedido when Hero CTA is clicked", async () => {
-    render(
-      <MemoryRouter>
-        <Landing />
-      </MemoryRouter>,
-    );
+    renderLanding();
     const heroCta = await screen.findAllByRole("button", { name: /levar meu clamor/i });
     const firstHeroCta = heroCta[0];
     if (!firstHeroCta) throw new Error("Hero CTA button not found");
@@ -58,21 +61,13 @@ describe("Landing", () => {
   });
 
   it("updates window.location.hash to #fazer-pedido when StickyNav CTA is clicked", async () => {
-    render(
-      <MemoryRouter>
-        <Landing />
-      </MemoryRouter>,
-    );
+    renderLanding();
     fireEvent.click(screen.getByRole("button", { name: /fazer pedido/i }));
     expect(window.location.hash).toBe("#fazer-pedido");
   });
 
   it("does not render the old FinalCta gold button", async () => {
-    render(
-      <MemoryRouter>
-        <Landing />
-      </MemoryRouter>,
-    );
+    renderLanding();
     await waitFor(() => {
       expect(screen.queryByRole("button", { name: /Clama — a partir de R\$/ })).toBeNull();
     });
