@@ -2,7 +2,7 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-import PedidoGratuitoConfirmar from "../PedidoGratuitoConfirmar";
+import Confirmar from "../Confirmar";
 import * as freemiumApi from "@/lib/api/freemium";
 import { PastoralApiError } from "@/lib/api";
 
@@ -21,19 +21,19 @@ vi.mock("react-router-dom", async () => {
 function renderAt(path: string) {
   return render(
     <MemoryRouter initialEntries={[path]}>
-      <PedidoGratuitoConfirmar />
+      <Confirmar />
     </MemoryRouter>,
   );
 }
 
-describe("PedidoGratuitoConfirmar (/oracao-gratis/confirmar) — P-V2 wave 2", () => {
+describe("Confirmar (/confirmar) — P-V2 wave 2", () => {
   beforeEach(() => {
     navigateMock.mockClear();
     vi.restoreAllMocks();
   });
 
   it("renderiza CTA principal quando token está presente na query string", () => {
-    renderAt("/oracao-gratis/confirmar?token=abc-token-123");
+    renderAt("/confirmar?token=abc-token-123");
 
     expect(
       screen.getByRole("heading", { name: /Confirme sua oração/i }),
@@ -44,7 +44,7 @@ describe("PedidoGratuitoConfirmar (/oracao-gratis/confirmar) — P-V2 wave 2", (
   });
 
   it("token ausente: mostra erro pastoral inline e CTA pra novo pedido", () => {
-    renderAt("/oracao-gratis/confirmar");
+    renderAt("/confirmar");
 
     expect(
       screen.getByText(/Link de confirmação inválido ou incompleto/i),
@@ -58,7 +58,7 @@ describe("PedidoGratuitoConfirmar (/oracao-gratis/confirmar) — P-V2 wave 2", (
     ).not.toBeInTheDocument();
   });
 
-  it("clique no CTA dispara POST e navega pra /oracao-gratis/confirmado em sucesso", async () => {
+  it("clique no CTA dispara POST e navega pra /confirmado em sucesso", async () => {
     const apiSpy = vi
       .spyOn(freemiumApi, "confirmarPedidoGratuito")
       .mockResolvedValue({
@@ -66,7 +66,7 @@ describe("PedidoGratuitoConfirmar (/oracao-gratis/confirmar) — P-V2 wave 2", (
         status: "GERANDO_ORACAO",
       });
 
-    renderAt("/oracao-gratis/confirmar?token=tk-1");
+    renderAt("/confirmar?token=tk-1");
 
     fireEvent.click(
       screen.getByRole("button", { name: /Confirmar minha oração/i }),
@@ -75,7 +75,7 @@ describe("PedidoGratuitoConfirmar (/oracao-gratis/confirmar) — P-V2 wave 2", (
     await waitFor(() => expect(apiSpy).toHaveBeenCalledWith("tk-1"));
     await waitFor(() =>
       expect(navigateMock).toHaveBeenCalledWith(
-        "/oracao-gratis/confirmado?pedido_id=uuid-xyz",
+        "/confirmado?pedido_id=uuid-xyz",
       ),
     );
   });
@@ -90,7 +90,7 @@ describe("PedidoGratuitoConfirmar (/oracao-gratis/confirmar) — P-V2 wave 2", (
       ),
     );
 
-    renderAt("/oracao-gratis/confirmar?token=tk-expirado");
+    renderAt("/confirmar?token=tk-expirado");
 
     fireEvent.click(
       screen.getByRole("button", { name: /Confirmar minha oração/i }),
@@ -114,7 +114,7 @@ describe("PedidoGratuitoConfirmar (/oracao-gratis/confirmar) — P-V2 wave 2", (
       ),
     );
 
-    renderAt("/oracao-gratis/confirmar?token=tk-bl");
+    renderAt("/confirmar?token=tk-bl");
 
     fireEvent.click(
       screen.getByRole("button", { name: /Confirmar minha oração/i }),

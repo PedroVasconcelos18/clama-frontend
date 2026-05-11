@@ -1,5 +1,10 @@
 import { useEffect, useState } from "react"
-import { Link, useNavigate, useSearchParams } from "react-router-dom"
+import {
+  Link,
+  useLocation,
+  useNavigate,
+  useSearchParams,
+} from "react-router-dom"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { toast } from "sonner"
@@ -15,15 +20,49 @@ import { Label } from "@/components/ui/label"
 import { PastoralAlert } from "@/components/utility/PastoralAlert"
 import { LoadingSpinner } from "@/components/utility/LoadingSpinner"
 
+interface LoginLocationState {
+  /** Mensagem one-shot vinda de outra página (ex.: gate user_ja_possui_conta da LP). */
+  flashMessage?: string
+  /** Override de `next` quando o redirect veio de `location.state` (ex.: LP /). */
+  next?: string
+}
+
 export default function Login() {
   const navigate = useNavigate()
+  const location = useLocation()
   const [searchParams] = useSearchParams()
   const { login, isAuthenticated, user, isLoading } = useCustomerAuth()
 
   const [error, setError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const next = validateNextPath(searchParams.get("next"))
+  // Flash message vinda de outro componente (ex.: LP redirecionando após
+  // 409 user_ja_possui_conta). Lemos UMA VEZ na montagem e limpamos o
+  // state pra não persistir em refreshes / navegações posteriores.
+  const locationState = (location.state as LoginLocationState | null) ?? null
+  const [flashMessage] = useState<string | null>(
+    locationState?.flashMessage ?? null,
+  )
+  useEffect(() => {
+    if (locationState?.flashMessage) {
+      navigate(location.pathname + location.search, {
+        replace: true,
+        state: null,
+      })
+    }
+    // Intencionalmente vazio: roda só uma vez na montagem.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // `next` pode vir de querystring OU de location.state (preferindo state).
+  // Default `/conta` — após login o usuário cai na área dele (histórico
+  // de pedidos + CTA novo pedido). Páginas que precisam de auth no meio
+  // do fluxo (LP redirect por gate user_ja_possui_conta) sobrescrevem
+  // via `state.next` ou query `?next=`.
+  const next = validateNextPath(
+    locationState?.next ?? searchParams.get("next"),
+    "/conta",
+  )
 
   const {
     register,
@@ -83,6 +122,13 @@ export default function Login() {
             Entre para continuar sua oração
           </p>
         </div>
+
+        {/* Flash message (one-shot) — vem de outra página via location.state. */}
+        {flashMessage && !error && (
+          <PastoralAlert variant="info" className="mb-4">
+            {flashMessage}
+          </PastoralAlert>
+        )}
 
         {/* Login Card */}
         <div className="bg-clama-night-deep border border-clama-gold/20 rounded-clama-card p-6">

@@ -5,20 +5,12 @@ import { Footer } from "@/components/clama/Footer";
 import PastoralAlert from "@/components/utility/PastoralAlert";
 
 /**
- * Página /oracao-gratis/confirmado
- *
- * Para onde o backend redireciona depois que o usuário clica no link de
- * confirmação no e-mail (`GET /api/freemium/confirmar/?token=X` com Accept:
- * text/html → 302 → cá). A query string traz `pedido_id`.
- *
- * O frontend NÃO chama nenhum endpoint daqui — a saga (criar User, gravar
- * blacklist, transitar status, disparar `gerar_oracao_task`) já rodou no
- * backend antes do redirect.
- *
- * Daqui o usuário pode ir pra `/confirmacao?pedido_id=X`, que já existe e
- * faz polling do status até `enviada`.
+ * Página /confirmado — sucesso pós-confirmação do double opt-in.
+ * O backend já rodou a saga (criar User, blacklist, transitar status,
+ * disparar `gerar_oracao_task`) antes de redirecionar pra cá. A página
+ * só apresenta o estado e linka pra `/confirmacao?pedido_id=X` (polling).
  */
-export default function PedidoGratuitoConfirmado() {
+export default function Confirmado() {
   const [searchParams] = useSearchParams();
   const pedidoId = searchParams.get("pedido_id");
 
@@ -30,15 +22,15 @@ export default function PedidoGratuitoConfirmado() {
         <main className="max-w-[480px] mx-auto px-6 py-12 text-center">
           <div className="mb-8">
             <PastoralAlert variant="error">
-              Link inválido ou incompleto. Faça um novo pedido em{" "}
-              <Link to="/oracao-gratis" className="underline font-semibold">
-                /oracao-gratis
+              Link inválido ou incompleto. Faça um novo pedido na{" "}
+              <Link to="/" className="underline font-semibold">
+                página inicial
               </Link>
               .
             </PastoralAlert>
           </div>
 
-          <Link to="/oracao-gratis">
+          <Link to="/">
             <button className="bg-white text-clama-night border-[1.5px] border-clama-night py-[0.85rem] px-8 text-[0.95rem] font-semibold font-sans rounded-full hover:bg-[#f9f5ff] transition-colors">
               Fazer um novo pedido
             </button>

@@ -208,7 +208,6 @@ export const PedidoSection = forwardRef<HTMLElement>((_props, ref) => {
               <PrayerForm
                 planos={planos}
                 onSubmit={handleFormSubmit}
-                requireTelefone={draft.canal === "WHATSAPP"}
                 onValidityChange={setIsFormValid}
               />
             </section>

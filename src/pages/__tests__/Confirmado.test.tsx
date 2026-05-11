@@ -2,19 +2,19 @@ import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { describe, it, expect } from "vitest";
 
-import PedidoGratuitoConfirmado from "../PedidoGratuitoConfirmado";
+import Confirmado from "../Confirmado";
 
 function renderAt(path: string) {
   return render(
     <MemoryRouter initialEntries={[path]}>
-      <PedidoGratuitoConfirmado />
+      <Confirmado />
     </MemoryRouter>,
   );
 }
 
-describe("PedidoGratuitoConfirmado (/oracao-gratis/confirmado)", () => {
+describe("Confirmado (/confirmado)", () => {
   it("renderiza mensagem de oração em preparação com pedido_id válido", () => {
-    renderAt("/oracao-gratis/confirmado?pedido_id=uuid-123");
+    renderAt("/confirmado?pedido_id=uuid-123");
 
     expect(
       screen.getByRole("heading", {
@@ -27,7 +27,7 @@ describe("PedidoGratuitoConfirmado (/oracao-gratis/confirmado)", () => {
   });
 
   it("CTA aponta pra página de polling /confirmacao com o pedido_id", () => {
-    renderAt("/oracao-gratis/confirmado?pedido_id=uuid-abc");
+    renderAt("/confirmado?pedido_id=uuid-abc");
 
     const link = screen.getByRole("link", {
       name: /Acompanhar minha oração/i,
@@ -39,19 +39,17 @@ describe("PedidoGratuitoConfirmado (/oracao-gratis/confirmado)", () => {
   });
 
   it("pedido_id ausente: mostra pastoral de link inválido", () => {
-    renderAt("/oracao-gratis/confirmado");
+    renderAt("/confirmado");
 
     expect(
       screen.getByText(/Link inválido ou incompleto/i),
     ).toBeInTheDocument();
-    // Não mostra o título da feliz path
     expect(
       screen.queryByRole("heading", {
         name: /Sua oração está sendo preparada/i,
       }),
     ).not.toBeInTheDocument();
 
-    // CTA pra fazer novo pedido
     const novoPedidoBtn = screen.getByRole("button", {
       name: /Fazer um novo pedido/i,
     });

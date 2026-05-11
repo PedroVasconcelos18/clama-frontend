@@ -2,18 +2,18 @@ import { apiFetch } from "@/lib/api";
 import type { PedidoGratuitoData } from "@/lib/schemas/pedido-gratuito";
 
 /**
- * Wrappers do fluxo /oracao-gratis (freemium) — versão pós-renegociação 2026-05-08
+ * Wrappers do fluxo freemium (Landing pública) — versão pós-renegociação 2026-05-08
  * + hardening wave 2 (P-V2 wave 2).
  *
  * Fluxo atual (double opt-in):
  *   1. `criarPedidoGratuito` — submete o pedido com CAPTCHA + device_hash
  *      opcional; backend cria Pedido em `AGUARDANDO_CONFIRMACAO_EMAIL` e
- *      envia e-mail com link `${FRONTEND_BASE_URL}/oracao-gratis/confirmar?token=X`.
+ *      envia e-mail com link `${FRONTEND_BASE_URL}/confirmar?token=X`.
  *   2. Usuário clica no link do e-mail → frontend abre
- *      `/oracao-gratis/confirmar` (página intermediária com botão).
+ *      `/confirmar` (página intermediária com botão).
  *   3. Usuário clica "Confirmar minha oração" → `confirmarPedidoGratuito`
  *      faz POST `/api/freemium/confirmar/` → backend executa a saga →
- *      navega pra `/oracao-gratis/confirmado?pedido_id=X`.
+ *      navega pra `/confirmado?pedido_id=X`.
  *
  * P-V2 wave 2 desacoplou GET de POST — só o POST consome o token. Antes,
  * mail scanners corporativos faziam GET pre-fetch e queimavam o token
@@ -66,7 +66,7 @@ export interface ConfirmarPedidoGratuitoResponse {
 /**
  * Confirma um pedido gratuito por token (POST `/api/freemium/confirmar/`).
  *
- * P-V2 wave 2: chamado pela página `/oracao-gratis/confirmar` quando o
+ * P-V2 wave 2: chamado pela página `/confirmar` quando o
  * usuário clica em "Confirmar minha oração". Esta é a ÚNICA forma de
  * consumir o token — o GET correspondente apenas redireciona pra cá.
  */

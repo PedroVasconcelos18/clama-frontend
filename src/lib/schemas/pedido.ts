@@ -1,16 +1,13 @@
 import { z } from "zod";
 import { isValidCpfOrCnpj } from "@/lib/validators/cpfCnpj";
 
-const telefoneOptional = z
-  .string()
-  .optional()
-  .refine((v) => !v || v.replace(/\D/g, "").length >= 8, {
-    message: "Precisamos de um telefone válido.",
-  });
-
+// Telefone sempre obrigatório no form pago — paridade com o form gratuito
+// (decisão do PM em 2026-05-10: coletar telefone independente do canal de
+// entrega, pra uso futuro). O `telefoneOptional` ficou no histórico mas
+// não é mais usado.
 const telefoneRequired = z
   .string()
-  .min(1, "Para receber por WhatsApp, precisamos do seu número.")
+  .min(1, "Para entrarmos em contato, precisamos do seu número.")
   .refine((v) => v.replace(/\D/g, "").length >= 8, {
     message: "Precisamos de um telefone válido.",
   });
@@ -61,16 +58,16 @@ const baseSchema = {
 
 export const pedidoSchema = z.object({
   ...baseSchema,
-  telefone: telefoneOptional,
-});
-
-export const pedidoSchemaWithTelefone = z.object({
-  ...baseSchema,
   telefone: telefoneRequired,
 });
 
-export function getPedidoSchema(requireTelefone: boolean): typeof pedidoSchema {
-  return (requireTelefone ? pedidoSchemaWithTelefone : pedidoSchema) as typeof pedidoSchema;
+/**
+ * @deprecated Telefone agora é sempre obrigatório no form pago. A função
+ * mantém a assinatura por retrocompatibilidade — `requireTelefone` é
+ * ignorado, retorna sempre o schema com telefone obrigatório.
+ */
+export function getPedidoSchema(_requireTelefone?: boolean): typeof pedidoSchema {
+  return pedidoSchema;
 }
 
 export type PedidoFormInput = z.input<typeof pedidoSchema>;

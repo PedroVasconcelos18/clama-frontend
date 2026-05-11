@@ -90,19 +90,50 @@ export function PrayerFormGratuito({
   const fingerprintRequested = useRef(false);
 
   // FingerprintJS roda uma vez no mount e popula o `device_hash` hidden.
+  // `trigger()` no final força revalidação de TODO o form — necessário porque
+  // hidden fields registrados via `register()` + `setValue` programático
+  // não disparam o ciclo natural de "field touched → form re-validated",
+  // o que mantinha `formState.isValid=false` indefinidamente em `mode: onChange`
+  // (mesmo com `errors={}`).
+  //
+  // NÃO usamos cleanup com flag `cancelled`: em React StrictMode (dev) o
+  // useEffect roda 2x (mount → cleanup → mount). Se a primeira promise
+  // tivesse capturado um `cancelled` que vira true no cleanup #1, o
+  // `setValue` nunca executava porque o segundo mount fazia early-return
+  // pelo ref. `setValue` é seguro pós-unmount (RHF não toca React state
+  // externo), então não precisamos abortar.
   useEffect(() => {
     if (fingerprintRequested.current) return;
     fingerprintRequested.current = true;
 
-    let cancelled = false;
     obterDeviceHash().then((hash) => {
-      if (cancelled) return;
-      form.setValue("device_hash", hash, { shouldValidate: true });
+      form.setValue("device_hash", hash, {
+        shouldValidate: true,
+        shouldTouch: true,
+      });
+      form.trigger();
     });
+  }, [form]);
 
-    return () => {
-      cancelled = true;
-    };
+  // DEV-only: o widget Turnstile invisible às vezes não emite o callback
+  // `onSuccess` em ambiente local (rede chiando, iframe da Cloudflare
+  // bloqueado, etc.) — o que trava o submit pra sempre. Como o backend em
+  // dev opera em `mock_mode` (TURNSTILE_SECRET_KEY="") e aceita qualquer
+  // token não-vazio, populamos um placeholder após 1.5s. Em produção isso
+  // não roda (`import.meta.env.DEV` é false).
+  useEffect(() => {
+    if (!import.meta.env.DEV) return;
+    const t = setTimeout(() => {
+      const current = form.getValues("turnstile_token");
+      if (!current) {
+        form.setValue("turnstile_token", "dev-fallback-token", {
+          shouldValidate: true,
+          shouldTouch: true,
+        });
+        form.trigger();
+      }
+    }, 1500);
+    return () => clearTimeout(t);
   }, [form]);
 
   const handleCpfCnpjChange = useCallback(
@@ -116,7 +147,10 @@ export function PrayerFormGratuito({
   const handleTurnstileSuccess = useCallback(
     (token: string) => {
       setCaptchaError(null);
-      form.setValue("turnstile_token", token, { shouldValidate: true });
+      form.setValue("turnstile_token", token, {
+        shouldValidate: true,
+        shouldTouch: true,
+      });
     },
     [form],
   );
@@ -125,11 +159,17 @@ export function PrayerFormGratuito({
     setCaptchaError(
       "Não conseguimos validar a verificação anti-robô. Recarregue a página.",
     );
-    form.setValue("turnstile_token", "", { shouldValidate: true });
+    form.setValue("turnstile_token", "", {
+      shouldValidate: true,
+      shouldTouch: true,
+    });
   }, [form]);
 
   const handleTurnstileExpire = useCallback(() => {
-    form.setValue("turnstile_token", "", { shouldValidate: true });
+    form.setValue("turnstile_token", "", {
+      shouldValidate: true,
+      shouldTouch: true,
+    });
   }, [form]);
 
   const handleSubmit = form.handleSubmit(async (data) => {
@@ -386,6 +426,23 @@ export function PrayerFormGratuito({
         {/* Hidden inputs pra manter os campos no RHF (sem renderizar UI extra). */}
         <input type="hidden" {...form.register("turnstile_token")} />
         <input type="hidden" {...form.register("device_hash")} />
+
+        {/* DEV-only: mostra por que o submit está bloqueado */}
+        {import.meta.env.DEV && !form.formState.isValid && (
+          <div className="mt-4 p-3 rounded-md border border-dashed border-[#c9b3f0] bg-[#fbf8ff] text-[0.78rem] font-mono text-[#4a3c6c]">
+            <strong>[dev] form inválido — campos pendentes:</strong>
+            <ul className="mt-1 list-disc list-inside">
+              {Object.entries(form.formState.errors).map(([k, v]) => (
+                <li key={k}>
+                  <code>{k}</code>: {v?.message?.toString() ?? "inválido"}
+                </li>
+              ))}
+              {Object.keys(form.formState.errors).length === 0 && (
+                <li>nenhum erro reportado — provavelmente algum campo ainda não foi tocado (mode: onChange)</li>
+              )}
+            </ul>
+          </div>
+        )}
 
         {/* Submit */}
         <div className="mt-8">

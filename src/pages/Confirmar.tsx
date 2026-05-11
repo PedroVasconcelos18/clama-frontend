@@ -10,27 +10,12 @@ import { PastoralApiError } from "@/lib/api";
 import { confirmarPedidoGratuito } from "@/lib/api/freemium";
 
 /**
- * Página /oracao-gratis/confirmar
- *
- * Tela intermediária do double opt-in (P-V2 wave 2). O usuário chega aqui
- * via clique no link do e-mail de confirmação. A página NÃO consome o
- * token automaticamente — exige um clique explícito no botão "Confirmar
- * minha oração", que dispara o POST `/api/freemium/confirmar/`.
- *
- * Por que essa indireção: mail scanners corporativos (Microsoft Safe
- * Links, Mimecast, Proofpoint) fazem GET pre-fetch em todos os links
- * inbound pra checar reputação. Antes da P-V2, o pre-fetch consumia o
- * token e a saga rodava antes do usuário sequer ver o e-mail. Mover
- * o consumo pra POST + clique humano fecha esse buraco.
- *
- * Fluxos:
- * - Token presente + clique → POST → sucesso → redireciona pra
- *   `/oracao-gratis/confirmado?pedido_id=X`.
- * - Token ausente na query string → mostra erro pastoral inline.
- * - POST falhou (400 token inválido/expirado, 409 blacklist) → mostra
- *   `pastoral_message` inline + permite voltar pro form.
+ * Página /confirmar — tela intermediária do double opt-in (P-V2 wave 2).
+ * O usuário chega aqui via clique no link do e-mail. O token só é consumido
+ * por POST explícito (clique humano), o que blinda contra mail scanners
+ * corporativos que fazem GET pre-fetch nos links inbound.
  */
-export default function PedidoGratuitoConfirmar() {
+export default function Confirmar() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const token = (searchParams.get("token") ?? "").trim();
@@ -44,7 +29,7 @@ export default function PedidoGratuitoConfirmar() {
     setSubmitting(true);
     try {
       const res = await confirmarPedidoGratuito(token);
-      navigate(`/oracao-gratis/confirmado?pedido_id=${res.pedido_id}`);
+      navigate(`/confirmado?pedido_id=${res.pedido_id}`);
     } catch (err) {
       if (err instanceof PastoralApiError) {
         setErro(err.pastoralMessage);
@@ -65,14 +50,14 @@ export default function PedidoGratuitoConfirmar() {
           <div className="mb-8">
             <PastoralAlert variant="error">
               Link de confirmação inválido ou incompleto. Faça um novo
-              pedido em{" "}
-              <Link to="/oracao-gratis" className="underline font-semibold">
-                /oracao-gratis
+              pedido na{" "}
+              <Link to="/" className="underline font-semibold">
+                página inicial
               </Link>
               .
             </PastoralAlert>
           </div>
-          <Link to="/oracao-gratis">
+          <Link to="/">
             <button className="bg-white text-clama-night border-[1.5px] border-clama-night py-[0.85rem] px-8 text-[0.95rem] font-semibold font-sans rounded-full hover:bg-[#f9f5ff] transition-colors">
               Fazer um novo pedido
             </button>

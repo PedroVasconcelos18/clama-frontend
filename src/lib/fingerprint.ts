@@ -29,10 +29,24 @@ export async function obterDeviceHash(): Promise<string> {
       const fp = await FingerprintJS.load();
       const result = await fp.get();
       cached = result.visitorId;
+      // Log de diagnóstico em dev: ajuda a detectar fingerprint instável
+      // (cada submit gerando visitorId diferente — sintoma de Brave/Safari/
+      // incognito adicionando ruído anti-tracking). Em produção é silencioso
+      // pra não vazar info em consoles de usuárias.
+      if (import.meta.env.DEV) {
+        // eslint-disable-next-line no-console
+        console.log(
+          `[device_hash] visitorId=${result.visitorId} (estabilidade: confidence=${result.confidence?.score ?? "n/a"})`,
+        );
+      }
       return cached;
-    } catch {
+    } catch (err) {
       // Fallback: nunca quebra o fluxo do usuário. UUID v4 é "device_hash"
       // suficiente pro MVP (campo de observação, não bloqueante).
+      if (import.meta.env.DEV) {
+        // eslint-disable-next-line no-console
+        console.warn("[device_hash] FingerprintJS falhou, usando fallback:", err);
+      }
       cached = fallbackHash();
       return cached;
     } finally {

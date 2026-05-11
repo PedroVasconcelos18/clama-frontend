@@ -2,7 +2,7 @@ import { z } from "zod";
 import { isValidCpfOrCnpj } from "@/lib/validators/cpfCnpj";
 
 /**
- * Schema do fluxo /oracao-gratis (freemium) — versão pós-renegociação 2026-05-08.
+ * Schema do fluxo freemium (Landing pública) — versão pós-renegociação 2026-05-08.
  *
  * Mudanças em relação ao v1:
  * - Removidos `otp_token` e `otp_codigo` (fluxo OTP via WhatsApp foi descontinuado).

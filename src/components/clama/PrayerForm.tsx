@@ -47,19 +47,19 @@ function maskCpfCnpj(value: string): string {
 interface PrayerFormProps {
   planos: Plan[];
   onSubmit: (data: PedidoFormData) => void;
+  /**
+   * @deprecated Telefone agora é sempre obrigatório (paridade com form
+   * gratuito). Prop mantida pra retrocompat — ignorada.
+   */
   requireTelefone?: boolean;
   onValidityChange?: (isValid: boolean) => void;
 }
 
 export function PrayerForm({
   onSubmit,
-  requireTelefone = false,
   onValidityChange,
 }: PrayerFormProps) {
-  const schema = useMemo(
-    () => getPedidoSchema(requireTelefone),
-    [requireTelefone]
-  );
+  const schema = useMemo(() => getPedidoSchema(), []);
 
   const form = useForm<PedidoFormInput, unknown, PedidoFormData>({
     resolver: zodResolver(schema),
@@ -83,13 +83,6 @@ export function PrayerForm({
     [form]
   );
 
-  // Re-validate telefone when requireTelefone changes
-  useEffect(() => {
-    if (form.formState.isSubmitted || form.formState.touchedFields.telefone) {
-      form.trigger("telefone");
-    }
-  }, [requireTelefone, form]);
-
   // Notify parent of validity changes
   useEffect(() => {
     onValidityChange?.(form.formState.isValid);
@@ -99,7 +92,6 @@ export function PrayerForm({
     const cleanedData: PedidoFormData = {
       ...data,
       idade: data.idade === "" ? undefined : data.idade,
-      telefone: data.telefone || undefined,
       pedido_oracao: data.pedido_oracao || undefined,
       sexo: data.sexo || undefined,
     };
@@ -225,7 +217,7 @@ export function PrayerForm({
           )}
         />
 
-        {/* WhatsApp - comentado temporariamente
+        {/* Telefone — sempre obrigatório (paridade com form gratuito). */}
         <FormField
           control={form.control}
           name="telefone"
@@ -235,6 +227,7 @@ export function PrayerForm({
               <FormControl>
                 <Input
                   type="tel"
+                  inputMode="tel"
                   placeholder="(11) 99999-9999"
                   className={inputClass}
                   {...field}
@@ -244,7 +237,6 @@ export function PrayerForm({
             </FormItem>
           )}
         />
-        */}
 
         {/* Divider */}
         <hr className="border-none border-t border-[#f0eaf8] my-6" />

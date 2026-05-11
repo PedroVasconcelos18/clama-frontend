@@ -4,9 +4,8 @@ import { AuthProvider } from "@/contexts/AuthContext"
 import { CustomerAuthProvider } from "@/contexts/CustomerAuthContext"
 import { ProtectedRoute } from "@/components/admin/ProtectedRoute"
 import Landing from "@/pages/Landing"
-import PedidoGratuito from "@/pages/PedidoGratuito"
-import PedidoGratuitoConfirmar from "@/pages/PedidoGratuitoConfirmar"
-import PedidoGratuitoConfirmado from "@/pages/PedidoGratuitoConfirmado"
+import Confirmar from "@/pages/Confirmar"
+import Confirmado from "@/pages/Confirmado"
 import Confirmacao from "@/pages/Confirmacao"
 import Cancelado from "@/pages/Cancelado"
 import Privacidade from "@/pages/Privacidade"
@@ -16,6 +15,7 @@ import DevShowcase from "@/pages/_DevShowcase"
 import HealthDebug from "@/pages/HealthDebug"
 import Login from "@/pages/Login"
 import TrocarSenha from "@/pages/TrocarSenha"
+import MinhaConta from "@/pages/MinhaConta"
 import AdminLogin from "@/pages/admin/AdminLogin"
 import AdminLayout from "@/layouts/AdminLayout"
 import DashboardPage from "@/pages/admin/DashboardPage"
@@ -31,15 +31,8 @@ export default function App() {
         <Routes>
           {/* Public routes */}
           <Route path="/" element={<Landing />} />
-          <Route path="/oracao-gratis" element={<PedidoGratuito />} />
-          <Route
-            path="/oracao-gratis/confirmar"
-            element={<PedidoGratuitoConfirmar />}
-          />
-          <Route
-            path="/oracao-gratis/confirmado"
-            element={<PedidoGratuitoConfirmado />}
-          />
+          <Route path="/confirmar" element={<Confirmar />} />
+          <Route path="/confirmado" element={<Confirmado />} />
           <Route path="/confirmacao" element={<Confirmacao />} />
           <Route path="/cancelado" element={<Cancelado />} />
           <Route path="/privacidade" element={<Privacidade />} />
@@ -50,6 +43,7 @@ export default function App() {
           {/* Customer auth routes (public — gating happens inside) */}
           <Route path="/login" element={<Login />} />
           <Route path="/trocar-senha" element={<TrocarSenha />} />
+          <Route path="/conta" element={<MinhaConta />} />
 
           {/* Admin routes */}
           <Route path="/admin/login" element={<AdminLogin />} />
