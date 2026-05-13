@@ -30,6 +30,7 @@ export default function PromptEditorPage() {
   const [editBuffer, setEditBuffer] = useState<{
     nome: string
     system_prompt: string
+    instrucoes_simples_gratuita: string
     instrucoes_simples: string
     instrucoes_versiculo: string
     instrucoes_profecia: string
@@ -80,6 +81,8 @@ export default function PromptEditorPage() {
     setEditBuffer({
       nome: selectedTemplate.nome,
       system_prompt: selectedTemplate.system_prompt,
+      instrucoes_simples_gratuita:
+        selectedTemplate.instrucoes_por_complexidade?.simples_gratuita || "",
       instrucoes_simples: selectedTemplate.instrucoes_por_complexidade?.simples || "",
       instrucoes_versiculo: selectedTemplate.instrucoes_por_complexidade?.com_versiculo || "",
       instrucoes_profecia:
@@ -100,6 +103,10 @@ export default function PromptEditorPage() {
         nome: editBuffer.nome,
         system_prompt: editBuffer.system_prompt,
         instrucoes_por_complexidade: {
+          // simples_gratuita é a chave usada pelo fluxo freemium (LP /).
+          // Migration prompts.0003 introduziu ela; o admin precisa expor
+          // pra editar sem migration.
+          simples_gratuita: editBuffer.instrucoes_simples_gratuita,
           simples: editBuffer.instrucoes_simples,
           com_versiculo: editBuffer.instrucoes_versiculo,
           com_profecia_e_versiculos: editBuffer.instrucoes_profecia,
@@ -339,6 +346,36 @@ export default function PromptEditorPage() {
                     Instruções por Complexidade
                   </h3>
 
+                  {/* Simples Gratuita (freemium / LP) */}
+                  <div className="space-y-2 bg-clama-gold/5 border border-clama-gold/20 rounded-lg p-3">
+                    <Label className="text-clama-cream/80 flex items-center gap-2">
+                      <span>Simples Gratuita</span>
+                      <span className="text-[0.7rem] uppercase tracking-wider text-clama-gold/80 font-normal">
+                        fluxo freemium da LP
+                      </span>
+                    </Label>
+                    {isEditing && editBuffer ? (
+                      <Textarea
+                        value={editBuffer.instrucoes_simples_gratuita}
+                        onChange={(e) =>
+                          setEditBuffer({
+                            ...editBuffer,
+                            instrucoes_simples_gratuita: e.target.value,
+                          })
+                        }
+                        rows={3}
+                        className="bg-clama-night border-clama-gold/30 text-clama-cream font-mono text-sm"
+                      />
+                    ) : (
+                      <div className="bg-clama-night rounded-lg p-3">
+                        <pre className="text-sm text-clama-cream/80 whitespace-pre-wrap font-mono">
+                          {selectedTemplate.instrucoes_por_complexidade?.simples_gratuita ||
+                            "(vazio)"}
+                        </pre>
+                      </div>
+                    )}
+                  </div>
+
                   {/* Simples */}
                   <div className="space-y-2">
                     <Label className="text-clama-cream/80">Simples</Label>
@@ -460,6 +497,7 @@ export default function PromptEditorPage() {
                 }
                 className="w-full h-9 px-3 rounded-lg bg-clama-night border border-clama-gold/30 text-clama-cream text-sm"
               >
+                <option value="simples_gratuita">Simples Gratuita (freemium)</option>
                 <option value="simples">Simples</option>
                 <option value="com_versiculo">Com Versículo</option>
                 <option value="com_profecia_e_versiculos">Com Profecia e Versículos</option>
