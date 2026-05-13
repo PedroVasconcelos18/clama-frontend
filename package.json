@@ -8,6 +8,7 @@
     "build": "tsc -b && vite build",
     "check:bundle-size": "node scripts/check-bundle-size.mjs",
     "dev": "vite",
+    "lighthouse": "lhci autorun",
     "generate:api-types": "openapi-typescript http://localhost:8000/api/schema/?format=json -o src/types/api-schema.ts",
     "lint": "eslint .",
     "preview": "vite preview",
@@ -43,6 +44,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",
+    "@lhci/cli": "^0.14.0",
     "@playwright/test": "^1.60.0",
     "@tailwindcss/typography": "^0.5.19",
     "@testing-library/jest-dom": "^6.9.1",
