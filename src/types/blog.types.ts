@@ -57,10 +57,19 @@ export type Post = {
   imagem_capa_url: string
   status: PostStatus
   data_publicacao: string | null
-  autor: { id: string; nome: string; email?: string } | string
+  autor: { id?: string; nome: string; email?: string } | string
   historia_ilustrativa: boolean
   created_at: string
   updated_at: string
+  /** Disponível em endpoints públicos (Story 3.1) */
+  like_count?: number
+  /** Disponível em endpoints públicos (Story 3.1) */
+  comment_count?: number
+}
+
+export type PublicPost = Post & {
+  like_count: number
+  comment_count: number
 }
 
 export type PaginatedPosts = {
@@ -81,7 +90,7 @@ export type PostListItem = Pick<
   | "created_at"
   | "updated_at"
 > & {
-  autor: string | { id: string; nome: string }
+  autor: string | { id?: string; nome: string }
 }
 
 export function gerarSlugDeTitulo(titulo: string): string {

@@ -131,7 +131,6 @@ describe("buildArticleJsonLd", () => {
   })
 
   it("autor faltando vira 'Equipe Clama'", () => {
-    // @ts-expect-error simulando autor undefined
     expect(buildArticleJsonLd(makePost({ autor: undefined })).author.name).toBe(
       "Equipe Clama",
     )
