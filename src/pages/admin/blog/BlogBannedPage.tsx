@@ -32,7 +32,7 @@ export default function BlogBannedPage() {
     let cancelled = false
     setLoading(true)
     adminFetch<PaginatedAdminBanidos>(
-      `/api/blog/admin/banned-customers/?page=${page}`,
+      `/api/blog/admin/banned-customers/?page=${page}&page_size=${PAGE_SIZE}`,
     )
       .then((response) => {
         if (!cancelled) setData(response)

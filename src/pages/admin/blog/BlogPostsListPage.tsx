@@ -84,6 +84,7 @@ export default function BlogPostsListPage() {
     params.set("page", String(page))
     params.set("ordering", ordering)
     if (statusFilter !== "todos") params.set("status", statusFilter)
+    params.set("page_size", String(PAGE_SIZE))
 
     adminFetch<PaginatedPosts>(`/api/blog/posts/?${params.toString()}`)
       .then((response) => {

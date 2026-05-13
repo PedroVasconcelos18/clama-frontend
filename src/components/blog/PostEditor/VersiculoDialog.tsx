@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import {
   Dialog,
   DialogContent,
@@ -34,6 +34,15 @@ export function VersiculoDialog({
     texto?: string
     referencia?: string
   }>({})
+
+  useEffect(() => {
+    if (open) {
+      setTexto("")
+      setReferencia("")
+      setVersao("ARC")
+      setErrors({})
+    }
+  }, [open])
 
   function handleConfirm() {
     const nextErrors: typeof errors = {}

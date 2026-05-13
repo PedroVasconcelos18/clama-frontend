@@ -139,6 +139,13 @@ export default function BlogPostEditorPage() {
   }
 
   async function onPublish(values: PostFormValues) {
+    const conteudoLimpo = values.conteudo_html.replace(/<[^>]+>/g, "").trim()
+    if (conteudoLimpo.length < 10) {
+      toast.error(
+        "Escreva o conteúdo do post antes de publicar (mínimo 10 caracteres).",
+      )
+      return
+    }
     if (hasMissingAlt(values.conteudo_html)) {
       toast.error(
         "Cada imagem no post precisa de texto alternativo antes de publicar.",

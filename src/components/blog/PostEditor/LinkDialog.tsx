@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import {
   Dialog,
   DialogContent,
@@ -29,6 +29,13 @@ export function LinkDialog({
 }: LinkDialogProps) {
   const [url, setUrl] = useState(initialUrl)
   const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (open) {
+      setUrl(initialUrl)
+      setError(null)
+    }
+  }, [open, initialUrl])
 
   function handleConfirm() {
     const trimmed = url.trim()

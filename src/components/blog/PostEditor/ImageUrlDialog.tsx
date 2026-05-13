@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import {
   Dialog,
   DialogContent,
@@ -27,6 +27,14 @@ export function ImageUrlDialog({
   const [src, setSrc] = useState("")
   const [alt, setAlt] = useState("")
   const [errors, setErrors] = useState<{ src?: string; alt?: string }>({})
+
+  useEffect(() => {
+    if (open) {
+      setSrc("")
+      setAlt("")
+      setErrors({})
+    }
+  }, [open])
 
   function handleConfirm() {
     const nextErrors: typeof errors = {}

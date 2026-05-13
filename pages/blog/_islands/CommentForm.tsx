@@ -24,6 +24,8 @@ export function CommentForm({ postSlug, onCommentCreated }: CommentFormProps) {
   const [error, setError] = useState<string | null>(null)
 
   if (!isAuthenticated) {
+    const nextPath =
+      typeof window !== "undefined" ? window.location.pathname : "/"
     return (
       <div
         data-slot="comment-form-prompt"
@@ -31,7 +33,7 @@ export function CommentForm({ postSlug, onCommentCreated }: CommentFormProps) {
       >
         {microcopy.commentForm.promptLoginInicio}
         <a
-          href={`/login?next=${encodeURIComponent(window.location.pathname)}`}
+          href={`/login?next=${encodeURIComponent(nextPath)}`}
           className="font-medium text-clama-blog-gold-deep underline"
         >
           {microcopy.commentForm.promptLoginLinkText}

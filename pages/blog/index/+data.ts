@@ -27,7 +27,9 @@ export async function data({
   urlParsed: { search: Record<string, string | undefined> }
 }): Promise<BlogIndexData> {
   const pageParam = urlParsed.search.page
-  const page = pageParam ? Math.max(1, Number(pageParam)) : 1
+  const parsed = pageParam ? Number(pageParam) : 1
+  const page =
+    Number.isFinite(parsed) && parsed >= 1 ? Math.floor(parsed) : 1
 
   try {
     const response = await fetch(

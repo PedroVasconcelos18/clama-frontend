@@ -44,6 +44,7 @@ export default function BlogCommentsPage() {
     params.set("page", String(page))
     if (statusFilter === "suspeitos") params.set("status", "suspeitos")
     if (postSlugFilter.trim()) params.set("post__slug", postSlugFilter.trim())
+    params.set("page_size", String(PAGE_SIZE))
 
     adminFetch<PaginatedAdminComentarios>(
       `/api/blog/admin/comments/?${params.toString()}`,
