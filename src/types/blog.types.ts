@@ -100,6 +100,30 @@ export type PaginatedPublicPosts = {
   results: PostPublicListItem[]
 }
 
+/** Shape do ComentarioSerializer (Story 4.3 backend). */
+export type Comentario = {
+  id: string
+  post: string
+  customer: string
+  customer_nome: string
+  conteudo: string
+  created_at: string
+  updated_at: string
+}
+
+export type PaginatedComentarios = {
+  count: number
+  next: string | null
+  previous: string | null
+  results: Comentario[]
+}
+
+/** Resposta do POST /api/blog/posts/<slug>/like/ (Story 4.4 backend). */
+export type LikeToggleResponse = {
+  liked: boolean
+  like_count: number
+}
+
 export type PaginatedPosts = {
   count: number
   next: string | null
