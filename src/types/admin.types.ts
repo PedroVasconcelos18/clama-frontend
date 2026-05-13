@@ -70,6 +70,7 @@ export interface AdminPromptTemplate {
   versao: number
   system_prompt: string
   instrucoes_por_complexidade: {
+    simples_gratuita?: string
     simples?: string
     com_versiculo?: string
     com_profecia_e_versiculos?: string
