@@ -34,6 +34,10 @@ const BlogPostsListPage = lazy(
 const BlogDashboardPage = lazy(
   () => import("@/pages/admin/blog/BlogDashboardPage"),
 )
+const BlogCommentsPage = lazy(
+  () => import("@/pages/admin/blog/BlogCommentsPage"),
+)
+const BlogBannedPage = lazy(() => import("@/pages/admin/blog/BlogBannedPage"))
 
 function LazyAdmin({ children }: { children: React.ReactNode }) {
   return <Suspense fallback={null}>{children}</Suspense>
@@ -104,6 +108,22 @@ export default function App() {
               element={
                 <LazyAdmin>
                   <BlogPostEditorPage />
+                </LazyAdmin>
+              }
+            />
+            <Route
+              path="blog/comentarios"
+              element={
+                <LazyAdmin>
+                  <BlogCommentsPage />
+                </LazyAdmin>
+              }
+            />
+            <Route
+              path="blog/banidos"
+              element={
+                <LazyAdmin>
+                  <BlogBannedPage />
                 </LazyAdmin>
               }
             />

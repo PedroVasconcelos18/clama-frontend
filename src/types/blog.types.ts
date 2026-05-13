@@ -124,6 +124,45 @@ export type LikeToggleResponse = {
   like_count: number
 }
 
+/** Shape do AdminComentarioSerializer (Story 5.2 backend). */
+export type AdminComentario = {
+  id: string
+  post_slug: string
+  post_titulo: string
+  customer_email: string
+  customer_id?: string
+  customer_nome: string
+  conteudo: string
+  is_suspeito: boolean
+  ip_address: string
+  created_at: string
+}
+
+export type PaginatedAdminComentarios = {
+  count: number
+  next: string | null
+  previous: string | null
+  results: AdminComentario[]
+}
+
+/** Shape do CustomerBanidoListSerializer (Story 5.2 backend). */
+export type AdminCustomerBanido = {
+  id: string
+  customer_id: string
+  customer_email: string
+  customer_nome: string
+  motivo: string
+  banido_em: string
+  banido_por_email: string
+}
+
+export type PaginatedAdminBanidos = {
+  count: number
+  next: string | null
+  previous: string | null
+  results: AdminCustomerBanido[]
+}
+
 export type PaginatedPosts = {
   count: number
   next: string | null

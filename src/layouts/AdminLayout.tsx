@@ -8,6 +8,8 @@ import {
   MessageSquare,
   FolderOpen,
   Newspaper,
+  MessagesSquare,
+  UserX,
   Menu,
   X,
   LogOut,
@@ -22,6 +24,12 @@ const navItems = [
   { to: "/admin/prompts", icon: MessageSquare, label: "Prompts" },
   { to: "/admin/documentos", icon: FolderOpen, label: "Documentos" },
   { to: "/admin/blog", icon: Newspaper, label: "Blog" },
+  {
+    to: "/admin/blog/comentarios",
+    icon: MessagesSquare,
+    label: "Comentários",
+  },
+  { to: "/admin/blog/banidos", icon: UserX, label: "Banidos" },
 ]
 
 export default function AdminLayout() {
