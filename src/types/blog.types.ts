@@ -72,6 +72,34 @@ export type PublicPost = Post & {
   comment_count: number
 }
 
+/** Shape do PostPublicListSerializer (Story 3.1 backend) — endpoint /api/blog/public/posts/ list. */
+export type PostPublicListItem = {
+  slug: string
+  titulo: string
+  excerpt: string
+  imagem_capa_url: string
+  data_publicacao: string
+  historia_ilustrativa: boolean
+  autor_nome: string
+  like_count: number
+  comment_count: number
+}
+
+/** Shape do PostPublicSerializer (Story 3.1 backend) — endpoint /api/blog/public/posts/<slug>/ detail. */
+export type PostPublicDetail = PostPublicListItem & {
+  conteudo_html: string
+  meta_title: string
+  meta_description: string
+  updated_at: string
+}
+
+export type PaginatedPublicPosts = {
+  count: number
+  next: string | null
+  previous: string | null
+  results: PostPublicListItem[]
+}
+
 export type PaginatedPosts = {
   count: number
   next: string | null
