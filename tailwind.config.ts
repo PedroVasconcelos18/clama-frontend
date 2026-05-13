@@ -1,8 +1,9 @@
 import type { Config } from "tailwindcss"
+import typography from "@tailwindcss/typography"
 
 export default {
   darkMode: ["class"],
-  content: ["./index.html", "./src/**/*.{ts,tsx}"],
+  content: ["./index.html", "./src/**/*.{ts,tsx}", "./pages/**/*.{ts,tsx}"],
   theme: {
     extend: {
       colors: {
@@ -15,6 +16,13 @@ export default {
         "clama-cream": "#fdf8f0",
         "clama-cream-warm": "#f5ecd9",
         "clama-accent": "#8a5cf6",
+        // Blog-specific tokens (Story 1.5 — não colidem com MVP)
+        "clama-blog-gold-deep": "#b8862a",
+        "clama-blog-gold-soft": "#f5d77a",
+        "clama-blog-purple-prose": "#3a1f5c",
+        "clama-blog-cream-warm": "#faf3e8",
+        "clama-blog-comment-bg": "#ffffff",
+        "clama-blog-border-soft": "#e8e0d0",
         // shadcn CSS variable colors
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
@@ -60,7 +68,33 @@ export default {
         serif: ["Georgia", '"Times New Roman"', "serif"],
         sans: ["-apple-system", '"Helvetica Neue"', "Arial", "sans-serif"],
       },
+      keyframes: {
+        "fade-in-comment": {
+          "0%": { opacity: "0", transform: "translateY(8px)" },
+          "100%": { opacity: "1", transform: "translateY(0)" },
+        },
+      },
+      animation: {
+        "fade-in-comment": "fade-in-comment 300ms ease-out",
+      },
+      typography: {
+        clama: {
+          css: {
+            fontFamily: 'Georgia, "Times New Roman", serif',
+            fontSize: "1.125rem",
+            lineHeight: "1.7",
+            color: "#3a1f5c",
+            maxWidth: "65ch",
+            "@screen md": {
+              fontSize: "1.1875rem",
+            },
+            h2: { fontFamily: "Georgia, serif", fontWeight: "700" },
+            h3: { fontFamily: "Georgia, serif", fontWeight: "700" },
+            a: { color: "#b8862a" },
+          },
+        },
+      },
     },
   },
-  plugins: [],
+  plugins: [typography],
 } satisfies Config
