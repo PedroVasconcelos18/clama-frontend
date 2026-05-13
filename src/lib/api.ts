@@ -10,18 +10,26 @@ export class PastoralApiError extends Error {
   code: string
   pastoralMessage: string
   httpStatus: number
+  /**
+   * Campos adicionais do `error` no body do response (ex.: `redirect`
+   * em 409 user_ja_possui_conta). Não inclui code/message/pastoral_message
+   * — esses já têm fields dedicados.
+   */
+  extra: Record<string, unknown>
 
   constructor(
     message: string,
     code: string,
     pastoralMessage: string,
-    httpStatus: number
+    httpStatus: number,
+    extra: Record<string, unknown> = {}
   ) {
     super(message)
     this.name = "PastoralApiError"
     this.code = code
     this.pastoralMessage = pastoralMessage
     this.httpStatus = httpStatus
+    this.extra = extra
   }
 }
 
@@ -126,11 +134,30 @@ export async function apiFetch<T>(
 
     const pastoralMessage = extractErrorMessage(body)
 
+    // Extrai `code` + campos extras do body. Backend retorna formato
+    // `{error: {code, message, pastoral_message, ...extras}}` (ex.: `redirect`
+    // em 409 user_ja_possui_conta). Default `validation_error` se ausente.
+    let code = "validation_error"
+    let extra: Record<string, unknown> = {}
+    if (body && typeof body === "object") {
+      const err = (body as Record<string, unknown>).error
+      if (err && typeof err === "object") {
+        const errObj = err as Record<string, unknown>
+        if (typeof errObj.code === "string") code = errObj.code
+        for (const [k, v] of Object.entries(errObj)) {
+          if (k !== "code" && k !== "message" && k !== "pastoral_message") {
+            extra[k] = v
+          }
+        }
+      }
+    }
+
     const error = new PastoralApiError(
       "Erro",
-      "validation_error",
+      code,
       pastoralMessage,
-      response.status
+      response.status,
+      extra
     )
 
     if (showToast) toast.error(error.pastoralMessage)

@@ -1,8 +1,9 @@
 import { type ComponentProps } from "react";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { StickyNav } from "../StickyNav";
+import { CustomerAuthProvider } from "@/contexts/CustomerAuthContext";
 
 const mockNavigate = vi.fn();
 vi.mock("react-router-dom", async () => {
@@ -13,11 +14,18 @@ vi.mock("react-router-dom", async () => {
   };
 });
 
+beforeEach(() => {
+  // Garante que CustomerAuthProvider inicia anônimo (sem state em localStorage).
+  localStorage.clear();
+});
+
 function renderNav(props: ComponentProps<typeof StickyNav> = {}) {
   mockNavigate.mockReset();
   return render(
     <MemoryRouter>
-      <StickyNav {...props} />
+      <CustomerAuthProvider>
+        <StickyNav {...props} />
+      </CustomerAuthProvider>
     </MemoryRouter>,
   );
 }

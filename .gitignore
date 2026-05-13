@@ -23,3 +23,8 @@ dist-ssr
 *.sln
 *.sw?
 *-lock.json
+
+# Env (não commitar — contém VITE_TURNSTILE_SITE_KEY e outras)
+.env
+.env.*
+!.env.example
