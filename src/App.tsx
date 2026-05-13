@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react"
 import { Routes, Route } from "react-router-dom"
 import { Toaster } from "@/components/ui/sonner"
 import { AuthProvider } from "@/contexts/AuthContext"
@@ -23,6 +24,14 @@ import PedidosListPage from "@/pages/admin/PedidosListPage"
 import PlanosPage from "@/pages/admin/PlanosPage"
 import PromptEditorPage from "@/pages/admin/PromptEditorPage"
 import DocumentosPage from "@/pages/admin/DocumentosPage"
+
+const BlogPostEditorPage = lazy(
+  () => import("@/pages/admin/blog/BlogPostEditorPage"),
+)
+
+function LazyAdmin({ children }: { children: React.ReactNode }) {
+  return <Suspense fallback={null}>{children}</Suspense>
+}
 
 export default function App() {
   return (
@@ -60,6 +69,22 @@ export default function App() {
             <Route path="planos" element={<PlanosPage />} />
             <Route path="prompts" element={<PromptEditorPage />} />
             <Route path="documentos" element={<DocumentosPage />} />
+            <Route
+              path="blog/posts/novo"
+              element={
+                <LazyAdmin>
+                  <BlogPostEditorPage />
+                </LazyAdmin>
+              }
+            />
+            <Route
+              path="blog/posts/:id/editar"
+              element={
+                <LazyAdmin>
+                  <BlogPostEditorPage />
+                </LazyAdmin>
+              }
+            />
           </Route>
 
           <Route path="*" element={<NotFound />} />
