@@ -7,6 +7,7 @@ import {
   CreditCard,
   MessageSquare,
   FolderOpen,
+  Newspaper,
   Menu,
   X,
   LogOut,
@@ -20,6 +21,7 @@ const navItems = [
   { to: "/admin/planos", icon: CreditCard, label: "Planos" },
   { to: "/admin/prompts", icon: MessageSquare, label: "Prompts" },
   { to: "/admin/documentos", icon: FolderOpen, label: "Documentos" },
+  { to: "/admin/blog", icon: Newspaper, label: "Blog" },
 ]
 
 export default function AdminLayout() {
