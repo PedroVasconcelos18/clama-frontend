@@ -28,6 +28,9 @@ import DocumentosPage from "@/pages/admin/DocumentosPage"
 const BlogPostEditorPage = lazy(
   () => import("@/pages/admin/blog/BlogPostEditorPage"),
 )
+const BlogPostsListPage = lazy(
+  () => import("@/pages/admin/blog/BlogPostsListPage"),
+)
 
 function LazyAdmin({ children }: { children: React.ReactNode }) {
   return <Suspense fallback={null}>{children}</Suspense>
@@ -69,6 +72,14 @@ export default function App() {
             <Route path="planos" element={<PlanosPage />} />
             <Route path="prompts" element={<PromptEditorPage />} />
             <Route path="documentos" element={<DocumentosPage />} />
+            <Route
+              path="blog/posts"
+              element={
+                <LazyAdmin>
+                  <BlogPostsListPage />
+                </LazyAdmin>
+              }
+            />
             <Route
               path="blog/posts/novo"
               element={
