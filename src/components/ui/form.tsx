@@ -146,8 +146,13 @@ const FormMessage = React.forwardRef<
   HTMLParagraphElement,
   React.HTMLAttributes<HTMLParagraphElement>
 >(({ className, children, ...props }, ref) => {
-  const { error, formMessageId } = useFormField();
-  const body = error ? String(error?.message) : children;
+  const { error, isTouched, formMessageId } = useFormField();
+  // Só mostra o erro depois que o usuário tocou no campo. Com
+  // `mode: "onChange"` o RHF valida tudo já no mount, o que fazia os
+  // erros de "campo obrigatório" aparecerem antes de qualquer interação.
+  // No submit o RHF marca todos os campos como touched, então os erros
+  // de campos não preenchidos ainda aparecem ao tentar enviar.
+  const body = error && isTouched ? String(error?.message) : children;
 
   if (!body) {
     return null;

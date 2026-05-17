@@ -7,7 +7,7 @@ import { toast } from "sonner"
 import { useCustomerAuth } from "@/contexts/CustomerAuthContext"
 import { useCustomerApi } from "@/hooks/useCustomerApi"
 import { PastoralApiError } from "@/lib/api"
-import { validateNextPath } from "@/lib/redirects"
+import { goToNext, validateNextPath } from "@/lib/redirects"
 import {
   changePasswordSchema,
   type ChangePasswordFormData,
@@ -76,7 +76,7 @@ export default function TrocarSenha() {
       }
 
       toast.success("Senha trocada. Que sua oração siga em paz.")
-      navigate(next, { replace: true })
+      goToNext(navigate, next, { replace: true })
     } catch (err) {
       let message = "Algo não saiu como o esperado. Tente novamente."
       if (err instanceof PastoralApiError) {

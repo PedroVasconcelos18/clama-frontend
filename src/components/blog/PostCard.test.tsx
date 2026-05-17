@@ -9,8 +9,8 @@ function makePost(overrides: Partial<PostCardInput> = {}): PostCardInput {
     excerpt: "Um excerpt curto.",
     imagem_capa_url: "https://exemplo.com/capa.jpg",
     data_publicacao: "2026-05-13T10:00:00Z",
-    created_at: "2026-05-10T08:00:00Z",
-    autor: { nome: "Pedro" },
+    historia_ilustrativa: false,
+    autor_nome: "Pedro",
     conteudo_html: "<p>texto</p>",
     like_count: 42,
     comment_count: 7,
@@ -27,18 +27,23 @@ describe("PostCard", () => {
     expect(link).toHaveAttribute("href", "/blog/post-x")
   })
 
-  it("renderiza título, excerpt e stats com counts", () => {
+  it("renderiza título, excerpt e counts", () => {
     render(<PostCard post={makePost()} />)
     expect(screen.getByRole("heading", { level: 2 })).toHaveTextContent(
       "Sobre a oração",
     )
     expect(screen.getByText("Um excerpt curto.")).toBeInTheDocument()
-    expect(screen.getByLabelText("42 likes")).toBeInTheDocument()
-    expect(screen.getByLabelText("7 comentários")).toBeInTheDocument()
-    expect(screen.getByText(/min de leitura/)).toBeInTheDocument()
+    expect(screen.getByText("42")).toBeInTheDocument()
+    expect(screen.getByText("7")).toBeInTheDocument()
+    expect(screen.getByText(/\d+ min/)).toBeInTheDocument()
   })
 
-  it("omite imagem quando imagem_capa_url está vazia", () => {
+  it("usa <img> quando há imagem_capa_url", () => {
+    const { container } = render(<PostCard post={makePost()} />)
+    expect(container.querySelector("img")).not.toBeNull()
+  })
+
+  it("usa glow decorativo (sem <img>) quando imagem_capa_url vazia", () => {
     const { container } = render(
       <PostCard post={makePost({ imagem_capa_url: "" })} />,
     )
@@ -51,7 +56,16 @@ describe("PostCard", () => {
         post={makePost({ like_count: undefined, comment_count: undefined })}
       />,
     )
-    expect(screen.getByLabelText("0 likes")).toBeInTheDocument()
-    expect(screen.getByLabelText("0 comentários")).toBeInTheDocument()
+    // dois "0" (likes e comentários)
+    expect(screen.getAllByText("0").length).toBeGreaterThanOrEqual(2)
+  })
+
+  it("deriva badge de categoria de historia_ilustrativa", () => {
+    const { rerender } = render(
+      <PostCard post={makePost({ historia_ilustrativa: true })} />,
+    )
+    expect(screen.getByText("História")).toBeInTheDocument()
+    rerender(<PostCard post={makePost({ historia_ilustrativa: false })} />)
+    expect(screen.getByText("Reflexão")).toBeInTheDocument()
   })
 })

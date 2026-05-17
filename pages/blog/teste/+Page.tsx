@@ -1,8 +1,8 @@
 export default function TestePage() {
   return (
-    <main className="bg-clama-blog-cream-warm border-clama-blog-border-soft border">
+    <main className="bg-clama-night-soft border-clama-gold/20 border">
       <article className="prose prose-clama">
-        <h1 className="text-clama-blog-purple-prose">Página de teste Vike</h1>
+        <h1 className="text-clama-cream">Página de teste Vike</h1>
         <p>
           Renderizada via Vike SSR/SSG. Se você está lendo isto no source HTML
           (curl), está funcionando.

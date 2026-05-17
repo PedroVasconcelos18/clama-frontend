@@ -32,7 +32,7 @@ export function PostMeta({ post, compact = false, className }: PostMetaProps) {
   return (
     <div
       className={cn(
-        "flex items-center gap-2 text-sm text-clama-blog-purple-prose/80",
+        "flex items-center gap-2 text-sm text-clama-cream/80",
         className,
       )}
     >
@@ -40,19 +40,20 @@ export function PostMeta({ post, compact = false, className }: PostMetaProps) {
         aria-hidden
         className={cn(
           "inline-flex shrink-0 items-center justify-center rounded-full font-medium text-clama-cream",
-          "bg-gradient-to-br from-clama-night-soft to-clama-blog-gold-deep",
+          "bg-gradient-to-br from-clama-night-soft to-clama-gold",
           sizeClass,
         )}
       >
         {inicial(nome)}
       </span>
-      <span className="font-medium text-clama-blog-purple-prose">{nome}</span>
+      <span className="font-medium text-clama-cream">{nome}</span>
       {tempo && (
         <>
           <span aria-hidden>·</span>
           <time
             dateTime={data ?? undefined}
-            className="text-clama-blog-purple-prose/60"
+            className="text-clama-cream/60"
+            suppressHydrationWarning
           >
             {tempo}
           </time>
@@ -61,7 +62,7 @@ export function PostMeta({ post, compact = false, className }: PostMetaProps) {
       {typeof post.readingTimeMin === "number" && (
         <>
           <span aria-hidden>·</span>
-          <span className="text-clama-blog-purple-prose/60">
+          <span className="text-clama-cream/60">
             {post.readingTimeMin} min de leitura
           </span>
         </>

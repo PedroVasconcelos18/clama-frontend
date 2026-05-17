@@ -24,27 +24,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import LoadingSpinner from "@/components/utility/LoadingSpinner";
-
-/**
- * Aplica máscara de CPF (000.000.000-00) ou CNPJ (00.000.000/0000-00)
- * baseado na quantidade de dígitos.
- */
-function maskCpfCnpj(value: string): string {
-  const digits = value.replace(/\D/g, "");
-
-  if (digits.length <= 11) {
-    return digits
-      .replace(/(\d{3})(\d)/, "$1.$2")
-      .replace(/(\d{3})(\d)/, "$1.$2")
-      .replace(/(\d{3})(\d{1,2})$/, "$1-$2");
-  }
-  return digits
-    .slice(0, 14)
-    .replace(/(\d{2})(\d)/, "$1.$2")
-    .replace(/(\d{3})(\d)/, "$1.$2")
-    .replace(/(\d{3})(\d)/, "$1/$2")
-    .replace(/(\d{4})(\d{1,2})$/, "$1-$2");
-}
+import { maskCpfCnpj, maskTelefoneBR } from "@/lib/formatters";
 
 /**
  * Normaliza telefone digitado em E.164 simples.
@@ -60,12 +40,16 @@ function toE164BR(raw: string): string {
 interface PrayerFormGratuitoProps {
   onSubmit: (data: PedidoGratuitoData) => Promise<void> | void;
   isSubmitting?: boolean;
+  /** "light" (default) = visual original; "dark" = tema da LP redesenhada. */
+  theme?: "light" | "dark";
 }
 
 export function PrayerFormGratuito({
   onSubmit,
   isSubmitting = false,
+  theme = "light",
 }: PrayerFormGratuitoProps) {
+  const isDark = theme === "dark";
   const schema = useMemo(() => pedidoGratuitoSchema, []);
   const siteKey = useMemo(() => getTurnstileSiteKey(), []);
 
@@ -144,6 +128,16 @@ export function PrayerFormGratuito({
     [form],
   );
 
+  // Máscara visual do telefone. O submit converte com toE164BR, que já
+  // remove a formatação — backend nunca recebe a máscara.
+  const handleTelefoneChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const masked = maskTelefoneBR(e.target.value);
+      form.setValue("telefone", masked, { shouldValidate: true });
+    },
+    [form],
+  );
+
   const handleTurnstileSuccess = useCallback(
     (token: string) => {
       setCaptchaError(null);
@@ -175,18 +169,25 @@ export function PrayerFormGratuito({
   const handleSubmit = form.handleSubmit(async (data) => {
     const cleaned: PedidoGratuitoData = {
       ...data,
-      idade: data.idade === "" ? undefined : data.idade,
       pedido_oracao: data.pedido_oracao || undefined,
       // Telefone vai em E.164 (backend aceita "+5511...").
+      // toE164BR remove a máscara visual antes de enviar.
       telefone: toE164BR(data.telefone),
     };
     await onSubmit(cleaned);
   });
 
-  const inputClass =
-    "w-full py-2 px-3 border-[1.5px] border-[#e0d8f0] rounded-[10px] text-[0.9rem] font-sans text-clama-night bg-white outline-none focus:border-[#8a5cf6] disabled:bg-[#f7f3fc] disabled:text-[#888] disabled:cursor-not-allowed";
-  const labelClass =
-    "font-sans text-[0.8rem] font-semibold text-clama-night tracking-[0.5px] uppercase block mb-1";
+  // Estilos por tema. Light = visual original (intacto).
+  const inputClass = isDark
+    ? "w-full py-2 px-3 border-[1.5px] border-clama-gold/30 rounded-[10px] text-[0.9rem] font-sans text-clama-cream bg-clama-night [color-scheme:dark] placeholder:text-clama-cream/35 outline-none focus:border-clama-gold disabled:bg-clama-night-soft/40 disabled:text-clama-cream/40 disabled:cursor-not-allowed"
+    : "w-full py-2 px-3 border-[1.5px] border-[#e0d8f0] rounded-[10px] text-[0.9rem] font-sans text-clama-night bg-white outline-none focus:border-[#8a5cf6] disabled:bg-[#f7f3fc] disabled:text-[#888] disabled:cursor-not-allowed";
+  const labelClass = isDark
+    ? "font-sans text-[0.8rem] font-semibold text-clama-cream tracking-[0.5px] uppercase block mb-1"
+    : "font-sans text-[0.8rem] font-semibold text-clama-night tracking-[0.5px] uppercase block mb-1";
+  const msgClass = isDark ? "text-red-300 text-sm" : "text-[#8a5cf6] text-sm";
+  const linkClass = isDark
+    ? "text-clama-gold hover:underline"
+    : "text-[#8a5cf6] hover:underline";
 
   return (
     <Form {...form}>
@@ -209,7 +210,7 @@ export function PrayerFormGratuito({
                   {...field}
                 />
               </FormControl>
-              <FormMessage className="text-[#8a5cf6] text-sm" />
+              <FormMessage className={msgClass} />
             </FormItem>
           )}
         />
@@ -230,10 +231,10 @@ export function PrayerFormGratuito({
                     placeholder="Ex: 28"
                     className={inputClass}
                     {...field}
-                    value={(field.value as number | "" | undefined) ?? ""}
+                    value={(field.value as number | undefined) ?? ""}
                   />
                 </FormControl>
-                <FormMessage className="text-[#8a5cf6] text-sm" />
+                <FormMessage className={msgClass} />
               </FormItem>
             )}
           />
@@ -256,7 +257,7 @@ export function PrayerFormGratuito({
                     <option value="nao_informado">Prefiro não informar</option>
                   </Select>
                 </FormControl>
-                <FormMessage className="text-[#8a5cf6] text-sm" />
+                <FormMessage className={msgClass} />
               </FormItem>
             )}
           />
@@ -277,7 +278,7 @@ export function PrayerFormGratuito({
                   {...field}
                 />
               </FormControl>
-              <FormMessage className="text-[#8a5cf6] text-sm" />
+              <FormMessage className={msgClass} />
             </FormItem>
           )}
         />
@@ -286,7 +287,7 @@ export function PrayerFormGratuito({
         <FormField
           control={form.control}
           name="cpf_cnpj"
-          render={({ field, fieldState }) => (
+          render={({ field }) => (
             <FormItem>
               <FormLabel className={labelClass}>CPF ou CNPJ</FormLabel>
               <FormControl>
@@ -299,9 +300,7 @@ export function PrayerFormGratuito({
                   onChange={handleCpfCnpjChange}
                 />
               </FormControl>
-              {fieldState.isTouched && (
-                <FormMessage className="text-[#8a5cf6] text-sm" />
-              )}
+              <FormMessage className={msgClass} />
             </FormItem>
           )}
         />
@@ -320,16 +319,21 @@ export function PrayerFormGratuito({
                   placeholder="(11) 99999-9999"
                   className={inputClass}
                   {...field}
+                  onChange={handleTelefoneChange}
                 />
               </FormControl>
-              <FormMessage className="text-[#8a5cf6] text-sm" />
+              <FormMessage className={msgClass} />
             </FormItem>
           )}
         />
 
-        <hr className="border-none border-t border-[#f0eaf8] my-6" />
+        <hr
+          className={`border-none border-t my-6 ${isDark ? "border-clama-gold/12" : "border-[#f0eaf8]"}`}
+        />
 
-        <div className="font-sans text-[0.72rem] font-bold tracking-[2px] uppercase text-[#8a5cf6] mb-4">
+        <div
+          className={`font-sans text-[0.72rem] font-bold tracking-[2px] uppercase mb-4 ${isDark ? "text-clama-gold-soft" : "text-[#8a5cf6]"}`}
+        >
           Seu pedido
         </div>
 
@@ -347,12 +351,14 @@ export function PrayerFormGratuito({
                   {...field}
                 />
               </FormControl>
-              <FormMessage className="text-[#8a5cf6] text-sm" />
+              <FormMessage className={msgClass} />
             </FormItem>
           )}
         />
 
-        <p className="font-sans text-[0.78rem] text-[#aaa] leading-relaxed mb-6">
+        <p
+          className={`font-sans text-[0.78rem] leading-relaxed mb-6 ${isDark ? "text-clama-cream/45" : "text-[#aaa]"}`}
+        >
           Sua dor, sua indignação, sua esperança são sagradas. Deus ouve desde o
           fundo do poço — e do fundo da história.
         </p>
@@ -370,26 +376,26 @@ export function PrayerFormGratuito({
                     id="consent_aceito_gratuito"
                     checked={field.value}
                     onChange={field.onChange}
-                    className="mt-1 h-4 w-4 rounded border-[#e0d8f0] bg-white text-[#8a5cf6] focus:ring-[#8a5cf6]/30"
+                    className={
+                      isDark
+                        ? "mt-1 h-4 w-4 rounded border-clama-gold/40 bg-clama-night text-clama-gold accent-clama-gold focus:ring-clama-gold/30"
+                        : "mt-1 h-4 w-4 rounded border-[#e0d8f0] bg-white text-[#8a5cf6] focus:ring-[#8a5cf6]/30"
+                    }
                   />
                 </FormControl>
                 <label
                   htmlFor="consent_aceito_gratuito"
-                  className="text-sm text-clama-night/80 leading-relaxed cursor-pointer"
+                  className={`text-sm leading-relaxed cursor-pointer ${isDark ? "text-clama-cream/75" : "text-clama-night/80"}`}
                 >
                   Li e concordo com os{" "}
-                  <Link
-                    to="/termos"
-                    target="_blank"
-                    className="text-[#8a5cf6] hover:underline"
-                  >
+                  <Link to="/termos" target="_blank" className={linkClass}>
                     Termos de Uso
                   </Link>{" "}
                   e a{" "}
                   <Link
                     to="/privacidade"
                     target="_blank"
-                    className="text-[#8a5cf6] hover:underline"
+                    className={linkClass}
                   >
                     Política de Privacidade
                   </Link>
@@ -397,7 +403,7 @@ export function PrayerFormGratuito({
                   geração da oração personalizada.
                 </label>
               </div>
-              <FormMessage className="text-[#8a5cf6] text-sm mt-2" />
+              <FormMessage className={`${msgClass} mt-2`} />
             </FormItem>
           )}
         />
@@ -416,7 +422,7 @@ export function PrayerFormGratuito({
           {captchaError && (
             <p
               role="alert"
-              className="mt-2 text-sm text-[#8a5cf6] font-sans"
+              className={`mt-2 text-sm font-sans ${isDark ? "text-red-300" : "text-[#8a5cf6]"}`}
             >
               {captchaError}
             </p>
@@ -429,7 +435,9 @@ export function PrayerFormGratuito({
 
         {/* DEV-only: mostra por que o submit está bloqueado */}
         {import.meta.env.DEV && !form.formState.isValid && (
-          <div className="mt-4 p-3 rounded-md border border-dashed border-[#c9b3f0] bg-[#fbf8ff] text-[0.78rem] font-mono text-[#4a3c6c]">
+          <div
+            className={`mt-4 p-3 rounded-md border border-dashed text-[0.78rem] font-mono ${isDark ? "border-clama-gold/30 bg-clama-night-soft/40 text-clama-cream/70" : "border-[#c9b3f0] bg-[#fbf8ff] text-[#4a3c6c]"}`}
+          >
             <strong>[dev] form inválido — campos pendentes:</strong>
             <ul className="mt-1 list-disc list-inside">
               {Object.entries(form.formState.errors).map(([k, v]) => (
@@ -450,7 +458,7 @@ export function PrayerFormGratuito({
             type="submit"
             variant="gold"
             size="lg"
-            disabled={isSubmitting || !form.formState.isValid}
+            disabled={isSubmitting}
             className="w-full h-12 text-[1.05rem] font-bold rounded-full"
           >
             {isSubmitting ? (
@@ -462,7 +470,9 @@ export function PrayerFormGratuito({
               "Receber minha oração gratuita"
             )}
           </Button>
-          <p className="font-sans text-[0.75rem] text-[#aaa] text-center leading-relaxed mt-4">
+          <p
+            className={`font-sans text-[0.75rem] text-center leading-relaxed mt-4 ${isDark ? "text-clama-cream/45" : "text-[#aaa]"}`}
+          >
             Após enviar, vamos te mandar um e-mail pra confirmar.
             <br />
             Seus dados são tratados com sigilo e respeito.

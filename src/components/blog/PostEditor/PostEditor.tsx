@@ -84,7 +84,7 @@ export function PostEditor({
       <EditorToolbar editor={editor} />
       <EditorContent
         editor={editor}
-        className="prose prose-clama min-h-[24rem] rounded-md border border-clama-blog-border-soft bg-clama-blog-comment-bg p-4 [&_.ProseMirror]:outline-none"
+        className="prose prose-clama min-h-[24rem] rounded-md border border-clama-gold/20 bg-clama-night-soft p-4 [&_.ProseMirror]:outline-none"
       />
       {isDirty && (
         <button

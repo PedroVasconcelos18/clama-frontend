@@ -54,7 +54,9 @@ export default function Landing() {
 
         {/* Form gratuito embutido só para anônimos. Autenticado nunca
             cai no fluxo freemium aqui — vai pra /conta?tab=novo via CTAs. */}
-        {!isAuthenticated && <PedidoSectionGratuito ref={pedidoRef} />}
+        {!isAuthenticated && (
+          <PedidoSectionGratuito ref={pedidoRef} theme="dark" />
+        )}
       </main>
 
       <Footer />

@@ -51,6 +51,32 @@ export async function refresh(refreshToken: string): Promise<RefreshResponse> {
   })
 }
 
+export interface ForgotPasswordResponse {
+  detail: string
+}
+
+/**
+ * Chama `POST /api/customer/auth/forgot-password/`.
+ *
+ * Standalone (sem Bearer) — faz parte do fluxo de recuperação na tela de
+ * login. O backend responde SEMPRE a mesma mensagem genérica (200), exista
+ * ou não o e-mail (anti-enumeração). Só dá erro em 400 (formato inválido)
+ * ou 429 (throttle 3/h por IP). `showToast: false` — a UI do modal exibe a
+ * mensagem inline.
+ */
+export async function forgotPassword(
+  email: string,
+): Promise<ForgotPasswordResponse> {
+  return apiFetch<ForgotPasswordResponse>(
+    "/api/customer/auth/forgot-password/",
+    {
+      method: "POST",
+      body: JSON.stringify({ email }),
+      showToast: false,
+    },
+  )
+}
+
 /**
  * Chama `POST /api/customer/auth/logout/` com Bearer + refresh body.
  *

@@ -71,7 +71,7 @@ export function EditorToolbar({ editor, className }: EditorToolbarProps) {
       role="toolbar"
       aria-label="Ferramentas do editor"
       className={cn(
-        "flex flex-wrap items-center gap-1 rounded-md border border-clama-blog-border-soft bg-clama-blog-cream-warm p-2",
+        "flex flex-wrap items-center gap-1 rounded-md border border-clama-gold/20 bg-clama-night-soft p-2 text-clama-cream",
         className,
       )}
     >

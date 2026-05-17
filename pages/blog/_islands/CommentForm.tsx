@@ -1,11 +1,11 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { toast } from "sonner"
-import { Button } from "@/components/ui/button"
-import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { useCustomerApi } from "@/hooks/useCustomerApi"
 import { useCustomerAuth } from "@/contexts/CustomerAuthContext"
 import { microcopy } from "@/i18n/microcopy"
+import { cn } from "@/lib/utils"
+import { inicial } from "@/lib/blog/presentation"
 import type { Comentario } from "@/types/blog.types"
 
 const MIN_LENGTH = 3
@@ -16,29 +16,61 @@ export type CommentFormProps = {
   onCommentCreated?: (comment: Comentario) => void
 }
 
+const CARD =
+  "rounded-2xl border border-clama-gold/15 bg-clama-night-deep p-6"
+
 export function CommentForm({ postSlug, onCommentCreated }: CommentFormProps) {
-  const { user, isAuthenticated } = useCustomerAuth()
+  const { user, isAuthenticated, isLoading } = useCustomerAuth()
   const { customerFetch } = useCustomerApi()
   const [conteudo, setConteudo] = useState("")
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // Mount-flag pra evitar hydration mismatch: server e primeira render cliente
+  // renderizam um placeholder neutro; só após mount decidimos auth UI.
+  const [mounted, setMounted] = useState(false)
+  const [nextPath, setNextPath] = useState("/")
+  useEffect(() => {
+    setMounted(true)
+    setNextPath(window.location.pathname)
+  }, [])
+
+  if (!mounted) {
+    return (
+      <div
+        data-slot="comment-form-skeleton"
+        className={cn(CARD, "text-sm text-clama-cream/50 opacity-60")}
+        aria-hidden
+      >
+        {microcopy.commentForm.placeholder}
+      </div>
+    )
+  }
 
   if (!isAuthenticated) {
-    const nextPath =
-      typeof window !== "undefined" ? window.location.pathname : "/"
     return (
       <div
         data-slot="comment-form-prompt"
-        className="rounded-md border border-clama-blog-border-soft bg-clama-blog-comment-bg p-4 text-sm text-clama-blog-purple-prose"
+        className={cn(
+          CARD,
+          "flex flex-col items-center gap-3 text-center",
+          isLoading && "opacity-60",
+        )}
       >
-        {microcopy.commentForm.promptLoginInicio}
+        <h3 className="font-serif text-xl text-clama-cream">
+          Quer deixar uma palavra?
+        </h3>
+        <p className="max-w-md text-[0.88rem] leading-relaxed text-clama-cream/55">
+          Entre na sua conta pra comentar — leva 30 segundos e seu nome aparece
+          junto.
+        </p>
         <a
-          href={`/login?next=${encodeURIComponent(nextPath)}`}
-          className="font-medium text-clama-blog-gold-deep underline"
+          href={isLoading ? "#" : `/login?next=${encodeURIComponent(nextPath)}`}
+          aria-disabled={isLoading || undefined}
+          onClick={isLoading ? (e) => e.preventDefault() : undefined}
+          className="mt-1 inline-flex items-center gap-2 rounded-full bg-clama-gold px-5 py-2.5 text-sm font-semibold text-clama-night transition-colors hover:bg-clama-gold-soft"
         >
-          {microcopy.commentForm.promptLoginLinkText}
+          Entrar pra comentar →
         </a>
-        {microcopy.commentForm.promptLoginFim}
       </div>
     )
   }
@@ -58,7 +90,7 @@ export function CommentForm({ postSlug, onCommentCreated }: CommentFormProps) {
     setSubmitting(true)
     try {
       const created = await customerFetch<Comentario>(
-        `/api/blog/posts/${encodeURIComponent(postSlug)}/comentarios/`,
+        `/api/blog/posts/${encodeURIComponent(postSlug)}/comments/`,
         {
           method: "POST",
           body: JSON.stringify({ conteudo: trimmed }),
@@ -72,43 +104,57 @@ export function CommentForm({ postSlug, onCommentCreated }: CommentFormProps) {
     }
   }
 
+  const nome = user?.nome_completo ?? "você"
+
   return (
-    <form
-      data-slot="comment-form"
-      onSubmit={handleSubmit}
-      className="rounded-md border border-clama-blog-border-soft bg-clama-blog-comment-bg p-4"
-    >
-      <div className="flex flex-col gap-2">
-        <Label htmlFor="comment-content" className="text-clama-blog-purple-prose">
+    <form data-slot="comment-form" onSubmit={handleSubmit} className={CARD}>
+      <div className="flex items-center gap-2.5">
+        <span
+          aria-hidden
+          className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-clama-night-soft to-clama-gold/70 text-sm font-semibold text-clama-cream"
+        >
+          {inicial(nome)}
+        </span>
+        <label htmlFor="comment-content" className="text-sm text-clama-cream/70">
           Comentando como{" "}
-          <span className="font-medium">{user?.nome_completo ?? "você"}</span>
-        </Label>
-        <Textarea
-          id="comment-content"
-          rows={3}
-          placeholder={microcopy.commentForm.placeholder}
-          value={conteudo}
-          onChange={(e) => setConteudo(e.target.value)}
-          disabled={submitting}
-          aria-invalid={error ? true : undefined}
-          aria-describedby="comment-helper"
-        />
+          <span className="font-medium text-clama-cream">{nome}</span>
+        </label>
+      </div>
+
+      <Textarea
+        id="comment-content"
+        rows={4}
+        placeholder={microcopy.commentForm.placeholder}
+        value={conteudo}
+        onChange={(e) => setConteudo(e.target.value)}
+        disabled={submitting}
+        aria-invalid={error ? true : undefined}
+        aria-describedby="comment-helper"
+        className="mt-4 resize-none border-clama-gold/20 bg-clama-night text-clama-cream placeholder:text-clama-cream/35 focus-visible:border-clama-gold/50"
+      />
+
+      {error && <p className="mt-2 text-sm text-destructive">{error}</p>}
+
+      <div className="mt-3 flex items-center justify-between gap-4">
         <p
           id="comment-helper"
-          className="text-xs text-clama-blog-purple-prose/60"
+          className="text-[0.72rem] leading-snug text-clama-cream/45"
         >
           {microcopy.commentForm.helperDataSensiveis}
         </p>
-        {error && <p className="text-sm text-destructive">{error}</p>}
-        <div className="flex items-center justify-between">
-          <span className="text-xs text-clama-blog-purple-prose/60">
-            {conteudo.length}/{MAX_LENGTH}
+        <div className="flex shrink-0 items-center gap-3">
+          <span className="text-[0.72rem] tabular-nums text-clama-cream/45">
+            {conteudo.length} / {MAX_LENGTH}
           </span>
-          <Button type="submit" disabled={submitting}>
+          <button
+            type="submit"
+            disabled={submitting}
+            className="inline-flex items-center justify-center rounded-full bg-clama-gold px-5 py-2 text-sm font-semibold text-clama-night transition-colors hover:bg-clama-gold-soft disabled:opacity-60"
+          >
             {submitting
               ? microcopy.commentForm.submitting
               : microcopy.commentForm.submitLabel}
-          </Button>
+          </button>
         </div>
       </div>
     </form>

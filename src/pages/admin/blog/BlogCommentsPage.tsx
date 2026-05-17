@@ -282,7 +282,7 @@ export default function BlogCommentsPage() {
             </DialogDescription>
           </DialogHeader>
           {deleteTarget && (
-            <p className="line-clamp-4 rounded-md border border-clama-blog-border-soft bg-clama-blog-cream-warm p-3 text-sm text-clama-night">
+            <p className="line-clamp-4 rounded-md border border-clama-gold/20 bg-clama-night-soft p-3 text-sm text-clama-night">
               {deleteTarget.conteudo}
             </p>
           )}

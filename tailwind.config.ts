@@ -16,13 +16,14 @@ export default {
         "clama-cream": "#fdf8f0",
         "clama-cream-warm": "#f5ecd9",
         "clama-accent": "#8a5cf6",
-        // Blog-specific tokens (Story 1.5 — não colidem com MVP)
-        "clama-blog-gold-deep": "#b8862a",
-        "clama-blog-gold-soft": "#f5d77a",
-        "clama-blog-purple-prose": "#3a1f5c",
-        "clama-blog-cream-warm": "#faf3e8",
-        "clama-blog-comment-bg": "#ffffff",
-        "clama-blog-border-soft": "#e8e0d0",
+        // Blog tokens — alinhados à paleta dark (night/gold/cream) do MVP.
+        // Mantidos como aliases pra evitar tocar cada componente.
+        "clama-blog-gold-deep": "#f0c040", // = clama-gold
+        "clama-blog-gold-soft": "#f5d77a", // soft accent (mantido)
+        "clama-blog-purple-prose": "#fdf8f0", // = clama-cream (texto)
+        "clama-blog-cream-warm": "#2a1a40", // = clama-night-soft (hover/bg secondary)
+        "clama-blog-comment-bg": "#110720", // = clama-night-deep (card bg)
+        "clama-blog-border-soft": "#2a1a40", // = clama-night-soft (border discreta)
         // shadcn CSS variable colors
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
@@ -83,19 +84,25 @@ export default {
             fontFamily: 'Georgia, "Times New Roman", serif',
             fontSize: "1.125rem",
             lineHeight: "1.7",
-            color: "#3a1f5c",
+            color: "#fdf8f0",
             maxWidth: "65ch",
             "@screen md": {
               fontSize: "1.1875rem",
             },
-            h2: { fontFamily: "Georgia, serif", fontWeight: "700" },
-            h3: { fontFamily: "Georgia, serif", fontWeight: "700" },
-            a: { color: "#b8862a" },
+            h1: { color: "#fdf8f0", fontFamily: "Georgia, serif", fontWeight: "700" },
+            h2: { color: "#fdf8f0", fontFamily: "Georgia, serif", fontWeight: "700" },
+            h3: { color: "#fdf8f0", fontFamily: "Georgia, serif", fontWeight: "700" },
+            h4: { color: "#fdf8f0", fontFamily: "Georgia, serif", fontWeight: "700" },
+            strong: { color: "#fdf8f0" },
+            a: { color: "#f0c040", textDecoration: "underline" },
+            "a:hover": { color: "#d4a017" },
+            blockquote: { color: "#fdf8f0", borderLeftColor: "rgba(240, 192, 64, 0.4)" },
+            code: { color: "#f5d77a" },
             "blockquote.versiculo": {
-              backgroundColor: "#b8862a",
+              backgroundColor: "rgba(240, 192, 64, 0.12)",
               color: "#fdf8f0",
               borderLeftWidth: "4px",
-              borderLeftColor: "#f5d77a",
+              borderLeftColor: "#f0c040",
               paddingLeft: "1.5rem",
               paddingRight: "1.5rem",
               paddingTop: "1rem",
@@ -124,6 +131,7 @@ export default {
                 fontSize: "0.875rem",
                 fontFamily: "Georgia, serif",
                 opacity: "0.85",
+                color: "#f0c040",
               },
             },
           },

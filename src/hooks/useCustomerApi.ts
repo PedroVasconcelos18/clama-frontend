@@ -13,7 +13,6 @@
  */
 
 import { useCallback, useRef } from "react"
-import { useNavigate } from "react-router-dom"
 import { toast } from "sonner"
 import { useCustomerAuth } from "@/contexts/CustomerAuthContext"
 import { PastoralApiError } from "@/lib/api"
@@ -63,7 +62,6 @@ interface CustomerFetchOptions extends RequestInit {
 
 export function useCustomerApi() {
   const { accessToken, refreshAccessToken, logout } = useCustomerAuth()
-  const navigate = useNavigate()
   // Shared in-flight refresh promise: concurrent 401s await the same refresh
   // and each retries with the resulting token. Avoids the boolean-flag race
   // where parallel callers would see "another refresh is happening" and skip
@@ -116,7 +114,9 @@ export function useCustomerApi() {
           // refreshAccessToken already cleared local auth on 401-blacklisted.
           // Make sure storage/state are clean and route the user to /login.
           await logout()
-          navigate("/login", { replace: true })
+          if (typeof window !== "undefined") {
+            window.location.assign("/login")
+          }
           const error = new PastoralApiError(
             "Sessão expirada",
             "session_expired",
@@ -156,7 +156,7 @@ export function useCustomerApi() {
 
       return response.json() as Promise<T>
     },
-    [accessToken, refreshAccessToken, logout, navigate]
+    [accessToken, refreshAccessToken, logout]
   )
 
   return { customerFetch }

@@ -8,8 +8,8 @@ import { isValidCpfOrCnpj } from "@/lib/validators/cpfCnpj";
 const telefoneRequired = z
   .string()
   .min(1, "Para entrarmos em contato, precisamos do seu número.")
-  .refine((v) => v.replace(/\D/g, "").length >= 8, {
-    message: "Precisamos de um telefone válido.",
+  .refine((v) => v.replace(/\D/g, "").length === 11, {
+    message: "Informe um celular com DDD (11 dígitos).",
   });
 
 const cpfCnpjSchema = z
@@ -35,12 +35,10 @@ const baseSchema = {
   email: z.string().email("Confira seu e-mail — parece que faltou algo."),
   cpf_cnpj: cpfCnpjSchema,
   idade: z.coerce
-    .number()
-    .int()
+    .number({ error: "Por favor, informe sua idade." })
+    .int("Idade precisa ser um número inteiro.")
     .min(1, "Idade precisa ser maior que zero.")
-    .max(120, "Idade parece estar incorreta.")
-    .optional()
-    .or(z.literal("")),
+    .max(120, "Idade parece estar incorreta."),
   sexo: z
     .enum(["feminino", "masculino", "nao_informado"], {
       error: "Por favor, selecione o sexo.",

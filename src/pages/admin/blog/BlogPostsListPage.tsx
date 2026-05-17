@@ -35,7 +35,7 @@ function StatusBadge({ status }: { status: PostStatus }) {
       className={cn(
         "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium",
         status === "publicado"
-          ? "bg-clama-blog-gold-soft/30 text-clama-blog-purple-prose"
+          ? "bg-clama-gold-soft/30 text-clama-cream"
           : "bg-clama-cream-warm text-clama-night",
       )}
     >

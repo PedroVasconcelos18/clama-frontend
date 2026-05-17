@@ -65,7 +65,7 @@ export function ReadingProgressBar({
     >
       <div
         className={cn(
-          "h-full bg-clama-blog-gold-deep motion-safe:transition-[width] motion-safe:duration-75 motion-safe:ease-out",
+          "h-full bg-clama-gold motion-safe:transition-[width] motion-safe:duration-75 motion-safe:ease-out",
         )}
         style={{ width: `${progress}%` }}
       />

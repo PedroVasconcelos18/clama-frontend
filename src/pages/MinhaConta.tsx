@@ -1,55 +1,62 @@
 import { useCallback, useEffect, useMemo, useState } from "react"
-import { Link, useNavigate, useSearchParams } from "react-router-dom"
-import { toast } from "sonner"
+import { useNavigate, useSearchParams } from "react-router-dom"
+import {
+  Calendar,
+  Check,
+  Hourglass,
+  Mail,
+  CircleDollarSign,
+  RefreshCw,
+  TriangleAlert,
+  X,
+} from "lucide-react"
 
 import { useCustomerAuth } from "@/contexts/CustomerAuthContext"
 import { useCustomerApi } from "@/hooks/useCustomerApi"
 import { PastoralApiError } from "@/lib/api"
-import { Button } from "@/components/ui/button"
 import LoadingSpinner from "@/components/utility/LoadingSpinner"
 import { PastoralAlert } from "@/components/utility/PastoralAlert"
 import { PedidoSection } from "@/components/clama/PedidoSection"
+import { SiteHeader } from "@/components/clama/SiteHeader"
+import { buildWhatsAppShareUrl } from "@/components/clama/WhatsAppShareButton"
+import { cn } from "@/lib/utils"
 import type { CustomerPedido } from "@/types/pedido-customer.types"
 
 /**
- * Área logada do customer (G2.c).
+ * Área logada do customer — redesign conta-design.
  *
- * Duas tabs:
- * - **Histórico**: lista pedidos do user, com filtro opcional de data
- *   (`from`/`to`). Backend filtra por `request.user` (claim JWT) — user
- *   nunca vê pedidos de outro.
- * - **Novo pedido**: monta o `PedidoSection` (form pago) inline na própria
- *   área logada, sem voltar pra LP. Após login, o submit aproveita o JWT
- *   pra `POST /api/pedidos/` direto, sem paywall intermediário.
+ * Mantém toda a lógica original: auth gate, tab em `?tab=`, fetch de pedidos
+ * com debounce de filtro de data, expand da oração entregue. O visual segue os
+ * mockups (clama-docs/conta-design): saudação com vela, abas integradas no
+ * card, cards de pedido com coluna de data, badges de 7 estados, oração
+ * expandida em forma devocional.
  *
- * Estado da tab vive em `?tab=historico|novo` — preserva via deep link e
- * refresh.
+ * Ações contextuais do mockup que dependem de backend inexistente no subset
+ * seguro do customer (Finalizar pagamento → asaas_invoice_url não exposto por
+ * segurança; Reenviar e-mail / Tentar novamente → sem endpoint customer) são
+ * substituídas pela NOTA explicativa do próprio mockup. "Compartilhar" no
+ * expandido reusa `buildWhatsAppShareUrl` (lógica de share de oração existente).
  */
 type TabId = "historico" | "novo"
 
 export default function MinhaConta() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
-  const { user, isAuthenticated, isLoading, logout } = useCustomerAuth()
+  const { user, isAuthenticated, isLoading } = useCustomerAuth()
 
-  // Tab persistida em querystring. Default = histórico.
   const rawTab = searchParams.get("tab")
   const activeTab: TabId = rawTab === "novo" ? "novo" : "historico"
 
   const setTab = useCallback(
     (tab: TabId) => {
       const next = new URLSearchParams(searchParams)
-      if (tab === "historico") {
-        next.delete("tab")
-      } else {
-        next.set("tab", tab)
-      }
+      if (tab === "historico") next.delete("tab")
+      else next.set("tab", tab)
       setSearchParams(next, { replace: true })
     },
     [searchParams, setSearchParams],
   )
 
-  // Redirect anon pra login (com next=/conta pra voltar após autenticar)
   useEffect(() => {
     if (isLoading) return
     if (!isAuthenticated) {
@@ -57,20 +64,18 @@ export default function MinhaConta() {
     }
   }, [isAuthenticated, isLoading, navigate])
 
-  const handleLogout = useCallback(async () => {
-    await logout()
-    toast.success("Até logo. Que sua paz seja preservada.")
+  const handleAfterLogout = useCallback(() => {
     navigate("/", { replace: true })
-  }, [logout, navigate])
+  }, [navigate])
 
   const primeiroNome = useMemo(() => {
     if (!user?.nome_completo) return "amada"
-    return user.nome_completo.split(" ")[0]
+    return user.nome_completo.split(" ")[0] || "amada"
   }, [user])
 
   if (isLoading || !isAuthenticated) {
     return (
-      <div className="min-h-screen bg-clama-night flex items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center bg-clama-night">
         <LoadingSpinner size={32} />
       </div>
     )
@@ -78,71 +83,83 @@ export default function MinhaConta() {
 
   return (
     <div className="min-h-screen bg-clama-night text-clama-cream">
-      {/* Header */}
-      <header className="border-b border-clama-gold/20">
-        <div className="max-w-3xl mx-auto px-6 py-5 flex items-center justify-between">
-          <Link
-            to="/"
-            className="font-serif text-clama-gold text-[1.4rem] font-bold tracking-wide"
-          >
-            Clama
-          </Link>
-          <button
-            onClick={handleLogout}
-            className="font-sans text-[0.82rem] text-clama-cream/70 hover:text-clama-gold transition-colors"
-          >
-            Sair
-          </button>
-        </div>
-      </header>
+      <SiteHeader active="conta" onAfterLogout={handleAfterLogout} />
 
-      {/* Saudação */}
-      <section className="max-w-3xl mx-auto px-6 pt-12 pb-6 text-center">
-        <p className="font-sans text-[0.78rem] tracking-[2px] uppercase text-clama-gold mb-2">
-          Sua área no Clama
-        </p>
-        <h1 className="font-serif text-[1.8rem] md:text-[2.2rem] text-clama-cream leading-tight">
-          Paz e bem, {primeiroNome}.
-        </h1>
-      </section>
+      <div className="mx-auto max-w-3xl px-5 pb-20 pt-8">
+        {/* Saudação + abas integradas */}
+        <section className="relative overflow-hidden rounded-3xl border border-clama-gold/20 bg-clama-night-deep">
+          <span
+            aria-hidden
+            className="pointer-events-none absolute inset-0"
+            style={{
+              backgroundImage:
+                "radial-gradient(60% 100% at 100% 0%, rgba(240,192,64,0.13), rgba(0,0,0,0) 60%), radial-gradient(50% 80% at 0% 100%, rgba(212,160,23,0.08), rgba(0,0,0,0) 60%)",
+            }}
+          />
+          <div className="relative px-7 pt-8 md:px-10 md:pt-10">
+            <div className="flex items-start justify-between gap-6">
+              <div>
+                <p className="font-sans text-[0.68rem] font-semibold uppercase tracking-[0.24em] text-clama-gold-soft">
+                  Sua área no Clama
+                </p>
+                <h1 className="mt-3 font-serif text-[2rem] leading-[1.1] text-clama-cream md:text-[2.6rem]">
+                  Olá,{" "}
+                  <span className="italic text-clama-gold">{primeiroNome}</span>.
+                </h1>
+                <p className="mt-3 max-w-md text-[0.9rem] leading-relaxed text-clama-cream/55">
+                  Aqui ficam todos os seus clamores — os que já foram
+                  respondidos, os que estão sendo escritos, e os que ainda vão
+                  nascer.
+                </p>
+              </div>
+              <span
+                aria-hidden
+                className="hidden shrink-0 select-none text-[2.6rem] drop-shadow-[0_0_18px_rgba(240,192,64,0.55)] sm:block"
+              >
+                🕯️
+              </span>
+            </div>
 
-      {/* Tabs */}
-      <nav
-        className="max-w-3xl mx-auto px-6"
-        role="tablist"
-        aria-label="Seções da minha conta"
-      >
-        <div className="flex gap-1 border-b border-clama-gold/15">
-          <TabButton
-            id="historico"
-            active={activeTab === "historico"}
-            onClick={() => setTab("historico")}
-          >
-            Histórico
-          </TabButton>
-          <TabButton
-            id="novo"
-            active={activeTab === "novo"}
-            onClick={() => setTab("novo")}
-          >
-            Novo pedido
-          </TabButton>
-        </div>
-      </nav>
-
-      {/* Tab content */}
-      <main className="max-w-3xl mx-auto px-6 pb-16 pt-8">
-        {activeTab === "historico" && (
-          <div role="tabpanel" id="panel-historico">
-            <HistoricoTab onGoToNovo={() => setTab("novo")} />
+            <nav
+              className="mt-7 flex items-center gap-1 border-t border-clama-gold/12 pt-1"
+              role="tablist"
+              aria-label="Seções da minha conta"
+            >
+              <TabButton
+                id="historico"
+                active={activeTab === "historico"}
+                onClick={() => setTab("historico")}
+              >
+                Histórico
+              </TabButton>
+              <span aria-hidden className="h-1 w-1 rotate-45 bg-clama-gold/40" />
+              <TabButton
+                id="novo"
+                active={activeTab === "novo"}
+                onClick={() => setTab("novo")}
+              >
+                Novo pedido
+              </TabButton>
+            </nav>
           </div>
-        )}
-        {activeTab === "novo" && (
-          <div role="tabpanel" id="panel-novo">
-            <NovoPedidoTab />
-          </div>
-        )}
-      </main>
+        </section>
+
+        <main className="mt-8">
+          {activeTab === "historico" && (
+            <div role="tabpanel" id="panel-historico">
+              <HistoricoTab
+                onGoToNovo={() => setTab("novo")}
+                primeiroNome={primeiroNome}
+              />
+            </div>
+          )}
+          {activeTab === "novo" && (
+            <div role="tabpanel" id="panel-novo">
+              <NovoPedidoTab />
+            </div>
+          )}
+        </main>
+      </div>
     </div>
   )
 }
@@ -164,11 +181,12 @@ function TabButton({ id, active, onClick, children }: TabButtonProps) {
       aria-controls={`panel-${id}`}
       aria-selected={active}
       onClick={onClick}
-      className={`font-sans font-semibold text-[0.92rem] px-5 py-3 transition-colors border-b-2 -mb-px ${
+      className={cn(
+        "-mb-px border-b-2 px-4 py-3 font-sans text-[0.92rem] font-semibold transition-colors",
         active
           ? "border-clama-gold text-clama-gold"
-          : "border-transparent text-clama-cream/60 hover:text-clama-cream"
-      }`}
+          : "border-transparent text-clama-cream/55 hover:text-clama-cream",
+      )}
     >
       {children}
     </button>
@@ -176,22 +194,23 @@ function TabButton({ id, active, onClick, children }: TabButtonProps) {
 }
 
 // ---------------------------------------------------------------------------
-// HISTÓRICO TAB
+// HISTÓRICO
 // ---------------------------------------------------------------------------
 
-interface HistoricoTabProps {
+function HistoricoTab({
+  onGoToNovo,
+  primeiroNome,
+}: {
   onGoToNovo: () => void
-}
-
-function HistoricoTab({ onGoToNovo }: HistoricoTabProps) {
+  primeiroNome: string
+}) {
   const { customerFetch } = useCustomerApi()
   const [pedidos, setPedidos] = useState<CustomerPedido[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [expandedId, setExpandedId] = useState<string | null>(null)
 
-  // Filtros — controlled inputs, debounce no fetch
-  const [from, setFrom] = useState<string>("")
-  const [to, setTo] = useState<string>("")
+  const [from, setFrom] = useState("")
+  const [to, setTo] = useState("")
 
   const loadPedidos = useCallback(async () => {
     setError(null)
@@ -212,9 +231,6 @@ function HistoricoTab({ onGoToNovo }: HistoricoTabProps) {
     }
   }, [customerFetch, from, to])
 
-  // Debounce fetch quando filtros mudam (300ms — input type=date só dispara
-  // change em datas completas, então não há disparo por tecla individual,
-  // mas o debounce ajuda quando user limpa ambos os campos rapidamente).
   useEffect(() => {
     const t = setTimeout(() => {
       loadPedidos()
@@ -231,19 +247,20 @@ function HistoricoTab({ onGoToNovo }: HistoricoTabProps) {
 
   return (
     <div>
-      {/* Filtro de data */}
+      {/* Filtro — toolbar compacta */}
       <section
-        className="border border-clama-gold/15 bg-clama-night-deep rounded-clama-card p-4 mb-6"
+        className="rounded-2xl border border-clama-gold/15 bg-clama-night-deep px-4 py-3"
         aria-label="Filtros do histórico"
       >
-        <p className="font-sans text-[0.72rem] font-bold tracking-[2px] uppercase text-clama-gold mb-3">
-          Filtrar por data
-        </p>
-        <div className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_auto] gap-3 items-end">
-          <div>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
+          <span className="inline-flex items-center gap-2 font-sans text-[0.68rem] font-semibold uppercase tracking-[0.2em] text-clama-gold-soft">
+            <Calendar aria-hidden className="h-3.5 w-3.5" />
+            Filtrar
+          </span>
+          <div className="flex items-center gap-2">
             <label
               htmlFor="filter-from"
-              className="block font-sans text-[0.78rem] text-clama-cream/70 mb-1"
+              className="font-sans text-[0.78rem] text-clama-cream/55"
             >
               De
             </label>
@@ -253,13 +270,13 @@ function HistoricoTab({ onGoToNovo }: HistoricoTabProps) {
               value={from}
               onChange={(e) => setFrom(e.target.value)}
               max={to || undefined}
-              className="w-full bg-clama-night border border-clama-gold/30 text-clama-cream text-sm rounded-lg px-3 py-2 outline-none focus:border-clama-gold"
+              className="rounded-lg border border-clama-gold/30 bg-clama-night px-3 py-1.5 text-sm text-clama-cream outline-none [color-scheme:dark] focus:border-clama-gold"
             />
           </div>
-          <div>
+          <div className="flex items-center gap-2">
             <label
               htmlFor="filter-to"
-              className="block font-sans text-[0.78rem] text-clama-cream/70 mb-1"
+              className="font-sans text-[0.78rem] text-clama-cream/55"
             >
               Até
             </label>
@@ -269,33 +286,49 @@ function HistoricoTab({ onGoToNovo }: HistoricoTabProps) {
               value={to}
               onChange={(e) => setTo(e.target.value)}
               min={from || undefined}
-              className="w-full bg-clama-night border border-clama-gold/30 text-clama-cream text-sm rounded-lg px-3 py-2 outline-none focus:border-clama-gold"
+              className="rounded-lg border border-clama-gold/30 bg-clama-night px-3 py-1.5 text-sm text-clama-cream outline-none [color-scheme:dark] focus:border-clama-gold"
             />
           </div>
-          <Button
-            variant="outline"
+          <button
+            type="button"
             onClick={limparFiltros}
             disabled={!temFiltros}
-            className="h-10 border-clama-gold/40 text-clama-cream hover:bg-clama-gold/10 disabled:opacity-40"
+            className={cn(
+              "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 font-sans text-[0.72rem] font-semibold uppercase tracking-[0.12em] transition-colors",
+              temFiltros
+                ? "border-clama-gold/40 text-clama-gold hover:bg-clama-gold/10"
+                : "cursor-default border-clama-cream/15 text-clama-cream/30",
+            )}
           >
+            <X aria-hidden className="h-3 w-3" />
             Limpar
-          </Button>
+          </button>
+          {pedidos !== null && (
+            <span className="ml-auto border-l border-clama-gold/15 pl-4 font-sans text-[0.78rem] text-clama-cream/45">
+              {pedidos.length}{" "}
+              {pedidos.length === 1 ? "pedido" : "pedidos"}
+            </span>
+          )}
         </div>
       </section>
 
       {error && (
-        <div className="mb-6">
+        <div className="mt-6">
           <PastoralAlert variant="error">{error}</PastoralAlert>
           <div className="mt-3 text-center">
-            <Button variant="outline" onClick={loadPedidos}>
+            <button
+              type="button"
+              onClick={loadPedidos}
+              className="rounded-full border border-clama-gold/40 px-5 py-2 text-sm text-clama-cream transition-colors hover:bg-clama-gold/10"
+            >
               Tentar novamente
-            </Button>
+            </button>
           </div>
         </div>
       )}
 
       {!error && pedidos === null && (
-        <div className="flex justify-center py-16">
+        <div className="flex justify-center py-20">
           <LoadingSpinner size={28} />
         </div>
       )}
@@ -305,11 +338,12 @@ function HistoricoTab({ onGoToNovo }: HistoricoTabProps) {
       )}
 
       {!error && pedidos !== null && pedidos.length > 0 && (
-        <div className="space-y-4">
+        <div className="mt-6 flex flex-col gap-4">
           {pedidos.map((p) => (
             <PedidoCard
               key={p.id}
               pedido={p}
+              primeiroNome={primeiroNome}
               expanded={expandedId === p.id}
               onToggle={() =>
                 setExpandedId((cur) => (cur === p.id ? null : p.id))
@@ -323,64 +357,192 @@ function HistoricoTab({ onGoToNovo }: HistoricoTabProps) {
 }
 
 // ---------------------------------------------------------------------------
-// NOVO PEDIDO TAB
+// NOVO PEDIDO — envólucro dark (PedidoSection é compartilhado com a LP,
+// então só integramos visualmente em vez de reescrevê-lo).
 // ---------------------------------------------------------------------------
 
 function NovoPedidoTab() {
-  // O PedidoSection já gerencia tudo: form, plano, canal, paywall (não dispara
-  // aqui porque o user está autenticado), checkout. Reusamos o componente
-  // standalone — não precisa de ref (não há scroll-into-view dentro da
-  // própria página de conta).
   return (
-    <div className="bg-white rounded-clama-card overflow-hidden border border-clama-gold/15">
-      <PedidoSection />
-    </div>
+    <section className="relative overflow-hidden rounded-2xl border border-clama-gold/15 bg-clama-night-deep">
+      <span
+        aria-hidden
+        className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-clama-gold/60 to-transparent"
+      />
+      <div className="border-b border-clama-gold/12 px-7 py-7 md:px-10">
+        <p className="font-sans text-[0.68rem] font-semibold uppercase tracking-[0.24em] text-clama-gold-soft">
+          Um novo pedido
+        </p>
+        <h2 className="mt-3 font-serif text-[1.7rem] leading-tight text-clama-cream md:text-[2rem]">
+          Conta o que tá no peito.{" "}
+          <span className="italic text-clama-gold">A gente cuida</span> do
+          resto.
+        </h2>
+        <p className="mt-3 max-w-lg text-[0.9rem] leading-relaxed text-clama-cream/55">
+          Pode ser uma palavra só, um nome, uma data, uma cura que demora.
+        </p>
+      </div>
+      {/*
+        Variante dark isolada: PedidoSection (compartilhado com a LP) recebe
+        theme="dark" — a LP continua usando o default "light", intacta.
+      */}
+      <PedidoSection theme="dark" />
+    </section>
   )
 }
 
 // ---------------------------------------------------------------------------
-// EMPTY STATE
+// ESTADO VAZIO
 // ---------------------------------------------------------------------------
 
-interface EmptyStateProps {
+function EmptyState({
+  onGoToNovo,
+  hasFilters,
+}: {
   onGoToNovo: () => void
   hasFilters: boolean
-}
-
-function EmptyState({ onGoToNovo, hasFilters }: EmptyStateProps) {
+}) {
   if (hasFilters) {
     return (
-      <div className="border border-clama-gold/20 rounded-clama-card bg-clama-night-deep p-8 text-center">
-        <h3 className="font-serif text-[1.1rem] text-clama-cream mb-2">
+      <div className="mt-6 rounded-2xl border border-clama-gold/15 bg-clama-night-deep px-6 py-12 text-center">
+        <h3 className="font-serif text-[1.2rem] text-clama-cream">
           Nenhum pedido nesse período
         </h3>
-        <p className="font-sans text-[0.9rem] text-clama-cream/70 leading-relaxed">
+        <p className="mx-auto mt-2 max-w-sm text-[0.9rem] leading-relaxed text-clama-cream/55">
           Tente ajustar as datas ou limpar os filtros.
         </p>
       </div>
     )
   }
   return (
-    <div className="border border-clama-gold/20 rounded-clama-card bg-clama-night-deep p-8 text-center">
-      <div className="w-16 h-16 rounded-full bg-clama-gold/10 border border-clama-gold/40 flex items-center justify-center mx-auto mb-4">
-        <span className="text-[1.6rem]" role="img" aria-label="vela">
-          🕯️
-        </span>
+    <div className="relative mt-6 overflow-hidden rounded-2xl border border-clama-gold/15 bg-clama-night-deep px-6 py-16 text-center">
+      <span
+        aria-hidden
+        className="pointer-events-none absolute inset-0"
+        style={{
+          backgroundImage:
+            "radial-gradient(50% 60% at 50% 30%, rgba(240,192,64,0.08), rgba(0,0,0,0) 70%)",
+        }}
+      />
+      <div className="relative">
+        <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full border border-clama-gold/40 bg-clama-gold/10">
+          <span className="text-2xl" role="img" aria-label="vela">
+            🕯️
+          </span>
+        </div>
+        <p className="font-sans text-[0.66rem] font-semibold uppercase tracking-[0.22em] text-clama-gold-soft">
+          Seu santuário ainda em silêncio
+        </p>
+        <h3 className="mt-3 font-serif text-[1.5rem] leading-tight text-clama-cream">
+          Seu primeiro clamor ainda não veio.
+        </h3>
+        <p className="mx-auto mt-3 max-w-md text-[0.92rem] leading-relaxed text-clama-cream/55">
+          Conta o que tá pesando — pode ser um luto, uma cura que demora, uma
+          decisão difícil. A gente escreve uma oração só pra você.
+        </p>
+        <button
+          type="button"
+          onClick={onGoToNovo}
+          className="mt-7 inline-flex items-center gap-2 rounded-full bg-clama-gold px-6 py-3 text-sm font-semibold text-clama-night transition-colors hover:bg-clama-gold-soft"
+        >
+          Fazer meu primeiro pedido →
+        </button>
       </div>
-      <h3 className="font-serif text-[1.2rem] text-clama-cream mb-2">
-        Seu primeiro clamor ainda não veio
-      </h3>
-      <p className="font-sans text-[0.9rem] text-clama-cream/70 leading-relaxed mb-5">
-        Tudo o que está no seu coração tem espaço aqui. Comece agora.
-      </p>
-      <Button
-        variant="gold"
-        onClick={onGoToNovo}
-        className="rounded-full px-6 h-10 text-[0.95rem] font-bold"
-      >
-        Fazer meu primeiro pedido
-      </Button>
     </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// STATUS BADGE — 7 estados, 4 tons
+// ---------------------------------------------------------------------------
+
+type Tone = "success" | "gold" | "amber" | "error"
+
+interface StatusInfo {
+  label: string
+  tone: Tone
+  Icon: typeof Check
+  ping?: boolean
+  /** Nota explicativa (substitui ações sem backend, do próprio mockup). */
+  nota?: string
+}
+
+function statusToInfo(status: CustomerPedido["status"]): StatusInfo {
+  switch (status) {
+    case "enviada":
+      return { label: "Entregue", tone: "success", Icon: Check }
+    case "gerando_oracao":
+    case "oracao_gerada":
+      return { label: "Preparando", tone: "gold", Icon: Hourglass, ping: true }
+    case "aguardando_confirmacao_email":
+      return {
+        label: "Aguardando e-mail",
+        tone: "gold",
+        Icon: Mail,
+        nota: "Mandamos um link de confirmação. Abra o e-mail pra liberar seu pedido.",
+      }
+    case "aguardando_pagamento":
+      return {
+        label: "Aguardando pagamento",
+        tone: "amber",
+        Icon: CircleDollarSign,
+        nota: "Sua oração começa assim que o pagamento for confirmado.",
+      }
+    case "pago":
+      return { label: "Pago", tone: "success", Icon: Check }
+    case "aguardando_reenvio":
+      return { label: "Reenviando", tone: "gold", Icon: RefreshCw, ping: true }
+    case "erro":
+      return {
+        label: "Tivemos um soluço",
+        tone: "error",
+        Icon: TriangleAlert,
+        nota: "Tivemos um soluço aqui. Estamos refazendo — em breve ela chega até você.",
+      }
+    default:
+      return { label: status, tone: "gold", Icon: Hourglass }
+  }
+}
+
+const TONE_CLASSES: Record<Tone, string> = {
+  success: "border-emerald-400/40 bg-emerald-400/10 text-emerald-300",
+  gold: "border-clama-gold/45 bg-clama-gold/10 text-clama-gold",
+  amber: "border-amber-400/40 bg-amber-400/10 text-amber-300",
+  error: "border-red-400/40 bg-red-400/10 text-red-300",
+}
+const TONE_DOT: Record<Tone, string> = {
+  success: "bg-emerald-300",
+  gold: "bg-clama-gold",
+  amber: "bg-amber-300",
+  error: "bg-red-300",
+}
+
+function StatusBadge({ info }: { info: StatusInfo }) {
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 font-sans text-[0.64rem] font-semibold uppercase tracking-[0.12em]",
+        TONE_CLASSES[info.tone],
+      )}
+    >
+      <span className="relative flex h-1.5 w-1.5">
+        {info.ping && (
+          <span
+            className={cn(
+              "absolute inline-flex h-full w-full animate-ping rounded-full opacity-60",
+              TONE_DOT[info.tone],
+            )}
+          />
+        )}
+        <span
+          className={cn(
+            "relative inline-flex h-1.5 w-1.5 rounded-full",
+            TONE_DOT[info.tone],
+          )}
+        />
+      </span>
+      {info.label}
+      <info.Icon aria-hidden className="h-3 w-3" />
+    </span>
   )
 }
 
@@ -388,127 +550,158 @@ function EmptyState({ onGoToNovo, hasFilters }: EmptyStateProps) {
 // PEDIDO CARD
 // ---------------------------------------------------------------------------
 
-interface PedidoCardProps {
+function PedidoCard({
+  pedido,
+  primeiroNome,
+  expanded,
+  onToggle,
+}: {
   pedido: CustomerPedido
+  primeiroNome: string
   expanded: boolean
   onToggle: () => void
-}
+}) {
+  const dt = useMemo(() => new Date(pedido.created_at), [pedido.created_at])
+  const dia = dt.toLocaleDateString("pt-BR", { day: "2-digit" })
+  const mes = dt
+    .toLocaleDateString("pt-BR", { month: "short" })
+    .replace(".", "")
+    .toUpperCase()
+  const ano = dt.toLocaleDateString("pt-BR", { year: "numeric" })
+  const dataExtenso = dt.toLocaleDateString("pt-BR", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  })
 
-function PedidoCard({ pedido, expanded, onToggle }: PedidoCardProps) {
-  const data = useMemo(
-    () =>
-      new Date(pedido.created_at).toLocaleDateString("pt-BR", {
-        day: "2-digit",
-        month: "long",
-        year: "numeric",
-      }),
-    [pedido.created_at],
-  )
-
-  const statusInfo = useMemo(() => statusToInfo(pedido.status), [pedido.status])
+  const info = useMemo(() => statusToInfo(pedido.status), [pedido.status])
   const canalLabel = pedido.canal_entrega === "whatsapp" ? "WhatsApp" : "E-mail"
-
+  const titulo = pedido.eh_gratuito
+    ? "Oração gratuita"
+    : pedido.plano || "Oração"
   const podeExpandir = pedido.status === "enviada" && !!pedido.oracao_gerada
 
   return (
-    <article className="border border-clama-gold/20 rounded-clama-card bg-clama-night-deep overflow-hidden">
+    <article className="overflow-hidden rounded-2xl border border-clama-gold/15 bg-clama-night-deep transition-colors hover:border-clama-gold/25">
       <button
         type="button"
         onClick={podeExpandir ? onToggle : undefined}
-        className={`w-full text-left p-5 transition-colors ${
-          podeExpandir ? "hover:bg-clama-night/50 cursor-pointer" : "cursor-default"
-        }`}
         aria-expanded={expanded}
+        className={cn(
+          "flex w-full gap-5 p-5 text-left transition-colors",
+          podeExpandir ? "cursor-pointer hover:bg-clama-night/40" : "cursor-default",
+        )}
       >
-        <div className="flex items-start justify-between gap-3 mb-2">
-          <div>
-            <p className="font-sans text-[0.78rem] tracking-[1px] uppercase text-clama-gold">
-              {data}
-            </p>
-            <p className="font-serif text-[1.05rem] text-clama-cream mt-1">
-              {pedido.eh_gratuito ? "Oração gratuita" : pedido.plano || "Oração"}
-            </p>
-          </div>
-          <span
-            className={`font-sans text-[0.72rem] font-semibold tracking-[1px] uppercase px-3 py-1 rounded-full border ${statusInfo.classes}`}
-          >
-            {statusInfo.label}
+        {/* Coluna data */}
+        <div className="flex w-12 shrink-0 flex-col items-center pt-1 text-center">
+          <span className="font-serif text-2xl leading-none text-clama-cream">
+            {dia}
+          </span>
+          <span className="mt-1 font-sans text-[0.6rem] font-semibold uppercase tracking-[0.14em] text-clama-gold-soft">
+            {mes}
+          </span>
+          <span className="mt-0.5 font-sans text-[0.6rem] text-clama-cream/35">
+            {ano}
           </span>
         </div>
 
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-clama-cream/70 font-sans text-[0.82rem]">
-          <span>Entrega: {canalLabel}</span>
-          {!pedido.eh_gratuito && pedido.valor_reais_str && (
-            <span>Valor: {pedido.valor_reais_str}</span>
-          )}
-          {podeExpandir && (
-            <span className="ml-auto text-clama-gold/80">
-              {expanded ? "Recolher ▴" : "Ver oração ▾"}
-            </span>
+        {/* Centro */}
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-2">
+            <div className="min-w-0">
+              <h3 className="font-serif text-[1.1rem] leading-tight text-clama-cream">
+                {titulo}
+              </h3>
+              <p className="mt-1 font-sans text-[0.78rem] text-clama-cream/50">
+                {!pedido.eh_gratuito && pedido.valor_reais_str
+                  ? `${pedido.valor_reais_str} · `
+                  : ""}
+                {canalLabel}
+              </p>
+            </div>
+            <div className="flex shrink-0 flex-col items-end gap-2">
+              <StatusBadge info={info} />
+              {podeExpandir && (
+                <span className="font-sans text-[0.72rem] font-semibold uppercase tracking-[0.1em] text-clama-gold/80">
+                  {expanded ? "Recolher ▴" : "Ver oração ▾"}
+                </span>
+              )}
+            </div>
+          </div>
+
+          {info.nota && (
+            <p className="mt-3 flex gap-2 border-l-2 border-clama-gold/30 pl-3 font-sans text-[0.8rem] leading-relaxed text-clama-cream/55">
+              {info.nota}
+            </p>
           )}
         </div>
       </button>
 
-      {podeExpandir && expanded && (
-        <div className="border-t border-clama-gold/15 px-5 py-5 bg-clama-night/40">
-          <p className="font-serif text-[0.95rem] leading-relaxed text-clama-cream whitespace-pre-line">
-            {pedido.oracao_gerada}
-          </p>
-        </div>
+      {podeExpandir && expanded && pedido.oracao_gerada && (
+        <OracaoExpandida
+          texto={pedido.oracao_gerada}
+          dataExtenso={dataExtenso}
+          canalLabel={canalLabel}
+          primeiroNome={primeiroNome}
+        />
       )}
     </article>
   )
 }
 
-// ---------------------------------------------------------------------------
-
-interface StatusInfo {
-  label: string
-  classes: string
-}
-
-function statusToInfo(status: CustomerPedido["status"]): StatusInfo {
-  switch (status) {
-    case "enviada":
-      return {
-        label: "Entregue",
-        classes: "border-emerald-400/50 text-emerald-300",
-      }
-    case "gerando_oracao":
-    case "oracao_gerada":
-      return {
-        label: "Preparando",
-        classes: "border-clama-gold/60 text-clama-gold",
-      }
-    case "aguardando_confirmacao_email":
-      return {
-        label: "Aguardando e-mail",
-        classes: "border-clama-gold/60 text-clama-gold",
-      }
-    case "aguardando_pagamento":
-      return {
-        label: "Aguardando pagamento",
-        classes: "border-amber-400/50 text-amber-300",
-      }
-    case "pago":
-      return {
-        label: "Pago",
-        classes: "border-emerald-400/50 text-emerald-300",
-      }
-    case "aguardando_reenvio":
-      return {
-        label: "Reenviando",
-        classes: "border-clama-gold/60 text-clama-gold",
-      }
-    case "erro":
-      return {
-        label: "Tivemos um soluço",
-        classes: "border-red-400/50 text-red-300",
-      }
-    default:
-      return {
-        label: status,
-        classes: "border-clama-cream/30 text-clama-cream/70",
-      }
-  }
+function OracaoExpandida({
+  texto,
+  dataExtenso,
+  canalLabel,
+  primeiroNome,
+}: {
+  texto: string
+  dataExtenso: string
+  canalLabel: string
+  primeiroNome: string
+}) {
+  return (
+    <div className="relative border-t border-clama-gold/15 bg-clama-night/40 px-6 py-8 md:px-10 md:py-10">
+      <span
+        aria-hidden
+        className="pointer-events-none absolute inset-0"
+        style={{
+          backgroundImage:
+            "radial-gradient(60% 50% at 50% 0%, rgba(240,192,64,0.08), rgba(0,0,0,0) 70%)",
+        }}
+      />
+      <div className="relative mx-auto max-w-xl text-center">
+        <p className="font-sans text-[0.64rem] font-semibold uppercase tracking-[0.22em] text-clama-gold-soft">
+          Sua oração · {dataExtenso}
+        </p>
+        <h4 className="mt-3 font-serif text-2xl text-clama-cream">
+          Para {primeiroNome}
+        </h4>
+        <p className="mt-6 whitespace-pre-line text-left font-serif text-[1.02rem] leading-[1.75] text-clama-cream/90">
+          {texto}
+        </p>
+        <div
+          aria-hidden
+          className="my-7 flex items-center justify-center gap-3"
+        >
+          <span className="h-px w-12 bg-gradient-to-r from-transparent to-clama-gold/30" />
+          <span className="font-sans text-[0.62rem] font-semibold uppercase tracking-[0.28em] text-clama-gold-soft">
+            Amém
+          </span>
+          <span className="h-px w-12 bg-gradient-to-l from-transparent to-clama-gold/30" />
+        </div>
+        <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 font-sans text-[0.76rem] text-clama-cream/45">
+          <span>Entregue por {canalLabel}</span>
+          <a
+            href={buildWhatsAppShareUrl(texto)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 rounded-full border border-clama-gold/35 px-3 py-1.5 font-semibold text-clama-gold transition-colors hover:bg-clama-gold/10"
+          >
+            Compartilhar
+          </a>
+        </div>
+      </div>
+    </div>
+  )
 }

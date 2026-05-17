@@ -33,7 +33,12 @@ export default defineConfig(({ mode }) => {
         "@": path.resolve(__dirname, "./src"),
       },
     },
+    optimizeDeps: {
+      holdUntilCrawlEnd: false,
+    },
     server: {
+      port: 5173,
+      strictPort: false,
       allowedHosts,
     },
   }

@@ -73,7 +73,7 @@ describe("Login (/login)", () => {
       access: "access-1",
       refresh: "refresh-1",
       user: {
-        id: "u-1",
+        id: 1,
         email: "fiel@example.com",
         nome_completo: "Pedro",
         force_change_password: false,
@@ -94,7 +94,7 @@ describe("Login (/login)", () => {
       access: "access-1",
       refresh: "refresh-1",
       user: {
-        id: "u-1",
+        id: 1,
         email: "fiel@example.com",
         nome_completo: "Pedro",
         force_change_password: false,
@@ -115,7 +115,7 @@ describe("Login (/login)", () => {
       access: "access-1",
       refresh: "refresh-1",
       user: {
-        id: "u-1",
+        id: 1,
         email: "fiel@example.com",
         nome_completo: "Pedro",
         force_change_password: true,
@@ -203,7 +203,7 @@ describe("Login (/login)", () => {
       "clama:customer-auth",
       JSON.stringify({
         user: {
-          id: "u-1",
+          id: 1,
           email: "fiel@example.com",
           nome_completo: "Pedro",
           force_change_password: false,
@@ -227,7 +227,7 @@ describe("Login (/login)", () => {
       access: "access-1",
       refresh: "refresh-1",
       user: {
-        id: "u-1",
+        id: 1,
         email: "fiel@example.com",
         nome_completo: "Pedro",
         force_change_password: false,

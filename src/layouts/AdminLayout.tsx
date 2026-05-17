@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext"
 import {
   LayoutDashboard,
   FileText,
+  Users,
   CreditCard,
   MessageSquare,
   FolderOpen,
@@ -19,6 +20,7 @@ import { cn } from "@/lib/utils"
 
 const navItems = [
   { to: "/admin", icon: LayoutDashboard, label: "Dashboard", end: true },
+  { to: "/admin/customers", icon: Users, label: "Customers" },
   { to: "/admin/pedidos", icon: FileText, label: "Pedidos" },
   { to: "/admin/planos", icon: CreditCard, label: "Planos" },
   { to: "/admin/prompts", icon: MessageSquare, label: "Prompts" },

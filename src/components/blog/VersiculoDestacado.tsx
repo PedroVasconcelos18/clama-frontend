@@ -19,8 +19,8 @@ export function VersiculoDestacado({
       className={cn(
         "versiculo",
         "my-6 rounded-md border-l-4 px-6 py-4",
-        "bg-clama-blog-gold-deep text-clama-cream",
-        "border-clama-blog-gold-soft",
+        "bg-clama-gold text-clama-cream",
+        "border-clama-gold-soft",
         className,
       )}
       data-referencia={referencia}

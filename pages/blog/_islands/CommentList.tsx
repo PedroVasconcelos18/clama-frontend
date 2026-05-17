@@ -11,7 +11,7 @@ export type CommentListProps = {
   postSlug: string
   initialComments?: Comentario[]
   initialCount?: number
-  adminCustomerIds?: string[]
+  adminCustomerIds?: number[]
 }
 
 export function CommentList({
@@ -58,24 +58,33 @@ export function CommentList({
       aria-label="Comentários"
       aria-live="polite"
       data-slot="comment-list"
+      className="mt-8"
     >
-      <header className="flex items-center justify-between">
-        <h2 className="font-serif text-2xl text-clama-blog-purple-prose">
+      <header className="flex items-center justify-between border-b border-clama-gold/10 pb-4">
+        <h2 className="font-serif text-2xl text-clama-cream">
           {microcopy.comments.heading(count)}
         </h2>
-        {showPaused && (
-          <span className="text-xs text-clama-blog-purple-prose/60">
+        {showPaused ? (
+          <span className="text-[0.72rem] uppercase tracking-[0.16em] text-clama-cream/45">
             {microcopy.comments.paused}
+          </span>
+        ) : (
+          <span className="inline-flex items-center gap-1.5 text-[0.72rem] font-medium uppercase tracking-[0.16em] text-clama-gold-soft">
+            <span className="relative flex h-1.5 w-1.5">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-clama-gold/60" />
+              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-clama-gold" />
+            </span>
+            ao vivo
           </span>
         )}
       </header>
 
       {renderedComments.length === 0 ? (
-        <p className="mt-4 text-clama-blog-purple-prose/70">
+        <p className="py-10 text-center text-[0.9rem] text-clama-cream/45">
           {microcopy.comments.emptyState}
         </p>
       ) : (
-        <ul className="mt-4 flex flex-col gap-3">
+        <ul className="mt-2 flex flex-col">
           {renderedComments.map((c) => (
             <li key={c.id}>
               <CommentItem

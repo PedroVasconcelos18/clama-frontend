@@ -36,18 +36,18 @@ export function PostPreview({ html, meta, className }: PostPreviewProps) {
     <article
       data-slot="post-preview"
       className={cn(
-        "prose prose-clama mx-auto bg-clama-blog-cream-warm p-6",
+        "prose prose-clama mx-auto rounded-md border border-clama-gold/20 bg-clama-night-soft p-6",
         className,
       )}
     >
       {meta && (
-        <header className="not-prose mb-6 border-b border-clama-blog-border-soft pb-4">
+        <header className="not-prose mb-6 border-b border-clama-gold/20 pb-4">
           {meta.titulo && (
-            <h1 className="font-serif text-3xl text-clama-blog-purple-prose">
+            <h1 className="font-serif text-3xl text-clama-cream">
               {meta.titulo}
             </h1>
           )}
-          <p className="mt-2 text-sm text-clama-blog-purple-prose/70">
+          <p className="mt-2 text-sm text-clama-cream/70">
             {meta.autor && <span>{meta.autor}</span>}
             {meta.dataPublicacao && (
               <>

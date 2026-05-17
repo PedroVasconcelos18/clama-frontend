@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
 import { apiFetch, PastoralApiError } from "@/lib/api";
+import { reaisToInt } from "@/lib/formatters";
 import { useFormDraft } from "@/hooks/useFormDraft";
 import { useCustomerAuth } from "@/contexts/CustomerAuthContext";
 import { useCustomerApi } from "@/hooks/useCustomerApi";
@@ -14,8 +15,10 @@ import {
   OfferingCards,
   type OfferingState,
 } from "@/components/clama/OfferingCards";
+// ChannelToggle comentado: só temos e-mail por enquanto. O type
+// CanalEntrega segue em uso (estado do draft fixo em "EMAIL").
 import {
-  ChannelToggle,
+  // ChannelToggle,
   type CanalEntrega,
 } from "@/components/clama/ChannelToggle";
 import { Divider } from "@/components/utility/Divider";
@@ -35,10 +38,38 @@ const INITIAL_DRAFT: FormDraftState = {
   canal: "EMAIL",
 };
 
-export const PedidoSection = forwardRef<HTMLElement>((_props, ref) => {
+// Valor livre pré-selecionado por padrão (deve casar com o mínimo do
+// OfferingCards / da API).
+const VALOR_LIVRE_PADRAO_REAIS = 5.99;
+
+export interface PedidoSectionProps {
+  /**
+   * "light" (default) = visual original, usado na Landing Page — NÃO mexer.
+   * "dark" = variante pro tema escuro da /conta (conta-design).
+   */
+  theme?: "light" | "dark";
+}
+
+export const PedidoSection = forwardRef<HTMLElement, PedidoSectionProps>(
+  ({ theme = "light" }, ref) => {
+  const isDark = theme === "dark";
   const navigate = useNavigate();
-  const { isAuthenticated } = useCustomerAuth();
+  const { isAuthenticated, user } = useCustomerAuth();
   const { customerFetch } = useCustomerApi();
+
+  // Cliente logado: semeia "Seus dados" com o cadastro dele (editável).
+  // Anônimo (LP/gratuito): sem prefill — fluxo original intacto.
+  const prefill =
+    isAuthenticated && user
+      ? {
+          nome: user.nome_completo || "",
+          email: user.email || "",
+          cpf_cnpj: user.cpf_cnpj || "",
+          telefone: user.telefone || "",
+          idade: user.idade ?? null,
+          sexo: user.sexo || "",
+        }
+      : undefined;
 
   const [planos, setPlanos] = useState<Plan[]>([]);
   const [isLoadingPlanos, setIsLoadingPlanos] = useState(true);
@@ -56,7 +87,6 @@ export const PedidoSection = forwardRef<HTMLElement>((_props, ref) => {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [isFormValid, setIsFormValid] = useState(false);
 
   useEffect(() => {
     const loadPlanos = async () => {
@@ -66,14 +96,16 @@ export const PedidoSection = forwardRef<HTMLElement>((_props, ref) => {
         const data = await apiFetch<Plan[]>("/api/planos/");
         setPlanos(data);
 
+        // Default: card "Livre" pré-selecionado em R$ 5,99 (sem destacar
+        // nenhum plano). Só semeia se o usuário ainda não escolheu nada.
         if (!draft.offering.selectedPlanId && !draft.offering.valorLivre) {
-          const recommendedPlan = data.find((p) => p.ordem === 2);
-          if (recommendedPlan) {
-            setDraft((prev) => ({
-              ...prev,
-              offering: { selectedPlanId: recommendedPlan.id, valorLivre: null },
-            }));
-          }
+          setDraft((prev) => ({
+            ...prev,
+            offering: {
+              selectedPlanId: null,
+              valorLivre: reaisToInt(VALOR_LIVRE_PADRAO_REAIS),
+            },
+          }));
         }
       } catch (err) {
         const error = err as PastoralApiError;
@@ -90,9 +122,11 @@ export const PedidoSection = forwardRef<HTMLElement>((_props, ref) => {
     setDraft((prev) => ({ ...prev, offering }));
   };
 
-  const handleCanalChange = (canal: CanalEntrega) => {
-    setDraft((prev) => ({ ...prev, canal }));
-  };
+  // Comentado junto com o bloco "Receber oração por". Reativar com o
+  // ChannelToggle quando o WhatsApp voltar.
+  // const handleCanalChange = (canal: CanalEntrega) => {
+  //   setDraft((prev) => ({ ...prev, canal }));
+  // };
 
   const handleFormSubmit = async (formData: PedidoFormData) => {
     // Paywall: anônimos vão pra /login antes de criar pedido pago
@@ -164,11 +198,15 @@ export const PedidoSection = forwardRef<HTMLElement>((_props, ref) => {
       });
   };
 
+  const eyebrowClass = isDark
+    ? "font-sans text-[0.72rem] font-bold tracking-[2px] uppercase text-clama-gold-soft mb-4"
+    : "font-sans text-[0.72rem] font-bold tracking-[2px] uppercase text-[#8a5cf6] mb-4";
+
   return (
     <section
       ref={ref}
       id="fazer-pedido"
-      className="bg-white scroll-mt-20"
+      className={isDark ? "scroll-mt-20" : "bg-white scroll-mt-20"}
     >
       <div className="max-w-[580px] mx-auto px-6 py-8">
         {submitError && (
@@ -180,7 +218,15 @@ export const PedidoSection = forwardRef<HTMLElement>((_props, ref) => {
         {isLoadingPlanos && (
           <div className="flex flex-col items-center justify-center py-16 gap-4">
             <LoadingSpinner size={32} />
-            <p className="text-[#888] font-sans">Carregando...</p>
+            <p
+              className={
+                isDark
+                  ? "text-clama-cream/50 font-sans"
+                  : "text-[#888] font-sans"
+              }
+            >
+              Carregando...
+            </p>
           </div>
         )}
 
@@ -191,7 +237,11 @@ export const PedidoSection = forwardRef<HTMLElement>((_props, ref) => {
               <Button
                 variant="outline"
                 onClick={handleRetryLoadPlanos}
-                className="border-clama-night/30 text-clama-night hover:bg-clama-cream"
+                className={
+                  isDark
+                    ? "border-clama-gold/40 text-clama-cream hover:bg-clama-gold/10"
+                    : "border-clama-night/30 text-clama-night hover:bg-clama-cream"
+                }
               >
                 Tentar novamente
               </Button>
@@ -202,36 +252,43 @@ export const PedidoSection = forwardRef<HTMLElement>((_props, ref) => {
         {!isLoadingPlanos && !planosError && (
           <div className="space-y-6">
             <section>
-              <div className="font-sans text-[0.72rem] font-bold tracking-[2px] uppercase text-[#8a5cf6] mb-4">
-                Seus dados
-              </div>
+              <div className={eyebrowClass}>Seus dados</div>
               <PrayerForm
                 planos={planos}
                 onSubmit={handleFormSubmit}
-                onValidityChange={setIsFormValid}
+                theme={theme}
+                prefill={prefill}
               />
             </section>
 
-            <Divider />
+            <Divider theme={theme} />
 
+            {/*
+              "Receber oração por" comentado: hoje só temos e-mail. O canal
+              fica fixo em "EMAIL" (default do INITIAL_DRAFT). Reativar este
+              bloco quando o WhatsApp voltar.
+            */}
+            {/*
             <section>
-              <div className="font-sans text-[0.72rem] font-bold tracking-[2px] uppercase text-[#8a5cf6] mb-4">
-                Receber oração por
-              </div>
-              <ChannelToggle value={draft.canal} onChange={handleCanalChange} />
+              <div className={eyebrowClass}>Receber oração por</div>
+              <ChannelToggle
+                value={draft.canal}
+                onChange={handleCanalChange}
+                theme={theme}
+              />
             </section>
 
-            <Divider />
+            <Divider theme={theme} />
+            */}
 
             <section>
-              <div className="font-sans text-[0.72rem] font-bold tracking-[2px] uppercase text-[#8a5cf6] mb-4">
-                Escolha sua contribuição
-              </div>
+              <div className={eyebrowClass}>Escolha sua contribuição</div>
               <OfferingCards
                 planos={planos}
                 selectedPlanId={draft.offering.selectedPlanId}
                 valorLivre={draft.offering.valorLivre}
                 onChange={handleOfferingChange}
+                theme={theme}
               />
             </section>
 
@@ -244,7 +301,6 @@ export const PedidoSection = forwardRef<HTMLElement>((_props, ref) => {
                   size="lg"
                   disabled={
                     isSubmitting ||
-                    !isFormValid ||
                     (!draft.offering.selectedPlanId && !draft.offering.valorLivre)
                   }
                   className="w-full h-12 text-[1.05rem] font-bold rounded-full"
@@ -270,7 +326,13 @@ export const PedidoSection = forwardRef<HTMLElement>((_props, ref) => {
                 </Button>
               )}
 
-              <p className="font-sans text-[0.75rem] text-[#aaa] text-center leading-relaxed mt-4">
+              <p
+                className={
+                  isDark
+                    ? "font-sans text-[0.75rem] text-clama-cream/45 text-center leading-relaxed mt-4"
+                    : "font-sans text-[0.75rem] text-[#aaa] text-center leading-relaxed mt-4"
+                }
+              >
                 Seus dados são tratados com sigilo e respeito.
                 <br />
                 Jamais compartilhamos suas informações.
@@ -281,6 +343,7 @@ export const PedidoSection = forwardRef<HTMLElement>((_props, ref) => {
       </div>
     </section>
   );
-});
+  },
+);
 
 PedidoSection.displayName = "PedidoSection";

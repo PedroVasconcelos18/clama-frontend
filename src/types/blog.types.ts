@@ -104,7 +104,7 @@ export type PaginatedPublicPosts = {
 export type Comentario = {
   id: string
   post: string
-  customer: string
+  customer: number
   customer_nome: string
   conteudo: string
   created_at: string

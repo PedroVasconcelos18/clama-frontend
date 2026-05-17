@@ -1,38 +1,55 @@
 import { useData } from "vike-react/useData"
 import { CTAClamar } from "@/components/blog/CTAClamar"
-import { PostMeta } from "@/components/blog/PostMeta"
 import { ReadingProgressBar } from "@/components/blog/ReadingProgressBar"
-import { readingTimeMin } from "@/lib/datetime"
+import { PostThumb, hasCapa } from "@/components/blog/PostThumb"
+import { SiteHeader } from "@/components/clama/SiteHeader"
+import { readingTimeMin, tempoRelativo } from "@/lib/datetime"
+import { categoriaLabel, inicial } from "@/lib/blog/presentation"
+import { CommentForm } from "../_islands/CommentForm"
+import { CommentList } from "../_islands/CommentList"
+import { LikeButton } from "../_islands/LikeButton"
+import { SharePostButton } from "../_islands/SharePostButton"
 import type { BlogPostData } from "./+data"
+
+/**
+ * Destaca a última palavra do título em itálico dourado — reproduz o gesto
+ * editorial dos mockups ("Quando a oração é só *silêncio*") de forma genérica.
+ */
+function TituloEditorial({ titulo }: { titulo: string }) {
+  const partes = titulo.trim().split(/\s+/)
+  if (partes.length < 2) {
+    return <span className="italic text-clama-gold">{titulo}</span>
+  }
+  const ultima = partes.pop() as string
+  return (
+    <>
+      {partes.join(" ")} <span className="italic text-clama-gold">{ultima}</span>
+    </>
+  )
+}
 
 export default function BlogPostPage() {
   const data = useData<BlogPostData>()
 
   if (!data.post) {
     return (
-      <main className="min-h-screen bg-clama-blog-cream-warm">
-        <header className="border-b border-clama-blog-border-soft bg-white px-4 py-6">
-          <div className="mx-auto max-w-5xl">
-            <a
-              href="/blog"
-              className="font-serif text-xl text-clama-blog-purple-prose"
-            >
-              Clama
-            </a>
-          </div>
-        </header>
-        <section className="mx-auto max-w-2xl px-4 py-16 text-center">
-          <h1 className="font-serif text-3xl text-clama-blog-purple-prose">
-            Não encontramos esse post.
+      <main className="min-h-screen bg-clama-night text-clama-cream">
+        <SiteHeader active="blog" />
+        <section className="mx-auto max-w-2xl px-5 py-24 text-center">
+          <p className="font-sans text-[0.7rem] font-semibold uppercase tracking-[0.24em] text-clama-gold-soft">
+            Página não encontrada
+          </p>
+          <h1 className="mt-4 font-serif text-3xl text-clama-cream">
+            Não encontramos esse texto.
           </h1>
-          <p className="mt-4 text-clama-blog-purple-prose/70">
+          <p className="mx-auto mt-4 max-w-md text-clama-cream/60">
             Pode ter sido despublicado ou o link está incompleto.
           </p>
           <a
             href="/blog"
-            className="mt-6 inline-block rounded-md bg-clama-blog-gold-deep px-5 py-2 text-clama-cream"
+            className="mt-7 inline-flex items-center gap-2 rounded-full bg-clama-gold px-6 py-3 text-sm font-semibold text-clama-night transition-colors hover:bg-clama-gold-soft"
           >
-            Ver outros posts
+            ← Ver outros textos
           </a>
         </section>
       </main>
@@ -41,71 +58,82 @@ export default function BlogPostPage() {
 
   const { post } = data
   const readMin = readingTimeMin(post.conteudo_html)
+  const categoria = categoriaLabel(Boolean(post.historia_ilustrativa))
+  const quando = post.data_publicacao
+    ? tempoRelativo(post.data_publicacao)
+    : null
 
   return (
     <>
       <a
         href="#post-conteudo"
-        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:rounded focus:bg-clama-blog-gold-deep focus:px-3 focus:py-1 focus:text-clama-cream"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:rounded focus:bg-clama-gold focus:px-3 focus:py-1 focus:text-clama-night"
       >
         Pular pro conteúdo
       </a>
       <ReadingProgressBar />
-      <main className="min-h-screen bg-clama-blog-cream-warm">
-        <header className="border-b border-clama-blog-border-soft bg-white px-4 py-6">
-          <div className="mx-auto flex max-w-5xl items-center justify-between">
+      <main className="min-h-screen bg-clama-night text-clama-cream">
+        <SiteHeader active="blog" />
+
+        <article id="post-conteudo" className="mx-auto max-w-[720px] px-5 pb-16">
+          <header className="pt-10 md:pt-14">
             <a
               href="/blog"
-              className="font-serif text-xl text-clama-blog-purple-prose"
+              className="inline-flex items-center gap-1.5 font-sans text-[0.7rem] font-semibold uppercase tracking-[0.22em] text-clama-gold-soft transition-colors hover:text-clama-gold"
             >
-              Clama
+              ← Voltar ao blog
             </a>
-            <nav className="flex gap-4 text-sm">
-              <a href="/blog" className="text-clama-blog-purple-prose/70">
-                Blog
-              </a>
-              <a href="/conta" className="text-clama-blog-purple-prose/70">
-                Conta
-              </a>
-            </nav>
-          </div>
-        </header>
 
-        <article
-          id="post-conteudo"
-          className="mx-auto max-w-[680px] px-4 py-10"
-        >
-          <header className="mb-8">
-            <h1 className="font-serif text-4xl leading-tight text-clama-blog-purple-prose">
-              {post.titulo}
+            <p className="mt-8 font-sans text-[0.7rem] font-semibold uppercase tracking-[0.22em] text-clama-gold-soft">
+              {categoria} · {readMin} min de leitura
+            </p>
+
+            <h1 className="mt-4 font-serif text-[2.2rem] leading-[1.12] tracking-tight text-clama-cream md:text-[3.25rem]">
+              <TituloEditorial titulo={post.titulo} />
             </h1>
-            <PostMeta
-              post={{
-                autor: post.autor_nome,
-                data_publicacao: post.data_publicacao,
-                readingTimeMin: readMin,
-              }}
-              className="mt-4"
-            />
-            {post.historia_ilustrativa && (
-              <p className="mt-3 inline-block rounded-full bg-clama-blog-gold-soft/30 px-3 py-1 text-xs text-clama-blog-purple-prose">
-                História ilustrativa — não é um relato literal
-              </p>
-            )}
+
+            <div className="mt-7 flex flex-wrap items-center gap-x-4 gap-y-3">
+              <div className="flex items-center gap-2.5">
+                <span
+                  aria-hidden
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-clama-night-soft to-clama-gold/70 text-sm font-semibold text-clama-cream"
+                >
+                  {inicial(post.autor_nome)}
+                </span>
+                <span className="flex flex-col leading-tight">
+                  <span className="text-[0.9rem] font-medium text-clama-cream">
+                    {post.autor_nome}
+                  </span>
+                  {quando && (
+                    <span className="text-[0.76rem] text-clama-cream/50">
+                      {quando}
+                    </span>
+                  )}
+                </span>
+              </div>
+              {post.historia_ilustrativa && (
+                <span className="rounded-full border border-clama-gold/30 bg-clama-gold/10 px-3 py-1 font-sans text-[0.66rem] font-semibold uppercase tracking-[0.16em] text-clama-gold">
+                  História ilustrativa — não é um relato literal
+                </span>
+              )}
+            </div>
           </header>
 
-          {post.imagem_capa_url && (
-            <img
-              src={post.imagem_capa_url}
-              alt=""
-              className="mb-8 aspect-[16/9] w-full rounded-lg object-cover"
-            />
+          {hasCapa(post.imagem_capa_url) && (
+            <div className="mt-9 aspect-[16/9] overflow-hidden rounded-2xl border border-clama-gold/15">
+              <PostThumb imagemCapaUrl={post.imagem_capa_url} alt="" />
+            </div>
           )}
 
           <div
-            className="prose prose-clama max-w-none"
+            className="prose prose-clama mt-10 max-w-none"
             dangerouslySetInnerHTML={{ __html: post.conteudo_html }}
           />
+
+          <div className="mt-12 flex flex-wrap items-center gap-3 border-t border-clama-gold/10 pt-8">
+            <LikeButton postSlug={post.slug} initialCount={post.like_count} />
+            <SharePostButton titulo={post.titulo} />
+          </div>
 
           <div className="mt-12">
             <CTAClamar variant="bottom" />
@@ -113,17 +141,18 @@ export default function BlogPostPage() {
 
           <section
             aria-label="Comentários"
-            className="mt-12 border-t border-clama-blog-border-soft pt-8"
+            className="mt-14 border-t border-clama-gold/10 pt-10"
           >
-            <h2 className="font-serif text-2xl text-clama-blog-purple-prose">
-              Comentários
-            </h2>
-            <p className="mt-2 text-clama-blog-purple-prose/60">
-              Comentários e curtidas chegam na Story 4.7.
-            </p>
+            <CommentForm postSlug={post.slug} />
+            <div className="mt-8">
+              <CommentList
+                postSlug={post.slug}
+                initialCount={post.comment_count}
+              />
+            </div>
           </section>
 
-          <div className="mt-10">
+          <div className="mt-12">
             <CTAClamar variant="after-comments" />
           </div>
         </article>

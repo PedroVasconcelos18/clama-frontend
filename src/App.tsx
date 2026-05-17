@@ -21,6 +21,7 @@ import AdminLogin from "@/pages/admin/AdminLogin"
 import AdminLayout from "@/layouts/AdminLayout"
 import DashboardPage from "@/pages/admin/DashboardPage"
 import PedidosListPage from "@/pages/admin/PedidosListPage"
+import CustomersListPage from "@/pages/admin/CustomersListPage"
 import PlanosPage from "@/pages/admin/PlanosPage"
 import PromptEditorPage from "@/pages/admin/PromptEditorPage"
 import DocumentosPage from "@/pages/admin/DocumentosPage"
@@ -76,6 +77,7 @@ export default function App() {
           >
             <Route index element={<DashboardPage />} />
             <Route path="pedidos" element={<PedidosListPage />} />
+            <Route path="customers" element={<CustomersListPage />} />
             <Route path="planos" element={<PlanosPage />} />
             <Route path="prompts" element={<PromptEditorPage />} />
             <Route path="documentos" element={<DocumentosPage />} />
