@@ -32,21 +32,20 @@ export interface CriarPedidoGratuitoResponse {
 export async function criarPedidoGratuito(
   payload: PedidoGratuitoData,
 ): Promise<CriarPedidoGratuitoResponse> {
-  // O backend espera `idade` como number (ou ausente) e `pedido_oracao`
-  // ausente quando vazio. CPF chega já só com dígitos pelo `transform` do schema.
+  // O schema já coage `idade` pra number obrigatório, então sempre vai junto.
+  // `pedido_oracao` é omitido quando vazio. CPF chega já só com dígitos pelo
+  // `transform` do schema.
   const cleaned: Record<string, unknown> = {
     nome: payload.nome,
     email: payload.email,
     cpf_cnpj: payload.cpf_cnpj,
     telefone: payload.telefone,
     sexo: payload.sexo,
+    idade: payload.idade,
     consent_aceito: payload.consent_aceito,
     turnstile_token: payload.turnstile_token,
     device_hash: payload.device_hash,
   };
-  if (payload.idade !== undefined && payload.idade !== "") {
-    cleaned.idade = payload.idade;
-  }
   if (payload.pedido_oracao) {
     cleaned.pedido_oracao = payload.pedido_oracao;
   }
