@@ -7,5 +7,10 @@ export default {
   // (blog = prerender:true → SSG; spa-fallback ssr:false + prerender:true +
   // +onBeforePrerenderStart → emite dist/client/index.html shell). O Vercel
   // serve dist/client estático; vercel.json reescreve o resto pro shell.
-  prerender: false,
+  //
+  // enable:false = parcial (só páginas que optam in). disableAutoRun:true =
+  // o auto-run do prerender (que NÃO dispara no build do Vercel — causa do 404)
+  // é desligado em TODO ambiente; o build script roda `vike prerender`
+  // explícito como passo único e determinístico, com dist/server intacto.
+  prerender: { enable: false, disableAutoRun: true },
 } satisfies Config
