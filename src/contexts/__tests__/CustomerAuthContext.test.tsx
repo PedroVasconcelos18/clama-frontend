@@ -13,7 +13,7 @@ import { PastoralApiError } from "@/lib/api"
 const STORAGE_KEY = "clama:customer-auth"
 
 const mockUser: CustomerUser = {
-  id: "u-1",
+  id: 1,
   email: "fiel@example.com",
   nome_completo: "Pedro Henrique",
   force_change_password: false,

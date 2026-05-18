@@ -24,3 +24,12 @@ export const changePasswordSchema = z
   })
 
 export type ChangePasswordFormData = z.infer<typeof changePasswordSchema>
+
+export const forgotPasswordSchema = z.object({
+  email: z
+    .string()
+    .min(1, "Por favor, informe seu e-mail.")
+    .email("Confira seu e-mail — parece que faltou algo."),
+})
+
+export type ForgotPasswordFormData = z.infer<typeof forgotPasswordSchema>

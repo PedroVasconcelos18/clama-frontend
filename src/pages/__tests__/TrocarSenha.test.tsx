@@ -41,7 +41,7 @@ function setLoggedIn(forceChangePassword = true) {
     STORAGE_KEY,
     JSON.stringify({
       user: {
-        id: "u-1",
+        id: 1,
         email: "fiel@example.com",
         nome_completo: "Pedro",
         force_change_password: forceChangePassword,
@@ -127,7 +127,7 @@ describe("TrocarSenha (/trocar-senha)", () => {
         return Promise.resolve(
           new Response(
             JSON.stringify({
-              id: "u-1",
+              id: 1,
               email: "fiel@example.com",
               nome_completo: "Pedro",
               force_change_password: false,

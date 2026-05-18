@@ -3,11 +3,16 @@ import { apiFetch, PastoralApiError } from "@/lib/api"
 import { logout as logoutRequest, LogoutError } from "@/lib/api/customer"
 
 export interface CustomerUser {
-  id: string
+  id: number
   email: string
   nome_completo: string
   force_change_password: boolean
   freemium_used_at: string | null
+  /** Dados de cadastro do próprio dono — pré-preenchem o form de pedido. */
+  cpf_cnpj?: string
+  telefone?: string
+  idade?: number | null
+  sexo?: string
 }
 
 interface CustomerAuthState {
@@ -63,52 +68,73 @@ function isValidAuthState(value: unknown): value is CustomerAuthState {
   const user = obj.user
   if (!user || typeof user !== "object") return false
   const u = user as Record<string, unknown>
-  if (typeof u.id !== "string" || u.id.length === 0) return false
+  if (typeof u.id !== "number" || !Number.isFinite(u.id)) return false
   if (typeof u.email !== "string" || u.email.length === 0) return false
 
   return true
 }
 
 function loadAuthFromStorage(): CustomerAuthState {
+  if (typeof window === "undefined") return EMPTY_AUTH
   try {
     const stored = localStorage.getItem(CUSTOMER_AUTH_STORAGE_KEY)
     if (!stored) return EMPTY_AUTH
 
     const parsed: unknown = JSON.parse(stored)
     if (!isValidAuthState(parsed)) {
-      // Shape parcial / corrompido — não confie, limpa.
-      localStorage.removeItem(CUSTOMER_AUTH_STORAGE_KEY)
+      // eslint-disable-next-line no-console
+      console.warn("[CustomerAuth] storage rejected by validator", parsed)
       return EMPTY_AUTH
     }
     return parsed
-  } catch {
-    try {
-      localStorage.removeItem(CUSTOMER_AUTH_STORAGE_KEY)
-    } catch {
-      /* noop */
-    }
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.warn("[CustomerAuth] storage parse error", err)
     return EMPTY_AUTH
   }
 }
 
 function saveAuthToStorage(state: CustomerAuthState): void {
+  if (typeof window === "undefined") return
+  // eslint-disable-next-line no-console
+  console.log("[CustomerAuth] save", { hasUser: !!state.user })
   localStorage.setItem(CUSTOMER_AUTH_STORAGE_KEY, JSON.stringify(state))
 }
 
 function clearAuthFromStorage(): void {
+  if (typeof window === "undefined") return
+  // eslint-disable-next-line no-console
+  console.trace("[CustomerAuth] clear storage")
   localStorage.removeItem(CUSTOMER_AUTH_STORAGE_KEY)
 }
 
 export function CustomerAuthProvider({ children }: { children: ReactNode }) {
-  const [authState, setAuthState] = useState<CustomerAuthState>(() => loadAuthFromStorage())
+  // Server renders EMPTY_AUTH (sem localStorage). Client inicializa
+  // sincronamente do storage no useState init — state já está correto na
+  // primeira renderização cliente. Consumidores que mostram UI auth-dependente
+  // DEVEM gatear com isClient/isLoading pra evitar mismatch de hidratação.
+  const [authState, setAuthState] = useState<CustomerAuthState>(() => {
+    if (typeof window === "undefined") return EMPTY_AUTH
+    const loaded = loadAuthFromStorage()
+    // eslint-disable-next-line no-console
+    console.log("[CustomerAuth] init from storage", {
+      hasUser: !!loaded.user,
+      raw: localStorage.getItem("clama:customer-auth")?.slice(0, 80),
+    })
+    return loaded
+  })
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
+    // No client: state já foi inicializado do storage no useState init.
+    // Aqui só sinalizamos que terminamos a hidratação.
     setIsLoading(false)
   }, [])
 
   useEffect(() => {
     if (authState.user) {
+      // eslint-disable-next-line no-console
+      console.log("[CustomerAuth] save effect", { email: authState.user.email })
       saveAuthToStorage(authState)
     }
   }, [authState])
@@ -157,8 +183,11 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
 
   const refreshAccessToken = useCallback(async (): Promise<string | null> => {
     if (!authState.refreshToken) {
-      setAuthState(EMPTY_AUTH)
-      clearAuthFromStorage()
+      // Sem refreshToken: pode ser auth nunca existiu OU state ainda não
+      // hidratou do storage. NÃO limpamos storage aqui — clearAuthFromStorage()
+      // chamado pré-hidratação apagaria tokens válidos esperando carregamento.
+      // O save effect também não roda (authState.user é null), então noop é
+      // seguro: se realmente não há auth, o estado já está coerente.
       return null
     }
 

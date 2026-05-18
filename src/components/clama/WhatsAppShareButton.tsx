@@ -9,6 +9,18 @@ export function buildWhatsAppShareUrl(oracaoTexto: string): string {
   return `https://wa.me/?text=${encodeURIComponent(mensagem)}`;
 }
 
+/**
+ * Mesma lógica de compartilhamento das orações, adaptada para posts do blog:
+ * monta a mensagem com título + link do post e gera a URL `wa.me`.
+ */
+export function buildWhatsAppSharePostUrl(
+  titulo: string,
+  postUrl: string,
+): string {
+  const mensagem = `Achei esse texto no Clama e quis compartilhar com você:\n\n"${titulo}"\n\n${postUrl}\n\nFaça também seu pedido de oração: ${CLAMA_URL}`;
+  return `https://wa.me/?text=${encodeURIComponent(mensagem)}`;
+}
+
 export function WhatsAppShareButton({ oracaoTexto }: WhatsAppShareButtonProps) {
   return (
     <a

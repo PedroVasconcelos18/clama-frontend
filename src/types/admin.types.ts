@@ -42,6 +42,52 @@ export interface AdminPedidoListItem {
   status: string
   canal_entrega: "email" | "whatsapp"
   created_at: string
+  eh_gratuito?: boolean
+}
+
+export interface AdminCustomerListItem {
+  id: number
+  email: string
+  nome_completo: string
+  date_joined: string
+  freemium_used_at: string | null
+  is_clama_admin: boolean
+  total_pedidos: number
+  pedidos_pagos: number
+  pedidos_gratuitos: number
+  total_comentarios: number
+  is_banned: boolean
+  motivo_ban: string | null
+  banido_em: string | null
+}
+
+export interface AdminCustomerBanimentoHistorico {
+  id: string
+  motivo: string
+  banido_em: string
+  banido_por_email: string
+  revogado_em: string | null
+  revogado_por_email: string | null
+}
+
+export interface AdminCustomerDetail {
+  id: number
+  email: string
+  nome_completo: string
+  date_joined: string
+  last_login: string | null
+  is_active: boolean
+  is_clama_admin: boolean
+  cpf_cnpj: string | null
+  telefone: string | null
+  nome_format_blog: "completo" | "compacto"
+  freemium_used_at: string | null
+  total_pedidos: number
+  pedidos_pagos: number
+  pedidos_gratuitos: number
+  total_comentarios: number
+  is_banned: boolean
+  banimentos: AdminCustomerBanimentoHistorico[]
 }
 
 export interface PaginatedResponse<T> {

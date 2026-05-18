@@ -33,3 +33,36 @@ export function validateNextPath(
 
   return rawNext
 }
+
+/** Prefixos servidos pelo Vike (rotas fora do React Router). */
+const VIKE_ROUTE_PREFIXES = ["/blog"] as const
+
+export function isVikeRoute(path: string): boolean {
+  return VIKE_ROUTE_PREFIXES.some(
+    (prefix) =>
+      path === prefix ||
+      path.startsWith(`${prefix}/`) ||
+      path.startsWith(`${prefix}?`),
+  )
+}
+
+type NavigateFn = (to: string, options?: { replace?: boolean }) => void
+
+/**
+ * Roteia pra `next` após autenticação. Se `next` aponta pra rota Vike,
+ * faz hard navigation — react-router não conhece essas rotas e renderiza 404.
+ */
+export function goToNext(
+  navigate: NavigateFn,
+  next: string,
+  options?: { replace?: boolean },
+): void {
+  if (isVikeRoute(next)) {
+    if (typeof window !== "undefined") {
+      if (options?.replace) window.location.replace(next)
+      else window.location.assign(next)
+    }
+    return
+  }
+  navigate(next, options)
+}

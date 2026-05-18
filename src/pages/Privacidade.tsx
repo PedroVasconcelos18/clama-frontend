@@ -217,6 +217,37 @@ export default function Privacidade() {
             O uso continuado da Plataforma após o prazo de comunicação implica aceite das novas condições. Caso o Usuário não concorde com as alterações promovidas, poderá solicitar a eliminação de seus dados e cessar o uso do Serviço, sem qualquer ônus. A versão vigente desta Política estará sempre disponível em clama.me/privacidade, com indicação da data de última atualização e do número de versão.
           </p>
 
+          {/* Seção 13B — Dados do Blog (Story 6.2) */}
+          <h2 className="font-serif text-clama-night text-xl mt-10 mb-4">13.B Dados do Blog</h2>
+
+          <h3 className="font-serif text-clama-night text-lg mt-6 mb-3">13.B.1 Comentários</h3>
+          <p className="text-clama-night/80 mb-4">
+            Ao comentar em um post do blog, o Clama armazena: (i) o conteúdo textual do comentário; (ii) o nome de exibição que o Usuário escolheu (nome completo ou primeiro nome + inicial do sobrenome — configurável em <Link to="/conta" className="text-clama-accent hover:underline">/conta</Link>); (iii) o endereço IP de origem, em formato criptografado; e (iv) a data e hora de publicação.
+          </p>
+
+          <h3 className="font-serif text-clama-night text-lg mt-6 mb-3">13.B.2 Retenção do IP — 6 meses</h3>
+          <p className="text-clama-night/80 mb-4">
+            O endereço IP é mantido pelo prazo de 6 (seis) meses contados da publicação do comentário, conforme exigência mínima do art. 15 da Lei nº 12.965/2014 (Marco Civil da Internet). Após esse prazo, o IP é purgado automaticamente do banco de dados. O comentário e o nome de exibição permanecem visíveis até que o Usuário ou o Clama os removam.
+          </p>
+
+          <h3 className="font-serif text-clama-night text-lg mt-6 mb-3">13.B.3 Likes (curtidas)</h3>
+          <p className="text-clama-night/80 mb-4">
+            Quando o Usuário curte um post, o Clama armazena apenas a associação entre o identificador interno do Usuário (UUID) e o post. O endereço IP não é registrado em likes.
+          </p>
+
+          <h3 className="font-serif text-clama-night text-lg mt-6 mb-3">13.B.4 Direito ao esquecimento — exclusão de comentários</h3>
+          <p className="text-clama-night/80 mb-4">
+            O Usuário pode excluir os próprios comentários a qualquer momento, pela interface do blog. Para solicitar a exclusão definitiva de dados pessoais associados aos comentários (incluindo IPs ainda dentro do prazo de retenção), envie um e-mail para{" "}
+            <a href="mailto:privacidade@clama.me" className="text-clama-accent hover:underline">privacidade@clama.me</a>{" "}
+            informando o e-mail cadastrado e o assunto "exclusão LGPD blog". O atendimento acontece em até 30 (trinta) dias, conforme o art. 18, § 3º da LGPD.
+          </p>
+
+          <h3 className="font-serif text-clama-night text-lg mt-6 mb-3">13.B.5 Banimento (moderação)</h3>
+          <p className="text-clama-night/80 mb-6">
+            Em caso de violação dos Termos de Uso, o Clama pode suspender o acesso do Usuário ao sistema de comentários e likes, sem aviso prévio. O banimento é registrado internamente com motivo e identificação do administrador responsável. O Usuário banido continua podendo ler o blog e usar os demais serviços do Clama. Para questionar um banimento, envie e-mail para{" "}
+            <a href="mailto:privacidade@clama.me" className="text-clama-accent hover:underline">privacidade@clama.me</a>.
+          </p>
+
           {/* Seção 14 */}
           <h2 className="font-serif text-clama-night text-xl mt-10 mb-4">14. Legislação Aplicável e Foro</h2>
           <p className="text-clama-night/80 mb-4">

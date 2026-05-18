@@ -263,6 +263,46 @@ export default function Termos() {
             <a href="mailto:contato@clama.me" className="text-clama-accent hover:underline">contato@clama.me</a>. O prazo de resposta é de até 5 dias úteis. O Usuário poderá também registrar reclamações por meio da plataforma oficial Consumidor.gov.br, nos termos da legislação consumerista vigente.
           </p>
 
+          {/* Seção 10 — Blog */}
+          <h2 className="font-serif text-clama-night text-xl mt-10 mb-4">10. Comentários no Blog</h2>
+
+          <h3 className="font-serif text-clama-night text-lg mt-6 mb-3">10.1 Quem pode comentar</h3>
+          <p className="text-clama-night/80 mb-4">
+            Comentários nos posts do blog só podem ser publicados por Usuários autenticados — não há comentário anônimo. A leitura dos comentários é livre e pública para qualquer visitante. Para comentar, o Usuário precisa estar logado na mesma conta usada para pedidos de oração.
+          </p>
+
+          <h3 className="font-serif text-clama-night text-lg mt-6 mb-3">10.2 Conduta esperada</h3>
+          <p className="text-clama-night/80 mb-4">
+            Ao comentar, o Usuário compromete-se a manter linguagem respeitosa, evitar ofensas pessoais, spam, ataques denominacionais ou conteúdo discriminatório. O comentário deve ter relação razoável com o post. Compartilhar dados pessoais sensíveis (CPF, telefone, endereço completo) nos comentários é desencorajado — o Clama não se responsabiliza pelo conteúdo que o Usuário publicar voluntariamente.
+          </p>
+
+          <h3 className="font-serif text-clama-night text-lg mt-6 mb-3">10.3 Moderação</h3>
+          <p className="text-clama-night/80 mb-4">
+            O Clama reserva-se o direito de remover qualquer comentário e suspender o acesso do Usuário ao sistema de comentários, a qualquer tempo, sem aviso prévio, quando entender que o comentário viola estes Termos. A suspensão (banimento) afeta apenas o sistema de comentários e likes — o Usuário continua podendo ler o blog e usar os demais serviços do Clama.
+          </p>
+
+          <h3 className="font-serif text-clama-night text-lg mt-6 mb-3">10.4 Edição e exclusão pelo próprio Usuário</h3>
+          <p className="text-clama-night/80 mb-4">
+            O Usuário pode editar o próprio comentário durante 15 (quinze) minutos contados a partir da publicação. Após esse prazo, a edição não é mais possível. A exclusão do próprio comentário é permitida a qualquer momento.
+          </p>
+
+          <h3 className="font-serif text-clama-night text-lg mt-6 mb-3">10.5 Marco Civil da Internet</h3>
+          <p className="text-clama-night/80 mb-4">
+            Nos termos do art. 19 da Lei nº 12.965/2014 (Marco Civil da Internet), o Clama atua como provedor de aplicação e somente é responsabilizado civilmente por danos decorrentes de conteúdo gerado por terceiros se, após ordem judicial específica, não tomar providências para tornar indisponível o conteúdo apontado como infringente.
+          </p>
+
+          <h3 className="font-serif text-clama-night text-lg mt-6 mb-3">10.6 Registro de IP</h3>
+          <p className="text-clama-night/80 mb-4">
+            O endereço IP de origem é registrado a cada publicação de comentário, em formato criptografado, e mantido pelo prazo de 6 (seis) meses, conforme exigência do art. 15 do Marco Civil da Internet. O acesso a esses dados acontece apenas mediante requisição judicial ou em casos de investigação de abuso interno, e é tratado pela equipe do Clama com a confidencialidade adequada.
+          </p>
+
+          <h3 className="font-serif text-clama-night text-lg mt-6 mb-3">10.7 Denúncias</h3>
+          <p className="text-clama-night/80 mb-6">
+            Comentários que violem estes Termos podem ser denunciados pelo e-mail{" "}
+            <a href="mailto:contato@clama.me" className="text-clama-accent hover:underline">contato@clama.me</a>{" "}
+            com link para o post e identificação do comentário. O Clama analisa cada denúncia no prazo de 5 (cinco) dias úteis.
+          </p>
+
           {/* Declaração final */}
           <div className="bg-clama-night/5 border border-clama-border rounded-lg p-4 mb-6">
             <p className="text-clama-night/80 text-sm">

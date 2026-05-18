@@ -1,7 +1,7 @@
 import { renderHook, act, waitFor } from "@testing-library/react"
 import { MemoryRouter } from "react-router-dom"
 import type { ReactNode } from "react"
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest"
+import { describe, it, expect, vi, beforeAll, beforeEach, afterAll, afterEach } from "vitest"
 
 import { CustomerAuthProvider } from "@/contexts/CustomerAuthContext"
 import { useCustomerApi } from "@/hooks/useCustomerApi"
@@ -9,16 +9,19 @@ import { PastoralApiError } from "@/lib/api"
 
 const STORAGE_KEY = "clama:customer-auth"
 
-const navigateMock = vi.fn()
-
-vi.mock("react-router-dom", async () => {
-  const actual = await vi.importActual<typeof import("react-router-dom")>(
-    "react-router-dom",
-  )
-  return {
-    ...actual,
-    useNavigate: () => navigateMock,
-  }
+const locationAssignMock = vi.fn()
+const originalLocation = window.location
+beforeAll(() => {
+  Object.defineProperty(window, "location", {
+    configurable: true,
+    value: { ...originalLocation, assign: locationAssignMock },
+  })
+})
+afterAll(() => {
+  Object.defineProperty(window, "location", {
+    configurable: true,
+    value: originalLocation,
+  })
 })
 
 const toastErrorMock = vi.fn()
@@ -38,7 +41,7 @@ function setLoggedIn() {
     STORAGE_KEY,
     JSON.stringify({
       user: {
-        id: "u-1",
+        id: 1,
         email: "fiel@example.com",
         nome_completo: "Pedro",
         force_change_password: false,
@@ -61,7 +64,7 @@ function wrapper({ children }: { children: ReactNode }) {
 describe("useCustomerApi", () => {
   beforeEach(() => {
     localStorage.clear()
-    navigateMock.mockClear()
+    locationAssignMock.mockClear()
     toastErrorMock.mockClear()
   })
 
@@ -181,7 +184,7 @@ describe("useCustomerApi", () => {
       expect(localStorage.getItem(STORAGE_KEY)).toBeNull()
     })
 
-    // Routed to /login replace
-    expect(navigateMock).toHaveBeenCalledWith("/login", { replace: true })
+    // Routed to /login (hard nav — works in both react-router SPA and Vike pages)
+    expect(locationAssignMock).toHaveBeenCalledWith("/login")
   })
 })

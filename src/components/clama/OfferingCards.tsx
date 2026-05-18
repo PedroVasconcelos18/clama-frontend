@@ -16,16 +16,28 @@ interface OfferingCardsProps {
   selectedPlanId: string | null;
   valorLivre: number | null;
   onChange: (state: OfferingState) => void;
+  /** "light" (default) = LP; "dark" = variante /conta. */
+  theme?: "light" | "dark";
 }
 
-const VALOR_MINIMO_REAIS = 6.99;
+const VALOR_MINIMO_REAIS = 5.99;
 
 export function OfferingCards({
   planos,
   selectedPlanId,
   valorLivre,
   onChange,
+  theme = "light",
 }: OfferingCardsProps) {
+  const isDark = theme === "dark";
+  const cardSelected = isDark
+    ? "border-2 border-clama-gold bg-clama-gold/10"
+    : "border-2 border-clama-gold bg-[#fffbee]";
+  const cardIdle = isDark
+    ? "border-2 border-clama-gold/20 bg-clama-night-deep hover:border-clama-gold/50"
+    : "border-2 border-[#ede8d8] bg-white hover:border-clama-gold";
+  const valorTexto = isDark ? "text-clama-cream" : "text-clama-night";
+  const subTexto = isDark ? "text-clama-cream/50" : "text-[#888]";
   const [valorLivreInput, setValorLivreInput] = useState<string>(
     valorLivre ? String(valorLivre / 100) : ""
   );
@@ -55,7 +67,7 @@ export function OfferingCards({
     const numValue = parseFloat(value);
 
     if (isNaN(numValue) || numValue < VALOR_MINIMO_REAIS) {
-      setValorLivreError("O valor mínimo é R$ 6,99.");
+      setValorLivreError("O valor mínimo é R$ 5,99.");
       onChange({
         selectedPlanId: null,
         valorLivre: null,
@@ -89,27 +101,37 @@ export function OfferingCards({
               onClick={() => handlePlanSelect(plano.id)}
               className={cn(
                 "relative rounded-[14px] py-[1.1rem] px-3 text-center transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-clama-gold",
-                isSelected
-                  ? "border-2 border-clama-gold bg-[#fffbee]"
-                  : "border-2 border-[#ede8d8] bg-white hover:border-clama-gold"
+                isSelected ? cardSelected : cardIdle,
               )}
             >
               {isMostPopular && (
-                <span className="font-sans text-[0.7rem] bg-clama-night text-clama-gold py-[2px] px-2 rounded-full inline-block mb-1">
+                <span
+                  className={cn(
+                    "font-sans text-[0.7rem] py-[2px] px-2 rounded-full inline-block mb-1",
+                    isDark
+                      ? "bg-clama-gold text-clama-night font-semibold"
+                      : "bg-clama-night text-clama-gold",
+                  )}
+                >
                   Mais escolhido
                 </span>
               )}
 
               {!isMostPopular && (
-                <div className="font-sans text-[0.75rem] text-[#888] mb-1">
+                <div className={cn("font-sans text-[0.75rem] mb-1", subTexto)}>
                   {plano.nome}
                 </div>
               )}
 
-              <div className="text-[1.4rem] font-bold text-clama-night">
+              <div className={cn("text-[1.4rem] font-bold", valorTexto)}>
                 {plano.valor_reais_str}
               </div>
-              <div className="font-sans text-[0.75rem] text-[#888] mt-1 leading-snug">
+              <div
+                className={cn(
+                  "font-sans text-[0.75rem] mt-1 leading-snug",
+                  subTexto,
+                )}
+              >
                 {plano.descricao}
               </div>
             </button>
@@ -124,15 +146,16 @@ export function OfferingCards({
           onClick={handleValorLivreClick}
           className={cn(
             "relative rounded-[14px] py-[1.1rem] px-3 text-center transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-clama-gold",
-            isValorLivreSelected
-              ? "border-2 border-clama-gold bg-[#fffbee]"
-              : "border-2 border-[#ede8d8] bg-white hover:border-clama-gold"
+            isValorLivreSelected ? cardSelected : cardIdle,
           )}
         >
-          <div className="text-base font-bold text-clama-night">
-            Livre
-          </div>
-          <div className="font-sans text-[0.75rem] text-[#888] mt-1 leading-snug">
+          <div className={cn("text-base font-bold", valorTexto)}>Livre</div>
+          <div
+            className={cn(
+              "font-sans text-[0.75rem] mt-1 leading-snug",
+              subTexto,
+            )}
+          >
             Dê conforme o que o coração manda
           </div>
         </button>
@@ -141,8 +164,13 @@ export function OfferingCards({
       {/* Campo de valor livre */}
       {isValorLivreSelected && (
         <div className="max-w-[640px] mx-auto">
-          <label className="font-sans text-[0.8rem] font-semibold text-clama-night tracking-[0.5px] uppercase block mb-1">
-            Valor da contribuição (mín. R$ 6,99)
+          <label
+            className={cn(
+              "font-sans text-[0.8rem] font-semibold tracking-[0.5px] uppercase block mb-1",
+              isDark ? "text-clama-cream" : "text-clama-night",
+            )}
+          >
+            Valor da contribuição (mín. R$ 5,99)
           </label>
           <Input
             type="number"
@@ -150,12 +178,24 @@ export function OfferingCards({
             step={0.01}
             value={valorLivreInput}
             onChange={(e) => handleValorLivreChange(e.target.value)}
-            placeholder="R$ 6,99"
-            className="w-full py-3 px-4 border-[1.5px] border-[#e0d8f0] rounded-[10px] text-[0.95rem] font-sans text-clama-night bg-white outline-none focus:border-[#8a5cf6]"
+            placeholder="R$ 5,99"
+            className={cn(
+              "w-full py-3 px-4 border-[1.5px] rounded-[10px] text-[0.95rem] font-sans outline-none",
+              isDark
+                ? "border-clama-gold/30 text-clama-cream bg-clama-night [color-scheme:dark] placeholder:text-clama-cream/35 focus:border-clama-gold"
+                : "border-[#e0d8f0] text-clama-night bg-white focus:border-[#8a5cf6]",
+            )}
             aria-label="Valor da contribuição em reais"
           />
           {valorLivreError && (
-            <p className="text-sm text-[#8a5cf6] mt-2">{valorLivreError}</p>
+            <p
+              className={cn(
+                "text-sm mt-2",
+                isDark ? "text-red-300" : "text-[#8a5cf6]",
+              )}
+            >
+              {valorLivreError}
+            </p>
           )}
         </div>
       )}

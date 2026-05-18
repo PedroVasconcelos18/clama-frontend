@@ -11,7 +11,7 @@ import { toast } from "sonner"
 
 import { useCustomerAuth } from "@/contexts/CustomerAuthContext"
 import { PastoralApiError } from "@/lib/api"
-import { validateNextPath } from "@/lib/redirects"
+import { goToNext, validateNextPath } from "@/lib/redirects"
 import { loginSchema, type LoginFormData } from "@/lib/schemas/customer"
 
 import { Button } from "@/components/ui/button"
@@ -19,6 +19,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { PastoralAlert } from "@/components/utility/PastoralAlert"
 import { LoadingSpinner } from "@/components/utility/LoadingSpinner"
+import { ForgotPasswordModal } from "@/components/customer/ForgotPasswordModal"
 
 interface LoginLocationState {
   /** Mensagem one-shot vinda de outra página (ex.: gate user_ja_possui_conta da LP). */
@@ -35,6 +36,7 @@ export default function Login() {
 
   const [error, setError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [forgotOpen, setForgotOpen] = useState(false)
 
   // Flash message vinda de outro componente (ex.: LP redirecionando após
   // 409 user_ja_possui_conta). Lemos UMA VEZ na montagem e limpamos o
@@ -67,10 +69,13 @@ export default function Login() {
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors },
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
   })
+
+  const emailValue = watch("email")
 
   // Redireciona se já autenticado e flag false
   useEffect(() => {
@@ -79,7 +84,7 @@ export default function Login() {
       if (user.force_change_password) {
         navigate(`/trocar-senha?next=${encodeURIComponent(next)}`, { replace: true })
       } else {
-        navigate(next, { replace: true })
+        goToNext(navigate, next, { replace: true })
       }
     }
   }, [isAuthenticated, user, isLoading, navigate, next])
@@ -94,7 +99,7 @@ export default function Login() {
       if (loggedUser.force_change_password) {
         navigate(`/trocar-senha?next=${encodeURIComponent(next)}`, { replace: true })
       } else {
-        navigate(next, { replace: true })
+        goToNext(navigate, next, { replace: true })
       }
     } catch (err) {
       let message = "Algo não saiu como o esperado. Tente novamente."
@@ -175,6 +180,16 @@ export default function Login() {
               )}
             </div>
 
+            <div className="text-right">
+              <button
+                type="button"
+                onClick={() => setForgotOpen(true)}
+                className="text-clama-gold/80 hover:text-clama-gold text-sm underline underline-offset-4 transition-colors"
+              >
+                Esqueci minha senha
+              </button>
+            </div>
+
             <Button
               type="submit"
               disabled={isSubmitting}
@@ -198,6 +213,12 @@ export default function Login() {
           Use o e-mail que você cadastrou.
         </p>
       </div>
+
+      <ForgotPasswordModal
+        open={forgotOpen}
+        onOpenChange={setForgotOpen}
+        defaultEmail={emailValue ?? ""}
+      />
     </div>
   )
 }

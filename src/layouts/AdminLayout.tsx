@@ -4,9 +4,13 @@ import { useAuth } from "@/contexts/AuthContext"
 import {
   LayoutDashboard,
   FileText,
+  Users,
   CreditCard,
   MessageSquare,
   FolderOpen,
+  Newspaper,
+  MessagesSquare,
+  UserX,
   Menu,
   X,
   LogOut,
@@ -16,10 +20,18 @@ import { cn } from "@/lib/utils"
 
 const navItems = [
   { to: "/admin", icon: LayoutDashboard, label: "Dashboard", end: true },
+  { to: "/admin/customers", icon: Users, label: "Customers" },
   { to: "/admin/pedidos", icon: FileText, label: "Pedidos" },
   { to: "/admin/planos", icon: CreditCard, label: "Planos" },
   { to: "/admin/prompts", icon: MessageSquare, label: "Prompts" },
   { to: "/admin/documentos", icon: FolderOpen, label: "Documentos" },
+  { to: "/admin/blog", icon: Newspaper, label: "Blog" },
+  {
+    to: "/admin/blog/comentarios",
+    icon: MessagesSquare,
+    label: "Comentários",
+  },
+  { to: "/admin/blog/banidos", icon: UserX, label: "Banidos" },
 ]
 
 export default function AdminLayout() {
