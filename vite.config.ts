@@ -2,6 +2,7 @@ import path from "node:path"
 import { defineConfig, loadEnv } from "vite"
 import react from "@vitejs/plugin-react"
 import vike from "vike/plugin"
+import vercel from "vite-plugin-vercel"
 import { visualizer } from "rollup-plugin-visualizer"
 
 // https://vite.dev/config/
@@ -17,6 +18,10 @@ export default defineConfig(({ mode }) => {
     plugins: [
       react(),
       vike(),
+      // Adapter oficial Vike→Vercel: gera .vercel/output (Build Output API v3)
+      // — estático pros prerenderizados + Serverless Function pro SSR. Ele
+      // auto-carrega @vite-plugin-vercel/vike (extends em pages/+config.ts).
+      vercel(),
       ...(analyze
         ? [
             visualizer({
