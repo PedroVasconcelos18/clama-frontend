@@ -96,15 +96,11 @@ function loadAuthFromStorage(): CustomerAuthState {
 
 function saveAuthToStorage(state: CustomerAuthState): void {
   if (typeof window === "undefined") return
-  // eslint-disable-next-line no-console
-  console.log("[CustomerAuth] save", { hasUser: !!state.user })
   localStorage.setItem(CUSTOMER_AUTH_STORAGE_KEY, JSON.stringify(state))
 }
 
 function clearAuthFromStorage(): void {
   if (typeof window === "undefined") return
-  // eslint-disable-next-line no-console
-  console.trace("[CustomerAuth] clear storage")
   localStorage.removeItem(CUSTOMER_AUTH_STORAGE_KEY)
 }
 
@@ -115,13 +111,7 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
   // DEVEM gatear com isClient/isLoading pra evitar mismatch de hidratação.
   const [authState, setAuthState] = useState<CustomerAuthState>(() => {
     if (typeof window === "undefined") return EMPTY_AUTH
-    const loaded = loadAuthFromStorage()
-    // eslint-disable-next-line no-console
-    console.log("[CustomerAuth] init from storage", {
-      hasUser: !!loaded.user,
-      raw: localStorage.getItem("clama:customer-auth")?.slice(0, 80),
-    })
-    return loaded
+    return loadAuthFromStorage()
   })
   const [isLoading, setIsLoading] = useState(true)
 
@@ -133,8 +123,6 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (authState.user) {
-      // eslint-disable-next-line no-console
-      console.log("[CustomerAuth] save effect", { email: authState.user.email })
       saveAuthToStorage(authState)
     }
   }, [authState])
