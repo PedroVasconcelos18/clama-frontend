@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "analyze:bundle": "cross-env ANALYZE=1 npm run build",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && vite build && vike prerender",
     "check:bundle-size": "node scripts/check-bundle-size.mjs",
     "dev": "vite",
     "lighthouse": "lhci autorun",
