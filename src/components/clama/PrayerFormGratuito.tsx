@@ -54,8 +54,12 @@ export function PrayerFormGratuito({
   const siteKey = useMemo(() => getTurnstileSiteKey(), []);
 
   const form = useForm<PedidoGratuitoInput, unknown, PedidoGratuitoData>({
+    // `onTouched`: valida ao primeiro blur de cada campo (e depois a cada
+    // mudança) + no submit. Evita que o form carregue já com todos os erros
+    // visíveis — só mostra erro depois que o usuário interage com o campo ou
+    // tenta enviar.
     resolver: zodResolver(schema),
-    mode: "onChange",
+    mode: "onTouched",
     defaultValues: {
       nome: "",
       email: "",
@@ -74,11 +78,11 @@ export function PrayerFormGratuito({
   const fingerprintRequested = useRef(false);
 
   // FingerprintJS roda uma vez no mount e popula o `device_hash` hidden.
-  // `trigger()` no final força revalidação de TODO o form — necessário porque
-  // hidden fields registrados via `register()` + `setValue` programático
-  // não disparam o ciclo natural de "field touched → form re-validated",
-  // o que mantinha `formState.isValid=false` indefinidamente em `mode: onChange`
-  // (mesmo com `errors={}`).
+  // `trigger(["device_hash"])` revalida APENAS o hidden field — necessário
+  // porque hidden fields setados programaticamente não disparam o ciclo
+  // natural "field touched → form re-validated", mantendo `isValid=false`.
+  // Validar só o campo hidden (em vez de `trigger()` no form inteiro) evita
+  // marcar todos os campos visíveis com erro logo no carregamento.
   //
   // NÃO usamos cleanup com flag `cancelled`: em React StrictMode (dev) o
   // useEffect roda 2x (mount → cleanup → mount). Se a primeira promise
@@ -95,7 +99,7 @@ export function PrayerFormGratuito({
         shouldValidate: true,
         shouldTouch: true,
       });
-      form.trigger();
+      form.trigger("device_hash");
     });
   }, [form]);
 
@@ -114,7 +118,7 @@ export function PrayerFormGratuito({
           shouldValidate: true,
           shouldTouch: true,
         });
-        form.trigger();
+        form.trigger("turnstile_token");
       }
     }, 1500);
     return () => clearTimeout(t);

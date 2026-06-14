@@ -5,7 +5,7 @@ import { LoadingSpinner } from "@/components/utility/LoadingSpinner"
 import { PastoralAlert } from "@/components/utility/PastoralAlert"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import { X, ExternalLink, RefreshCw } from "lucide-react"
+import { X, ExternalLink, RefreshCw, Gift } from "lucide-react"
 import { toast } from "sonner"
 import type { AdminPedido } from "@/types/admin.types"
 
@@ -30,6 +30,8 @@ export function PedidoDetailDrawer({ pedidoId, onClose }: PedidoDetailDrawerProp
   const [error, setError] = useState<string | null>(null)
   const [isResending, setIsResending] = useState(false)
   const [showConfirmResend, setShowConfirmResend] = useState(false)
+  const [isMarkingFree, setIsMarkingFree] = useState(false)
+  const [showConfirmFree, setShowConfirmFree] = useState(false)
 
   useEffect(() => {
     if (!pedidoId) {
@@ -63,6 +65,11 @@ export function PedidoDetailDrawer({ pedidoId, onClose }: PedidoDetailDrawerProp
       pedido.status === "aguardando_reenvio" ||
       (pedido.status === "pago" && !pedido.oracao_gerada))
 
+  // Pode marcar gratuito qualquer pedido ainda não enviado e que já não
+  // seja gratuito. O backend é a defesa final (409 para enviada).
+  const canMarkFree =
+    pedido && pedido.status !== "enviada" && !pedido.eh_gratuito
+
   async function handleResend() {
     if (!pedido) return
     setIsResending(true)
@@ -83,6 +90,28 @@ export function PedidoDetailDrawer({ pedidoId, onClose }: PedidoDetailDrawerProp
       }
     } finally {
       setIsResending(false)
+    }
+  }
+
+  async function handleMarkFree() {
+    if (!pedido) return
+    setIsMarkingFree(true)
+    try {
+      await adminFetch(`/api/admin/pedidos/${pedido.id}/marcar-gratuito/`, {
+        method: "POST",
+      })
+      toast.success("Pedido marcado como gratuito. Gerando oração.")
+      setShowConfirmFree(false)
+      const data = await adminFetch<AdminPedido>(`/api/admin/pedidos/${pedido.id}/`)
+      setPedido(data)
+    } catch (err) {
+      if (err instanceof PastoralApiError) {
+        toast.error(err.pastoralMessage)
+      } else {
+        toast.error("Erro ao marcar como gratuito.")
+      }
+    } finally {
+      setIsMarkingFree(false)
     }
   }
 
@@ -119,6 +148,11 @@ export function PedidoDetailDrawer({ pedidoId, onClose }: PedidoDetailDrawerProp
                 )}
               >
                 {pedido.status.replace(/_/g, " ")}
+              </span>
+            )}
+            {pedido?.eh_gratuito && (
+              <span className="px-2 py-1 text-xs rounded bg-clama-gold/20 text-clama-gold">
+                Gratuito
               </span>
             )}
           </div>
@@ -305,6 +339,52 @@ export function PedidoDetailDrawer({ pedidoId, onClose }: PedidoDetailDrawerProp
                     >
                       <RefreshCw className="w-4 h-4 mr-2" />
                       Reenviar
+                    </Button>
+                  )}
+                </div>
+              )}
+
+              {/* Marcar como gratuito */}
+              {canMarkFree && (
+                <div className="pt-4 border-t border-clama-gold/20">
+                  {showConfirmFree ? (
+                    <div className="space-y-3">
+                      <p className="text-sm text-clama-cream">
+                        Marcar o pedido de <strong>{pedido.nome}</strong> como
+                        gratuito? A oração será gerada sem cobrança.
+                      </p>
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={handleMarkFree}
+                          disabled={isMarkingFree}
+                          className="flex-1"
+                        >
+                          {isMarkingFree ? (
+                            <>
+                              <LoadingSpinner className="w-4 h-4 mr-2" />
+                              Processando...
+                            </>
+                          ) : (
+                            "Confirmar gratuito"
+                          )}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          onClick={() => setShowConfirmFree(false)}
+                          className="text-clama-cream/60 hover:text-clama-cream"
+                        >
+                          Cancelar
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <Button
+                      onClick={() => setShowConfirmFree(true)}
+                      variant="outline"
+                      className="w-full"
+                    >
+                      <Gift className="w-4 h-4 mr-2" />
+                      Marcar como gratuito
                     </Button>
                   )}
                 </div>

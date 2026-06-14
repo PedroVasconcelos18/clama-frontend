@@ -34,7 +34,7 @@ interface FormDraftState {
 
 const INITIAL_DRAFT: FormDraftState = {
   formData: {},
-  offering: { selectedPlanId: null, valorLivre: null },
+  offering: { selectedPlanId: null, valorLivre: null, gratuito: false },
   canal: "EMAIL",
 };
 
@@ -96,16 +96,35 @@ export const PedidoSection = forwardRef<HTMLElement, PedidoSectionProps>(
         const data = await apiFetch<Plan[]>("/api/planos/");
         setPlanos(data);
 
-        // Default: card "Livre" pré-selecionado em R$ 5,99 (sem destacar
-        // nenhum plano). Só semeia se o usuário ainda não escolheu nada.
-        if (!draft.offering.selectedPlanId && !draft.offering.valorLivre) {
-          setDraft((prev) => ({
-            ...prev,
-            offering: {
-              selectedPlanId: null,
-              valorLivre: reaisToInt(VALOR_LIVRE_PADRAO_REAIS),
-            },
-          }));
+        // Só semeia se o usuário ainda não escolheu nada.
+        if (
+          !draft.offering.gratuito &&
+          !draft.offering.selectedPlanId &&
+          !draft.offering.valorLivre
+        ) {
+          if (isAuthenticated) {
+            // Autenticado: o card Gratuito está disponível e vem
+            // pré-selecionado.
+            setDraft((prev) => ({
+              ...prev,
+              offering: {
+                selectedPlanId: null,
+                valorLivre: null,
+                gratuito: true,
+              },
+            }));
+          } else {
+            // Anônimo: card "Livre" pré-selecionado em R$ 5,99 (sem
+            // destacar nenhum plano).
+            setDraft((prev) => ({
+              ...prev,
+              offering: {
+                selectedPlanId: null,
+                valorLivre: reaisToInt(VALOR_LIVRE_PADRAO_REAIS),
+                gratuito: false,
+              },
+            }));
+          }
         }
       } catch (err) {
         const error = err as PastoralApiError;
@@ -135,13 +154,42 @@ export const PedidoSection = forwardRef<HTMLElement, PedidoSectionProps>(
       return;
     }
 
-    if (!draft.offering.selectedPlanId && !draft.offering.valorLivre) {
+    if (
+      !draft.offering.gratuito &&
+      !draft.offering.selectedPlanId &&
+      !draft.offering.valorLivre
+    ) {
       setSubmitError("Por favor, escolha uma oferta para continuar.");
       return;
     }
 
     setIsSubmitting(true);
     setSubmitError(null);
+
+    // Fluxo gratuito: cria o pedido sem checkout e dispara a geração.
+    if (draft.offering.gratuito) {
+      try {
+        const { id } = await customerFetch<{ id: string }>(
+          "/api/pedidos/gratuito/",
+          {
+            method: "POST",
+            body: JSON.stringify({
+              ...formData,
+              canal_entrega: draft.canal.toLowerCase(),
+            }),
+            showToast: false,
+          },
+        );
+
+        clearDraft();
+        window.location.href = `/confirmacao?pedido_id=${id}`;
+      } catch (err) {
+        const error = err as PastoralApiError;
+        setSubmitError(error.pastoralMessage);
+        setIsSubmitting(false);
+      }
+      return;
+    }
 
     try {
       let valor_centavos: number;
@@ -287,6 +335,8 @@ export const PedidoSection = forwardRef<HTMLElement, PedidoSectionProps>(
                 planos={planos}
                 selectedPlanId={draft.offering.selectedPlanId}
                 valorLivre={draft.offering.valorLivre}
+                gratuito={draft.offering.gratuito}
+                allowGratuito={isAuthenticated}
                 onChange={handleOfferingChange}
                 theme={theme}
               />
@@ -301,7 +351,9 @@ export const PedidoSection = forwardRef<HTMLElement, PedidoSectionProps>(
                   size="lg"
                   disabled={
                     isSubmitting ||
-                    (!draft.offering.selectedPlanId && !draft.offering.valorLivre)
+                    (!draft.offering.gratuito &&
+                      !draft.offering.selectedPlanId &&
+                      !draft.offering.valorLivre)
                   }
                   className="w-full h-12 text-[1.05rem] font-bold rounded-full"
                 >

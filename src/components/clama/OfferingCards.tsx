@@ -9,12 +9,16 @@ export type CanalEntrega = "EMAIL" | "WHATSAPP";
 export interface OfferingState {
   selectedPlanId: string | null;
   valorLivre: number | null; // em centavos
+  gratuito: boolean;
 }
 
 interface OfferingCardsProps {
   planos: Plan[];
   selectedPlanId: string | null;
   valorLivre: number | null;
+  gratuito: boolean;
+  /** Exibe o card "Gratuito". Default: false. */
+  allowGratuito?: boolean;
   onChange: (state: OfferingState) => void;
   /** "light" (default) = LP; "dark" = variante /conta. */
   theme?: "light" | "dark";
@@ -26,6 +30,8 @@ export function OfferingCards({
   planos,
   selectedPlanId,
   valorLivre,
+  gratuito,
+  allowGratuito = false,
   onChange,
   theme = "light",
 }: OfferingCardsProps) {
@@ -42,13 +48,24 @@ export function OfferingCards({
     valorLivre ? String(valorLivre / 100) : ""
   );
   const [valorLivreError, setValorLivreError] = useState<string | null>(null);
-  const isValorLivreSelected = selectedPlanId === null && valorLivre !== null;
+  const isValorLivreSelected =
+    !gratuito && selectedPlanId === null && valorLivre !== null;
 
   const handlePlanSelect = (planId: string) => {
     setValorLivreError(null);
     onChange({
       selectedPlanId: planId,
       valorLivre: null,
+      gratuito: false,
+    });
+  };
+
+  const handleGratuitoClick = () => {
+    setValorLivreError(null);
+    onChange({
+      selectedPlanId: null,
+      valorLivre: null,
+      gratuito: true,
     });
   };
 
@@ -56,6 +73,7 @@ export function OfferingCards({
     onChange({
       selectedPlanId: null,
       valorLivre: valorLivre ?? reaisToInt(VALOR_MINIMO_REAIS),
+      gratuito: false,
     });
     if (!valorLivreInput) {
       setValorLivreInput(String(VALOR_MINIMO_REAIS));
@@ -71,12 +89,14 @@ export function OfferingCards({
       onChange({
         selectedPlanId: null,
         valorLivre: null,
+        gratuito: false,
       });
     } else {
       setValorLivreError(null);
       onChange({
         selectedPlanId: null,
         valorLivre: reaisToInt(numValue),
+        gratuito: false,
       });
     }
   };
@@ -137,6 +157,30 @@ export function OfferingCards({
             </button>
           );
         })}
+
+        {/* Card Gratuito */}
+        {allowGratuito && (
+          <button
+            type="button"
+            role="radio"
+            aria-checked={gratuito}
+            onClick={handleGratuitoClick}
+            className={cn(
+              "relative rounded-[14px] py-[1.1rem] px-3 text-center transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-clama-gold",
+              gratuito ? cardSelected : cardIdle,
+            )}
+          >
+            <div className={cn("text-base font-bold", valorTexto)}>Gratuito</div>
+            <div
+              className={cn(
+                "font-sans text-[0.75rem] mt-1 leading-snug",
+                subTexto,
+              )}
+            >
+              Receba sua oração sem custo
+            </div>
+          </button>
+        )}
 
         {/* Card Valor Livre */}
         <button

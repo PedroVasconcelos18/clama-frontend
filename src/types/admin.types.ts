@@ -13,6 +13,7 @@ export interface AdminPedido {
   }
   valor_centavos: number
   valor_reais_str: string
+  eh_gratuito: boolean
   status: string
   canal_entrega: "email" | "whatsapp"
   oracao_gerada: string | null
