@@ -3,6 +3,12 @@ import type { Config } from "vike/types"
 
 export default {
   extends: vikeReact,
+  // Favicon global: o vike-react NÃO herda o <link rel="icon"> do index.html
+  // nas páginas que ele renderiza (blog, spa-fallback shell) — só emite a tag
+  // de favicon quando a config `favicon` está setada. Sem isto, o ícone da aba
+  // some nessas páginas. Definir aqui no config raiz faz todas as páginas Vike
+  // herdarem o mesmo favicon do Clama.
+  favicon: "/favicon.svg",
   // Deploy estático puro (sem adapter/SSR): prerender opt-in por página
   // (blog = prerender:true → SSG; spa-fallback ssr:false + prerender:true +
   // +onBeforePrerenderStart → emite dist/client/index.html shell). O Vercel
