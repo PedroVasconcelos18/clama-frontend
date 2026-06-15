@@ -9,6 +9,12 @@ export default {
   // some nessas páginas. Definir aqui no config raiz faz todas as páginas Vike
   // herdarem o mesmo favicon do Clama.
   favicon: "/favicon.svg",
+  // Título padrão da aba: como o app é SPA (React Router) e não seta
+  // document.title em runtime, sem um title aqui o shell prerenderizado sai
+  // sem <title> e o navegador mostra a URL (ex.: "clama.me/confirmacao") na
+  // aba. Definir no config raiz garante "Clama" como título padrão em todas
+  // as páginas Vike; páginas específicas (ex.: blog) podem sobrescrever.
+  title: "Clama | O Clamor que Nasce do Coração do Povo",
   // Deploy estático puro (sem adapter/SSR): prerender opt-in por página
   // (blog = prerender:true → SSG; spa-fallback ssr:false + prerender:true +
   // +onBeforePrerenderStart → emite dist/client/index.html shell). O Vercel
