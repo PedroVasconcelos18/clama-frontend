@@ -113,7 +113,7 @@ export const PedidoSectionGratuito = forwardRef<
               <h2
                 className={`font-serif text-[1.6rem] md:text-[1.9rem] leading-tight mb-3 ${isDark ? "text-clama-cream" : "text-clama-night"}`}
               >
-                Sua primeira oração — por nossa conta
+                Sua primeira oração
               </h2>
               <p
                 className={`font-sans text-[0.95rem] leading-relaxed ${isDark ? "text-clama-cream/55" : "text-[#666]"}`}
