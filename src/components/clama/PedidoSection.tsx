@@ -247,13 +247,14 @@ export const PedidoSection = forwardRef<HTMLElement, PedidoSectionProps>(
         showToast: false,
       });
 
-      const { checkout_url } = await customerFetch<{ checkout_url: string }>(
-        `/api/pedidos/${id}/checkout/`,
-        { method: "POST", showToast: false },
-      );
+      // Gera o Pix (o backend cria o pagamento e salva o QR no pedido). O QR
+      // em si é exibido na tela de confirmação, que busca via /pedidos/{id}/.
+      await customerFetch(`/api/pedidos/${id}/checkout/`, {
+        method: "POST",
+        showToast: false,
+      });
 
       clearDraft();
-      window.open(checkout_url, "_blank", "noopener,noreferrer");
       window.location.href = `/confirmacao?pedido_id=${id}`;
     } catch (err) {
       const error = err as PastoralApiError;

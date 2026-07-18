@@ -20,7 +20,8 @@ import PastoralAlert from "@/components/utility/PastoralAlert";
 import LoadingSpinner from "@/components/utility/LoadingSpinner";
 
 const POLL_INTERVAL_MS = 5000;
-const MAX_POLL_ATTEMPTS = 24;
+// ~15 min: enquanto aguarda o pagamento Pix, seguimos consultando o status.
+const MAX_POLL_ATTEMPTS = 180;
 
 interface StatusInfo {
   title: string;
@@ -40,9 +41,9 @@ function getStatusMessage(
   switch (status) {
     case "aguardando_pagamento":
       return {
-        title: "Processando pagamento...",
+        title: "Quase lá — pague com Pix",
         message:
-          "Estamos aguardando a confirmação do seu pagamento. Isso pode levar alguns segundos.",
+          "Escaneie o QR code ou copie o código Pix abaixo. Assim que o pagamento cair, sua oração começa a ser preparada — esta tela atualiza sozinha.",
         isComplete: false,
         isError: false,
         isWaiting: false,
@@ -100,8 +101,23 @@ export default function Confirmacao() {
   const [canal, setCanal] = useState<string>("email");
   const [pastoralMessage, setPastoralMessage] = useState<string | null>(null);
   const [oracaoGerada, setOracaoGerada] = useState<string>("");
+  const [pixQrCode, setPixQrCode] = useState<string | null>(null);
+  const [pixQrCodeBase64, setPixQrCodeBase64] = useState<string | null>(null);
+  const [pixCopiado, setPixCopiado] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const copiarPix = async () => {
+    if (!pixQrCode) return;
+    try {
+      await navigator.clipboard.writeText(pixQrCode);
+      setPixCopiado(true);
+      window.setTimeout(() => setPixCopiado(false), 2500);
+    } catch {
+      // Clipboard indisponível (http/permite): silencioso — o usuário ainda
+      // pode selecionar o código manualmente.
+    }
+  };
 
   const attemptsRef = useRef(0);
   const intervalRef = useRef<number | null>(null);
@@ -120,6 +136,8 @@ export default function Confirmacao() {
         setCanal(data.canal_entrega);
         setPastoralMessage(data.pastoral_message ?? null);
         setOracaoGerada(data.oracao_gerada ?? "");
+        setPixQrCode(data.pix_qr_code ?? null);
+        setPixQrCodeBase64(data.pix_qr_code_base64 ?? null);
         setIsLoading(false);
 
         // Stop polling when in terminal states
@@ -214,6 +232,38 @@ export default function Confirmacao() {
                   </>
                 )}
               </p>
+            )}
+
+            {/* Pix — QR + copia-e-cola enquanto aguardando o pagamento */}
+            {status === "aguardando_pagamento" && pixQrCode && (
+              <div className="border-[1.5px] border-clama-gold/50 rounded-xl p-6 bg-[#fffbee] mb-8">
+                {pixQrCodeBase64 && (
+                  <img
+                    src={`data:image/png;base64,${pixQrCodeBase64}`}
+                    alt="QR code Pix para pagamento"
+                    className="w-52 h-52 mx-auto mb-4 rounded-lg bg-white p-2"
+                  />
+                )}
+                <p className="font-sans text-[#666] text-[0.8rem] mb-2">
+                  Ou copie o código Pix (copia e cola):
+                </p>
+                <div className="flex items-stretch gap-2">
+                  <code className="flex-1 min-w-0 truncate text-left font-mono text-[0.75rem] text-clama-night bg-white border border-[#e0d8f0] rounded-lg px-3 py-2">
+                    {pixQrCode}
+                  </code>
+                  <button
+                    type="button"
+                    onClick={copiarPix}
+                    className="shrink-0 bg-clama-night text-white text-[0.8rem] font-semibold font-sans rounded-lg px-4 hover:bg-clama-night/90 transition-colors"
+                  >
+                    {pixCopiado ? "Copiado!" : "Copiar"}
+                  </button>
+                </div>
+                <p className="font-sans text-[#aaa] text-[0.72rem] mt-3">
+                  Pague no app do seu banco. A confirmação é automática — esta
+                  tela avança sozinha.
+                </p>
+              </div>
             )}
 
             {/* Compartilhar no WhatsApp (logo após o aviso, antes da oração) */}
