@@ -32,7 +32,7 @@ import type { CustomerPedido } from "@/types/pedido-customer.types"
  * expandida em forma devocional.
  *
  * Ações contextuais do mockup que dependem de backend inexistente no subset
- * seguro do customer (Finalizar pagamento → asaas_invoice_url não exposto por
+ * seguro do customer (Finalizar pagamento → provider_checkout_url não exposto por
  * segurança; Reenviar e-mail / Tentar novamente → sem endpoint customer) são
  * substituídas pela NOTA explicativa do próprio mockup. "Compartilhar" no
  * expandido reusa `buildWhatsAppShareUrl` (lógica de share de oração existente).

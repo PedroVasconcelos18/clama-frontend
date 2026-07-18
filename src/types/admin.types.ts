@@ -17,8 +17,8 @@ export interface AdminPedido {
   status: string
   canal_entrega: "email" | "whatsapp"
   oracao_gerada: string | null
-  asaas_charge_id: string | null
-  asaas_invoice_url: string | null
+  provider_payment_id: string | null
+  provider_checkout_url: string | null
   retry_count: number
   last_error: string | null
   whatsapp_message_id: string | null

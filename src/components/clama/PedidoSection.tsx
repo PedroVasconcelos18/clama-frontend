@@ -34,13 +34,18 @@ interface FormDraftState {
 
 const INITIAL_DRAFT: FormDraftState = {
   formData: {},
-  offering: { selectedPlanId: null, valorLivre: null, gratuito: false },
+  offering: {
+    selectedPlanId: null,
+    valorLivre: null,
+    valorLivreActive: false,
+    gratuito: false,
+  },
   canal: "EMAIL",
 };
 
 // Valor livre pré-selecionado por padrão (deve casar com o mínimo do
 // OfferingCards / da API).
-const VALOR_LIVRE_PADRAO_REAIS = 5.99;
+const VALOR_LIVRE_PADRAO_REAIS = 1;
 
 export interface PedidoSectionProps {
   /**
@@ -87,6 +92,19 @@ export const PedidoSection = forwardRef<HTMLElement, PedidoSectionProps>(
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  // Só vira true ao clicar no botão de enviar — usado pra exibir o aviso do
+  // valor livre no submit (nunca durante a digitação).
+  const [attemptedSubmit, setAttemptedSubmit] = useState(false);
+
+  // Normaliza o modo "Livre" (rascunhos antigos podem não ter o campo, mas
+  // têm valorLivre setado).
+  const valorLivreActive =
+    draft.offering.valorLivreActive ?? draft.offering.valorLivre != null;
+  // Aviso do valor livre: apenas após tentar submeter e sem valor válido.
+  const valorLivreError =
+    attemptedSubmit && valorLivreActive && !draft.offering.valorLivre
+      ? "O valor mínimo é R$ 1,00."
+      : null;
 
   useEffect(() => {
     const loadPlanos = async () => {
@@ -110,17 +128,19 @@ export const PedidoSection = forwardRef<HTMLElement, PedidoSectionProps>(
               offering: {
                 selectedPlanId: null,
                 valorLivre: null,
+                valorLivreActive: false,
                 gratuito: true,
               },
             }));
           } else {
-            // Anônimo: card "Livre" pré-selecionado em R$ 5,99 (sem
+            // Anônimo: card "Livre" pré-selecionado em R$ 1,00 (sem
             // destacar nenhum plano).
             setDraft((prev) => ({
               ...prev,
               offering: {
                 selectedPlanId: null,
                 valorLivre: reaisToInt(VALOR_LIVRE_PADRAO_REAIS),
+                valorLivreActive: true,
                 gratuito: false,
               },
             }));
@@ -138,6 +158,9 @@ export const PedidoSection = forwardRef<HTMLElement, PedidoSectionProps>(
   }, []);
 
   const handleOfferingChange = (offering: OfferingState) => {
+    // Interagiu com a oferta → limpa o aviso de submit (reaparece só no
+    // próximo clique do botão, se ainda inválido).
+    setAttemptedSubmit(false);
     setDraft((prev) => ({ ...prev, offering }));
   };
 
@@ -151,6 +174,15 @@ export const PedidoSection = forwardRef<HTMLElement, PedidoSectionProps>(
     // Paywall: anônimos vão pra /login antes de criar pedido pago
     if (!isAuthenticated) {
       navigate("/login?next=/#pedido");
+      return;
+    }
+
+    // A partir daqui é um clique real no botão: libera o aviso do valor livre.
+    setAttemptedSubmit(true);
+
+    // Modo "Livre" sem valor válido: bloqueia e deixa o aviso aparecer no
+    // campo (via `valorLivreError`), sem mensagem genérica no topo.
+    if (valorLivreActive && !draft.offering.valorLivre) {
       return;
     }
 
@@ -335,9 +367,11 @@ export const PedidoSection = forwardRef<HTMLElement, PedidoSectionProps>(
                 planos={planos}
                 selectedPlanId={draft.offering.selectedPlanId}
                 valorLivre={draft.offering.valorLivre}
+                valorLivreActive={valorLivreActive}
                 gratuito={draft.offering.gratuito}
                 allowGratuito={isAuthenticated}
                 onChange={handleOfferingChange}
+                valorLivreError={valorLivreError}
                 theme={theme}
               />
             </section>
@@ -353,7 +387,7 @@ export const PedidoSection = forwardRef<HTMLElement, PedidoSectionProps>(
                     isSubmitting ||
                     (!draft.offering.gratuito &&
                       !draft.offering.selectedPlanId &&
-                      !draft.offering.valorLivre)
+                      !valorLivreActive)
                   }
                   className="w-full h-12 text-[1.05rem] font-bold rounded-full"
                 >

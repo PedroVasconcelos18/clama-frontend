@@ -221,12 +221,12 @@ export function PedidoDetailDrawer({ pedidoId, onClose }: PedidoDetailDrawerProp
               <section>
                 <h3 className="text-sm font-medium text-clama-gold mb-3">Pagamento</h3>
                 <div className="space-y-2 text-sm">
-                  <Row label="Asaas ID" value={pedido.asaas_charge_id || "N/A"} />
-                  {pedido.asaas_invoice_url && (
+                  <Row label="ID do pagamento" value={pedido.provider_payment_id || "N/A"} />
+                  {pedido.provider_checkout_url && (
                     <div className="flex items-center justify-between py-1">
-                      <span className="text-clama-cream/60">Fatura</span>
+                      <span className="text-clama-cream/60">Checkout</span>
                       <a
-                        href={pedido.asaas_invoice_url}
+                        href={pedido.provider_checkout_url}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-clama-gold hover:underline flex items-center gap-1"
