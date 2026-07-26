@@ -111,6 +111,17 @@ export interface AdminPlano {
   updated_at: string
 }
 
+export interface AdminInstituicao {
+  id: string
+  nome: string
+  /** data-URI da logo (preview); "" quando não há logo. */
+  logo: string
+  ativo: boolean
+  ordem: number
+  created_at: string
+  updated_at: string
+}
+
 export interface AdminPromptTemplate {
   id: string
   nome: string

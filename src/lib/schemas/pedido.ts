@@ -52,6 +52,13 @@ const baseSchema = {
     .refine((v) => v === true, {
       message: "Para enviar seu pedido, é preciso concordar com a política de privacidade.",
     }),
+  // Instituição parceira para repasse — opcional. UUID da instituição ativa
+  // (mesmo nome de campo do backend), `null`/ausente quando não direcionada.
+  instituicao: z
+    .string()
+    .uuid("Instituição inválida.")
+    .nullable()
+    .optional(),
 };
 
 export const pedidoSchema = z.object({

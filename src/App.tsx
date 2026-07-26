@@ -23,6 +23,7 @@ import DashboardPage from "@/pages/admin/DashboardPage"
 import PedidosListPage from "@/pages/admin/PedidosListPage"
 import CustomersListPage from "@/pages/admin/CustomersListPage"
 import PlanosPage from "@/pages/admin/PlanosPage"
+import InstituicoesPage from "@/pages/admin/InstituicoesPage"
 import PromptEditorPage from "@/pages/admin/PromptEditorPage"
 import DocumentosPage from "@/pages/admin/DocumentosPage"
 
@@ -79,6 +80,7 @@ export default function App() {
             <Route path="pedidos" element={<PedidosListPage />} />
             <Route path="customers" element={<CustomersListPage />} />
             <Route path="planos" element={<PlanosPage />} />
+            <Route path="instituicoes" element={<InstituicoesPage />} />
             <Route path="prompts" element={<PromptEditorPage />} />
             <Route path="documentos" element={<DocumentosPage />} />
             <Route

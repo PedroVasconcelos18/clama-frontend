@@ -6,7 +6,7 @@ import { StepsSection } from "@/components/clama/StepsSection";
 import { PillarsSection } from "@/components/clama/PillarsSection";
 // import { TestimonialsSection } from "@/components/clama/TestimonialsSection";
 import { FinalCtaSection } from "@/components/clama/FinalCtaSection";
-import { PedidoSectionGratuito } from "@/components/clama/PedidoSectionGratuito";
+import { PedidoSection } from "@/components/clama/PedidoSection";
 import { Footer } from "@/components/clama/Footer";
 import { useScrollToPedido } from "@/hooks/useScrollToPedido";
 import { useIsInView } from "@/hooks/useIsInView";
@@ -52,11 +52,10 @@ export default function Landing() {
 
         <FinalCtaSection />
 
-        {/* Form gratuito embutido só para anônimos. Autenticado nunca
-            cai no fluxo freemium aqui — vai pra /conta?tab=novo via CTAs. */}
-        {!isAuthenticated && (
-          <PedidoSectionGratuito ref={pedidoRef} theme="dark" />
-        )}
+        {/* Seção única de pedido embutida só para deslogados (Gratuito ou Valor
+            livre, com o mesmo componente do /conta). Autenticado nunca cai aqui
+            — vai pra /conta?tab=novo via CTAs. */}
+        {!isAuthenticated && <PedidoSection ref={pedidoRef} theme="dark" />}
       </main>
 
       <Footer />

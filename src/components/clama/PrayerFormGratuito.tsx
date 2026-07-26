@@ -42,12 +42,20 @@ interface PrayerFormGratuitoProps {
   isSubmitting?: boolean;
   /** "light" (default) = visual original; "dark" = tema da LP redesenhada. */
   theme?: "light" | "dark";
+  /** Rótulo do botão de envio. Default cobre o fluxo gratuito; o fluxo de
+   *  doação paga passa um rótulo próprio. */
+  submitLabel?: string;
+  /** Quando false, oculta o botão interno — o pai renderiza um botão externo
+   *  (`<button form="prayer-form-gratuito">`) depois de outras seções. */
+  showSubmitButton?: boolean;
 }
 
 export function PrayerFormGratuito({
   onSubmit,
   isSubmitting = false,
   theme = "light",
+  submitLabel = "Receber minha oração gratuita",
+  showSubmitButton = true,
 }: PrayerFormGratuitoProps) {
   const isDark = theme === "dark";
   const schema = useMemo(() => pedidoGratuitoSchema, []);
@@ -456,32 +464,34 @@ export function PrayerFormGratuito({
           </div>
         )}
 
-        {/* Submit */}
-        <div className="mt-8">
-          <Button
-            type="submit"
-            variant="gold"
-            size="lg"
-            disabled={isSubmitting}
-            className="w-full h-12 text-[1.05rem] font-bold rounded-full"
-          >
-            {isSubmitting ? (
-              <>
-                <LoadingSpinner size={20} className="mr-2" />
-                Enviando...
-              </>
-            ) : (
-              "Receber minha oração gratuita"
-            )}
-          </Button>
-          <p
-            className={`font-sans text-[0.75rem] text-center leading-relaxed mt-4 ${isDark ? "text-clama-cream/45" : "text-[#aaa]"}`}
-          >
-            Após enviar, vamos te mandar um e-mail pra confirmar.
-            <br />
-            Seus dados são tratados com sigilo e respeito.
-          </p>
-        </div>
+        {/* Submit (interno) — ocultável quando o pai usa um botão externo. */}
+        {showSubmitButton && (
+          <div className="mt-8">
+            <Button
+              type="submit"
+              variant="gold"
+              size="lg"
+              disabled={isSubmitting}
+              className="w-full h-12 text-[1.05rem] font-bold rounded-full"
+            >
+              {isSubmitting ? (
+                <>
+                  <LoadingSpinner size={20} className="mr-2" />
+                  Enviando...
+                </>
+              ) : (
+                submitLabel
+              )}
+            </Button>
+            <p
+              className={`font-sans text-[0.75rem] text-center leading-relaxed mt-4 ${isDark ? "text-clama-cream/45" : "text-[#aaa]"}`}
+            >
+              Após enviar, vamos te mandar um e-mail pra confirmar.
+              <br />
+              Seus dados são tratados com sigilo e respeito.
+            </p>
+          </div>
+        )}
       </form>
     </Form>
   );

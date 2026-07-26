@@ -144,7 +144,7 @@ export const PedidoSectionGratuito = forwardRef<
 
 PedidoSectionGratuito.displayName = "PedidoSectionGratuito";
 
-function SubmittedView({
+export function SubmittedView({
   email,
   isDark,
 }: {
