@@ -6,7 +6,7 @@
  * uses customer refresh endpoint.
  *
  * Features:
- * - Automatic JWT injection via Authorization header
+ * - Autenticação por cookie HttpOnly (ADR-01) — sem header Authorization
  * - Transparent token refresh on 401
  * - Auto-logout if refresh fails
  * - Automatic error toast display (opt-out with showToast: false)
@@ -61,29 +61,32 @@ interface CustomerFetchOptions extends RequestInit {
 }
 
 export function useCustomerApi() {
-  const { accessToken, refreshAccessToken, logout } = useCustomerAuth()
+  const { refreshAccessToken, logout } = useCustomerAuth()
   // Shared in-flight refresh promise: concurrent 401s await the same refresh
   // and each retries with the resulting token. Avoids the boolean-flag race
   // where parallel callers would see "another refresh is happening" and skip
   // their retry entirely.
-  const refreshInFlight = useRef<Promise<string | null> | null>(null)
+  const refreshInFlight = useRef<Promise<boolean> | null>(null)
 
   const customerFetch = useCallback(
     async <T>(path: string, init?: CustomerFetchOptions): Promise<T> => {
       const { showToast = true, ...fetchInit } = init ?? {}
 
-      const doFetch = async (token: string | null): Promise<Response> => {
+      const doFetch = async (): Promise<Response> => {
         const isFormData = fetchInit?.body instanceof FormData
         const headers: HeadersInit = {
           Accept: "application/json",
           "Accept-Language": getLocale(),
           ...(fetchInit?.body && !isFormData ? { "Content-Type": "application/json" } : {}),
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
           ...fetchInit?.headers,
         }
 
         try {
-          return await fetch(`${BASE_URL}${path}`, { ...fetchInit, headers })
+          return await fetch(`${BASE_URL}${path}`, {
+            ...fetchInit,
+            headers,
+            credentials: "include",
+          })
         } catch {
           const error = new PastoralApiError(
             "Sem conexão",
@@ -97,7 +100,7 @@ export function useCustomerApi() {
       }
 
       // First attempt with current token
-      let response = await doFetch(accessToken)
+      let response = await doFetch()
 
       // On 401, refresh once (shared promise) and retry. Concurrent callers
       // await the same in-flight refresh, then each retries with the fresh token.
@@ -107,9 +110,9 @@ export function useCustomerApi() {
             refreshInFlight.current = null
           })
         }
-        const newToken = await refreshInFlight.current
-        if (newToken) {
-          response = await doFetch(newToken)
+        const renovou = await refreshInFlight.current
+        if (renovou) {
+          response = await doFetch()
         } else {
           // refreshAccessToken already cleared local auth on 401-blacklisted.
           // Make sure storage/state are clean and route the user to /login.
@@ -156,7 +159,7 @@ export function useCustomerApi() {
 
       return response.json() as Promise<T>
     },
-    [accessToken, refreshAccessToken, logout]
+    [refreshAccessToken, logout]
   )
 
   return { customerFetch }

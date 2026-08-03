@@ -26,7 +26,7 @@ export type UsePostCommentsResult = {
 async function fetchComments(slug: string): Promise<PaginatedComentarios> {
   const response = await fetch(
     `${API_URL}/api/blog/posts/${encodeURIComponent(slug)}/comments/`,
-    { headers: { Accept: "application/json" } },
+    { headers: { Accept: "application/json" }, credentials: "include" },
   )
   if (!response.ok) {
     throw new Error(`HTTP ${response.status}`)

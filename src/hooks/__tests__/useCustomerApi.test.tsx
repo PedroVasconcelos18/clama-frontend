@@ -77,31 +77,31 @@ describe("useCustomerApi", () => {
 
     let refreshCount = 0
 
+    // ADR-01: o cliente não vê token nenhum — o cookie é enviado pelo
+    // navegador. Simulamos o servidor por ESTADO: antes do refresh a sessão
+    // está expirada (401); depois, válida (200).
+    let sessaoRenovada = false
+
     const fetchMock = vi.fn(async (input: RequestInfo, init?: RequestInit) => {
       const url = typeof input === "string" ? input : (input as Request).url
-      const auth = String((init?.headers as Record<string, string>)?.Authorization ?? "")
+      expect(init?.credentials).toBe("include")
 
       if (url.includes("/api/customer/auth/refresh/")) {
         refreshCount += 1
-        return new Response(
-          JSON.stringify({ access: "access-new" }),
-          { status: 200, headers: { "Content-Type": "application/json" } },
-        )
+        sessaoRenovada = true
+        return new Response(null, { status: 200 })
       }
 
       if (url.includes("/api/protected/foo/")) {
-        if (auth === "Bearer access-old") {
-          return new Response(
-            JSON.stringify({ detail: "Unauthorized" }),
-            { status: 401, headers: { "Content-Type": "application/json" } },
-          )
-        }
-        if (auth === "Bearer access-new") {
-          return new Response(
-            JSON.stringify({ ok: true }),
-            { status: 200, headers: { "Content-Type": "application/json" } },
-          )
-        }
+        return sessaoRenovada
+          ? new Response(JSON.stringify({ ok: true }), {
+              status: 200,
+              headers: { "Content-Type": "application/json" },
+            })
+          : new Response(JSON.stringify({ detail: "Unauthorized" }), {
+              status: 401,
+              headers: { "Content-Type": "application/json" },
+            })
       }
 
       return new Response(null, { status: 404 })

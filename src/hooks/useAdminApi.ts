@@ -5,7 +5,7 @@
  * for API calls. Never use raw apiFetch for admin endpoints.
  *
  * Features:
- * - Automatic JWT injection via Authorization header
+ * - Autenticação por cookie HttpOnly (ADR-01) — sem header Authorization
  * - Transparent token refresh on 401
  * - Auto-logout if refresh fails
  * - Automatic error toast display (opt-out with showToast: false)
@@ -84,19 +84,22 @@ export function useAdminApi() {
     async <T>(path: string, init?: AdminFetchOptions): Promise<T> => {
       const { showToast = true, ...fetchInit } = init ?? {}
 
-      const doFetch = async (token: string | null): Promise<Response> => {
+      const doFetch = async (): Promise<Response> => {
         // Não adiciona Content-Type para FormData (browser define automaticamente com boundary)
         const isFormData = fetchInit?.body instanceof FormData
         const headers: HeadersInit = {
           Accept: "application/json",
           "Accept-Language": getLocale(),
           ...(fetchInit?.body && !isFormData ? { "Content-Type": "application/json" } : {}),
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
           ...fetchInit?.headers,
         }
 
         try {
-          return await fetch(`${BASE_URL}${path}`, { ...fetchInit, headers })
+          return await fetch(`${BASE_URL}${path}`, {
+            ...fetchInit,
+            headers,
+            credentials: "include",
+          })
         } catch {
           const error = new PastoralApiError(
             "Sem conexão",
@@ -110,7 +113,7 @@ export function useAdminApi() {
       }
 
       // First attempt with current token
-      let response = await doFetch(accessToken)
+      let response = await doFetch()
 
       // On 401, try to refresh token and retry once
       if (response.status === 401 && !isRefreshing.current) {
@@ -118,7 +121,7 @@ export function useAdminApi() {
         try {
           const newToken = await refreshAccessToken()
           if (newToken) {
-            response = await doFetch(newToken)
+            response = await doFetch()
           } else {
             // Refresh failed, redirect to login
             logout()

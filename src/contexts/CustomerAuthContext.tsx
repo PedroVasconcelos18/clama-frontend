@@ -17,8 +17,6 @@ export interface CustomerUser {
 
 interface CustomerAuthState {
   user: CustomerUser | null
-  accessToken: string | null
-  refreshToken: string | null
 }
 
 interface LoginResponse {
@@ -27,19 +25,14 @@ interface LoginResponse {
   user: CustomerUser
 }
 
-interface RefreshResponse {
-  access: string
-}
-
 interface CustomerAuthContextValue {
   user: CustomerUser | null
-  accessToken: string | null
-  refreshToken: string | null
   isAuthenticated: boolean
   isLoading: boolean
   login: (email: string, password: string) => Promise<CustomerUser>
   logout: () => Promise<void>
-  refreshAccessToken: () => Promise<string | null>
+  /** Renova a sessão via cookie. `true` se renovou. */
+  refreshAccessToken: () => Promise<boolean>
   setUser: (user: CustomerUser) => void
 }
 
@@ -49,8 +42,6 @@ const CustomerAuthContext = createContext<CustomerAuthContextValue | null>(null)
 
 const EMPTY_AUTH: CustomerAuthState = {
   user: null,
-  accessToken: null,
-  refreshToken: null,
 }
 
 /**
@@ -62,9 +53,9 @@ function isValidAuthState(value: unknown): value is CustomerAuthState {
   if (!value || typeof value !== "object") return false
   const obj = value as Record<string, unknown>
 
-  if (typeof obj.accessToken !== "string" || obj.accessToken.length === 0) return false
-  if (typeof obj.refreshToken !== "string" || obj.refreshToken.length === 0) return false
-
+  // ADR-01: os tokens vivem em cookie HttpOnly e nunca chegam ao JavaScript.
+  // O storage guarda apenas o `user`, que é o que sustenta `isAuthenticated`
+  // e os guards de rota — dado não sensível, e evita um /me a cada boot.
   const user = obj.user
   if (!user || typeof user !== "object") return false
   const u = user as Record<string, unknown>
@@ -136,8 +127,6 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
 
     const newState: CustomerAuthState = {
       user: data.user,
-      accessToken: data.access,
-      refreshToken: data.refresh,
     }
     setAuthState(newState)
     saveAuthToStorage(newState)
@@ -145,15 +134,13 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const logout = useCallback(async () => {
-    const refresh = authState.refreshToken
-    const access = authState.accessToken
-    // Always clear locally — idempotent UX
+    // Sempre limpa localmente primeiro — UX idempotente.
     setAuthState(EMPTY_AUTH)
     clearAuthFromStorage()
 
-    if (refresh && access) {
+    {
       try {
-        await logoutRequest(refresh, access)
+        await logoutRequest()
       } catch (err) {
         // Backend é idempotente em 205 mesmo pra refresh já blacklisted.
         // Aqui só caímos em 4xx/5xx genuínos ou erro de rede. Logamos e
@@ -167,40 +154,34 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
         }
       }
     }
-  }, [authState.refreshToken, authState.accessToken])
+  }, [])
 
-  const refreshAccessToken = useCallback(async (): Promise<string | null> => {
-    if (!authState.refreshToken) {
-      // Sem refreshToken: pode ser auth nunca existiu OU state ainda não
+  const refreshAccessToken = useCallback(async (): Promise<boolean> => {
+    if (!authState.user) {
+      // Sem `user`: ou a sessão nunca existiu, ou o state ainda não
       // hidratou do storage. NÃO limpamos storage aqui — clearAuthFromStorage()
       // chamado pré-hidratação apagaria tokens válidos esperando carregamento.
       // O save effect também não roda (authState.user é null), então noop é
       // seguro: se realmente não há auth, o estado já está coerente.
-      return null
+      return false
     }
 
     try {
-      const data = await apiFetch<RefreshResponse>("/api/customer/auth/refresh/", {
+      // ADR-01: o refresh vem do cookie; corpo vazio. A resposta reemite os
+      // cookies — nada de token trafega pelo JavaScript.
+      await apiFetch("/api/customer/auth/refresh/", {
         method: "POST",
-        body: JSON.stringify({ refresh: authState.refreshToken }),
         showToast: false,
       })
-
-      const newState: CustomerAuthState = {
-        ...authState,
-        accessToken: data.access,
-      }
-      setAuthState(newState)
-      saveAuthToStorage(newState)
-      return data.access
+      return true
     } catch (err) {
       if (err instanceof PastoralApiError && err.httpStatus === 401) {
         setAuthState(EMPTY_AUTH)
         clearAuthFromStorage()
       }
-      return null
+      return false
     }
-  }, [authState])
+  }, [authState.user])
 
   const setUser = useCallback((user: CustomerUser) => {
     setAuthState((prev) => {
@@ -212,8 +193,6 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
 
   const value: CustomerAuthContextValue = {
     user: authState.user,
-    accessToken: authState.accessToken,
-    refreshToken: authState.refreshToken,
     isAuthenticated: !!authState.user,
     isLoading,
     login,

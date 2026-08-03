@@ -112,7 +112,11 @@ export async function apiFetch<T>(
 
   let response: Response
   try {
-    response = await fetch(`${BASE_URL}${path}`, { ...fetchInit, headers })
+    response = await fetch(`${BASE_URL}${path}`, {
+      ...fetchInit,
+      headers,
+      credentials: "include",
+    })
   } catch {
     const error = new PastoralApiError(
       "Sem conexão",

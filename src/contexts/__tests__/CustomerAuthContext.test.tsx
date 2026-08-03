@@ -64,12 +64,12 @@ describe("CustomerAuthContext", () => {
 
     expect(result.current.isAuthenticated).toBe(true)
     expect(result.current.user?.email).toBe("fiel@example.com")
-    expect(result.current.accessToken).toBe("access-1")
 
     const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "{}")
     expect(stored.user.email).toBe("fiel@example.com")
-    expect(stored.accessToken).toBe("access-1")
-    expect(stored.refreshToken).toBe("refresh-1")
+    // ADR-01: token nenhum no storage — vive em cookie HttpOnly.
+    expect(stored.__accessTokenRemovido).toBeUndefined()
+    expect(stored.refreshToken).toBeUndefined()
   })
 
   it("login returns user with force_change_password=true", async () => {
@@ -89,14 +89,10 @@ describe("CustomerAuthContext", () => {
     expect(returned?.force_change_password).toBe(true)
   })
 
-  it("logout calls /logout/ with Bearer + refresh and clears storage", async () => {
+  it("logout chama /logout/ com credentials e limpa o storage", async () => {
     localStorage.setItem(
       STORAGE_KEY,
-      JSON.stringify({
-        user: mockUser,
-        accessToken: "access-1",
-        refreshToken: "refresh-1",
-      }),
+      JSON.stringify({ user: mockUser }),
     )
 
     const fetchMock = vi.fn().mockResolvedValue(
@@ -118,11 +114,11 @@ describe("CustomerAuthContext", () => {
     const init = call[1] as RequestInit
     expect(String(url)).toContain("/api/customer/auth/logout/")
     expect(init.method).toBe("POST")
-    // Critical: Authorization header must be present (P-1F).
-    expect((init.headers as Record<string, string>).Authorization).toBe(
-      "Bearer access-1",
-    )
-    expect(init.body).toBe(JSON.stringify({ refresh: "refresh-1" }))
+    // ADR-01: sem header Authorization e sem refresh no corpo — a credencial
+    // viaja no cookie HttpOnly, que exige `credentials: "include"`.
+    expect((init.headers as Record<string, string>).Authorization).toBeUndefined()
+    expect(init.body).toBeUndefined()
+    expect(init.credentials).toBe("include")
 
     expect(result.current.isAuthenticated).toBe(false)
     expect(result.current.user).toBeNull()
@@ -132,11 +128,7 @@ describe("CustomerAuthContext", () => {
   it("logout clears storage even when server returns 4xx (idempotent UX)", async () => {
     localStorage.setItem(
       STORAGE_KEY,
-      JSON.stringify({
-        user: mockUser,
-        accessToken: "access-1",
-        refreshToken: "refresh-1",
-      }),
+      JSON.stringify({ user: mockUser }),
     )
 
     // Simulate genuine 4xx — backend now returns 205 even on already-blacklisted,
@@ -157,43 +149,36 @@ describe("CustomerAuthContext", () => {
     expect(localStorage.getItem(STORAGE_KEY)).toBeNull()
   })
 
-  it("refreshAccessToken updates access token", async () => {
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify({
-        user: mockUser,
-        accessToken: "access-old",
-        refreshToken: "refresh-1",
-      }),
-    )
+  it("refreshAccessToken renova a sessao sem tocar em token no cliente", async () => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ user: mockUser }))
 
-    vi.spyOn(apiModule, "apiFetch").mockResolvedValue({
-      access: "access-new",
-    })
+    const fetchSpy = vi
+      .spyOn(apiModule, "apiFetch")
+      .mockResolvedValue(undefined as never)
 
     const { result } = renderHook(() => useCustomerAuth(), { wrapper })
-    await waitFor(() => expect(result.current.accessToken).toBe("access-old"))
+    await waitFor(() => expect(result.current.isAuthenticated).toBe(true))
 
-    let newToken: string | null = null
+    let renovou = false
     await act(async () => {
-      newToken = await result.current.refreshAccessToken()
+      renovou = await result.current.refreshAccessToken()
     })
 
-    expect(newToken).toBe("access-new")
-    expect(result.current.accessToken).toBe("access-new")
+    expect(renovou).toBe(true)
+    // ADR-01: chamada sem corpo — o refresh vem do cookie, e a resposta
+    // reemite os cookies. Nenhum token chega ao JavaScript.
+    const [path, init] = fetchSpy.mock.calls[0]!
+    expect(path).toBe("/api/customer/auth/refresh/")
+    expect((init as RequestInit | undefined)?.body).toBeUndefined()
 
     const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "{}")
-    expect(stored.accessToken).toBe("access-new")
+    expect(stored.accessToken).toBeUndefined()
   })
 
   it("refresh failure (401) logs out and clears storage", async () => {
     localStorage.setItem(
       STORAGE_KEY,
-      JSON.stringify({
-        user: mockUser,
-        accessToken: "access-old",
-        refreshToken: "refresh-1",
-      }),
+      JSON.stringify({ user: mockUser }),
     )
 
     vi.spyOn(apiModule, "apiFetch").mockRejectedValue(
@@ -203,12 +188,12 @@ describe("CustomerAuthContext", () => {
     const { result } = renderHook(() => useCustomerAuth(), { wrapper })
     await waitFor(() => expect(result.current.isAuthenticated).toBe(true))
 
-    let newToken: string | null = "should-not-be-this"
+    let renovou = true
     await act(async () => {
-      newToken = await result.current.refreshAccessToken()
+      renovou = await result.current.refreshAccessToken()
     })
 
-    expect(newToken).toBeNull()
+    expect(renovou).toBe(false)
     expect(result.current.isAuthenticated).toBe(false)
     expect(localStorage.getItem(STORAGE_KEY)).toBeNull()
   })
@@ -228,29 +213,23 @@ describe("CustomerAuthContext", () => {
     expect(localStorage.getItem(STORAGE_KEY)).toBeNull()
   })
 
-  it("loadAuthFromStorage rejects missing tokens (P-11)", async () => {
+  it("loadAuthFromStorage aceita storage sem tokens (ADR-01)", async () => {
     localStorage.setItem(
       STORAGE_KEY,
-      JSON.stringify({
-        user: mockUser,
-        accessToken: null,
-        refreshToken: "refresh-1",
-      }),
+      JSON.stringify({ user: mockUser }),
     )
 
+    // Depois do ADR-01 o storage guarda só o `user`; a ausência de token não é
+    // mais motivo de rejeição — é o formato correto.
     const { result } = renderHook(() => useCustomerAuth(), { wrapper })
-    expect(result.current.user).toBeNull()
-    expect(localStorage.getItem(STORAGE_KEY)).toBeNull()
+    await waitFor(() => expect(result.current.isAuthenticated).toBe(true))
+    expect(result.current.user?.email).toBe("fiel@example.com")
   })
 
   it("loadAuthFromStorage accepts valid full state (P-11 happy)", async () => {
     localStorage.setItem(
       STORAGE_KEY,
-      JSON.stringify({
-        user: mockUser,
-        accessToken: "access-1",
-        refreshToken: "refresh-1",
-      }),
+      JSON.stringify({ user: mockUser }),
     )
 
     const { result } = renderHook(() => useCustomerAuth(), { wrapper })

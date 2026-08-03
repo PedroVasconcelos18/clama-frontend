@@ -78,11 +78,11 @@ export async function forgotPassword(
 }
 
 /**
- * Chama `POST /api/customer/auth/logout/` com Bearer + refresh body.
+ * Chama `POST /api/customer/auth/logout/`.
  *
- * Não usa `apiFetch` porque:
- * - precisa injetar Authorization explicitamente (logout exige `IsAuthenticated`)
- * - resposta 205 não tem body → `response.json()` quebraria
+ * ADR-01: a credencial e o refresh vêm dos cookies HttpOnly — nada de token
+ * trafega pelo JavaScript. Não usa `apiFetch` porque a resposta 205 não tem
+ * body e `response.json()` quebraria.
  *
  * Backend é idempotente: retorna 205 tanto pra logout válido quanto pra
  * refresh já blacklisted. Lançamos `LogoutError` apenas em 4xx/5xx genuínos
@@ -98,10 +98,7 @@ export class LogoutError extends Error {
   }
 }
 
-export async function logout(
-  refreshToken: string,
-  accessToken: string,
-): Promise<void> {
+export async function logout(): Promise<void> {
   let response: Response
   try {
     response = await fetch(`${BASE_URL}/api/customer/auth/logout/`, {
@@ -109,10 +106,8 @@ export async function logout(
       headers: {
         Accept: "application/json",
         "Accept-Language": getLocale(),
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${accessToken}`,
       },
-      body: JSON.stringify({ refresh: refreshToken }),
+      credentials: "include",
     })
   } catch (err) {
     throw new LogoutError(
@@ -129,22 +124,19 @@ export async function logout(
   throw new LogoutError(`Logout failed: HTTP ${response.status}`, response.status)
 }
 
-export async function me(accessToken: string): Promise<CustomerUser> {
+export async function me(): Promise<CustomerUser> {
   return apiFetch<CustomerUser>("/api/customer/me/", {
     method: "GET",
-    headers: { Authorization: `Bearer ${accessToken}` },
     showToast: false,
   })
 }
 
 export async function changePassword(
   payload: ChangePasswordPayload,
-  accessToken: string,
 ): Promise<void> {
   await apiFetch("/api/customer/auth/change-password/", {
     method: "POST",
     body: JSON.stringify(payload),
-    headers: { Authorization: `Bearer ${accessToken}` },
     showToast: false,
   })
 }
