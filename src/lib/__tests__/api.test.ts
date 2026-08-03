@@ -5,7 +5,9 @@ describe("apiFetch", () => {
   const originalFetch = globalThis.fetch
 
   beforeEach(() => {
-    vi.stubEnv("VITE_API_URL", "http://localhost:8000")
+    // Base vazia = caminho relativo, resolvido pelo rewrite de `/api/*`
+    // (vercel.json em produção, server.proxy do Vite em dev).
+    vi.stubEnv("VITE_API_URL", "")
   })
 
   afterEach(() => {
@@ -29,7 +31,7 @@ describe("apiFetch", () => {
     expect(result.status).toBe("ok")
     expect(result.version).toBe("0.1.0")
     expect(fetch).toHaveBeenCalledWith(
-      "http://localhost:8000/api/health/",
+      "/api/health/",
       expect.objectContaining({
         headers: expect.objectContaining({ Accept: "application/json" }),
       })

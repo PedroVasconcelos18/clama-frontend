@@ -40,6 +40,15 @@ export default defineConfig(({ mode }) => {
       port: 5173,
       strictPort: false,
       allowedHosts,
+      // Espelha em dev o rewrite de `/api/*` que o vercel.json faz em produção.
+      // Sem isso, com VITE_API_URL vazio o fetch relativo bate no próprio Vite
+      // e recebe o index.html da SPA — falha silenciosa com status 200.
+      proxy: {
+        "/api": {
+          target: env.VITE_DEV_API_PROXY_TARGET || "http://localhost:8000",
+          changeOrigin: true,
+        },
+      },
     },
   }
 })

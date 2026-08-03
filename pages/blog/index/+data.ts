@@ -3,7 +3,10 @@ import type {
   PostPublicListItem,
 } from "@/types/blog.types"
 
-const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8000"
+const API_URL =
+  import.meta.env.VITE_API_URL_SSR ||
+  import.meta.env.VITE_API_URL ||
+  "http://localhost:8000"
 const PAGE_SIZE = 12
 
 export type BlogIndexData = {

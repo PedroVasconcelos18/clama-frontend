@@ -1,6 +1,9 @@
 import type { PaginatedPublicPosts } from "@/types/blog.types"
 
-const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8000"
+const API_URL =
+  import.meta.env.VITE_API_URL_SSR ||
+  import.meta.env.VITE_API_URL ||
+  "http://localhost:8000"
 
 /**
  * Vike chama esta função no início do build pra descobrir quais URLs dinâmicas
