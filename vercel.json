@@ -2,6 +2,10 @@
   "framework": null,
   "buildCommand": "npm run build",
   "outputDirectory": "dist/client",
+
+  "_comentario_trailing_slash": "Story 5.2. O Vike serve saída em estilo diretório (blog/teste/index.html), então hoje /blog/teste e /blog/teste/ ambos resolvem — ambiguidade que vira 301 em toda URL indexada se o formato divergir do WordPress. O WordPress foi configurado com permalink /%postname% SEM barra final e 301a a forma com barra; declarar false aqui alinha as duas camadas antes do cutover, não depois.",
+  "trailingSlash": false,
+
   "rewrites": [
     { "source": "/api/:path*", "destination": "https://api.clama.me/api/:path*" },
     { "source": "/(.*)", "destination": "/index.html" }
