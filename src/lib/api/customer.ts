@@ -14,6 +14,7 @@
 import { apiFetch } from "@/lib/api"
 import { getLocale } from "@/i18n"
 import type { CustomerUser } from "@/contexts/CustomerAuthContext"
+import { csrfHeaders } from "@/lib/csrf"
 
 const BASE_URL = import.meta.env.VITE_API_URL ?? ""
 
@@ -106,6 +107,7 @@ export async function logout(): Promise<void> {
       headers: {
         Accept: "application/json",
         "Accept-Language": getLocale(),
+        ...(await csrfHeaders("POST")),
       },
       credentials: "include",
     })

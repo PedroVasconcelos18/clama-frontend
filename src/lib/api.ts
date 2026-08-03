@@ -5,6 +5,7 @@ import {
   getNetworkError,
   getLocale,
 } from "@/i18n"
+import { csrfHeaders } from "@/lib/csrf"
 
 export class PastoralApiError extends Error {
   code: string
@@ -105,6 +106,8 @@ export async function apiFetch<T>(
 
   const headers: HeadersInit = {
     Accept: "application/json",
+    // Escritas autenticadas por cookie exigem prova de CSRF (ADR-01).
+    ...(await csrfHeaders(fetchInit?.method)),
     "Accept-Language": getLocale(),
     ...(fetchInit?.body ? { "Content-Type": "application/json" } : {}),
     ...fetchInit?.headers,

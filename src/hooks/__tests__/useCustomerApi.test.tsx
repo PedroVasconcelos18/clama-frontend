@@ -86,10 +86,21 @@ describe("useCustomerApi", () => {
       const url = typeof input === "string" ? input : (input as Request).url
       expect(init?.credentials).toBe("include")
 
+      if (url.includes("/api/csrf/")) {
+        return new Response(JSON.stringify({ csrf_token: "tok" }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        })
+      }
+
       if (url.includes("/api/customer/auth/refresh/")) {
         refreshCount += 1
         sessaoRenovada = true
-        return new Response(null, { status: 200 })
+        // O backend responde 200 com corpo vazio — os tokens saem em cookies.
+        return new Response(JSON.stringify({}), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        })
       }
 
       if (url.includes("/api/protected/foo/")) {
@@ -135,6 +146,13 @@ describe("useCustomerApi", () => {
 
     const fetchMock = vi.fn(async (input: RequestInfo) => {
       const url = typeof input === "string" ? input : (input as Request).url
+
+      if (url.includes("/api/csrf/")) {
+        return new Response(JSON.stringify({ csrf_token: "tok" }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        })
+      }
 
       if (url.includes("/api/customer/auth/refresh/")) {
         // Refresh blacklisted → 401 from backend

@@ -23,6 +23,7 @@ import {
   getSessionExpiredError,
   getLocale,
 } from "@/i18n"
+import { csrfHeaders } from "@/lib/csrf"
 
 const BASE_URL = import.meta.env.VITE_API_URL ?? ""
 
@@ -76,6 +77,10 @@ export function useCustomerApi() {
         const isFormData = fetchInit?.body instanceof FormData
         const headers: HeadersInit = {
           Accept: "application/json",
+          // Escritas autenticadas por cookie exigem prova de CSRF (ADR-01).
+          // Fica ANTES do spread de fetchInit.headers para o chamador poder
+          // sobrescrever, e vale também no caminho de FormData.
+          ...(await csrfHeaders(fetchInit?.method)),
           "Accept-Language": getLocale(),
           ...(fetchInit?.body && !isFormData ? { "Content-Type": "application/json" } : {}),
           ...fetchInit?.headers,

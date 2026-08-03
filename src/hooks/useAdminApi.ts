@@ -23,6 +23,7 @@ import {
   getSessionExpiredError,
   getLocale,
 } from "@/i18n"
+import { csrfHeaders } from "@/lib/csrf"
 
 const BASE_URL = import.meta.env.VITE_API_URL ?? ""
 
@@ -76,9 +77,13 @@ interface AdminFetchOptions extends RequestInit {
 }
 
 export function useAdminApi() {
-  const { accessToken, refreshAccessToken, logout } = useAuth()
+  const { refreshAccessToken, logout } = useAuth()
   const navigate = useNavigate()
-  const isRefreshing = useRef(false)
+  // Promise de refresh compartilhada: 401s concorrentes aguardam o MESMO
+  // refresh e cada um repete sua chamada. O guard booleano anterior fazia os
+  // concorrentes PULAREM a retentativa — com access de 15 min (ADR-01) o
+  // refresh passa a ser frequente e essa corrida deixa de ser teórica.
+  const refreshInFlight = useRef<Promise<boolean> | null>(null)
 
   const adminFetch = useCallback(
     async <T>(path: string, init?: AdminFetchOptions): Promise<T> => {
@@ -89,6 +94,10 @@ export function useAdminApi() {
         const isFormData = fetchInit?.body instanceof FormData
         const headers: HeadersInit = {
           Accept: "application/json",
+          // Escritas autenticadas por cookie exigem prova de CSRF (ADR-01).
+          // Fica ANTES do spread de fetchInit.headers para o chamador poder
+          // sobrescrever, e vale também no caminho de FormData.
+          ...(await csrfHeaders(fetchInit?.method)),
           "Accept-Language": getLocale(),
           ...(fetchInit?.body && !isFormData ? { "Content-Type": "application/json" } : {}),
           ...fetchInit?.headers,
@@ -115,28 +124,27 @@ export function useAdminApi() {
       // First attempt with current token
       let response = await doFetch()
 
-      // On 401, try to refresh token and retry once
-      if (response.status === 401 && !isRefreshing.current) {
-        isRefreshing.current = true
-        try {
-          const newToken = await refreshAccessToken()
-          if (newToken) {
-            response = await doFetch()
-          } else {
-            // Refresh failed, redirect to login
-            logout()
-            navigate("/admin/login", { replace: true })
-            const error = new PastoralApiError(
-              "Sessão expirada",
-              "session_expired",
-              getSessionExpiredError(),
-              401
-            )
-            if (showToast) toast.error(error.pastoralMessage)
-            throw error
-          }
-        } finally {
-          isRefreshing.current = false
+      // Em 401, renova uma vez e repete.
+      if (response.status === 401) {
+        if (!refreshInFlight.current) {
+          refreshInFlight.current = refreshAccessToken().finally(() => {
+            refreshInFlight.current = null
+          })
+        }
+        const renovou = await refreshInFlight.current
+        if (renovou) {
+          response = await doFetch()
+        } else {
+          logout()
+          navigate("/admin/login", { replace: true })
+          const error = new PastoralApiError(
+            "Sessão expirada",
+            "session_expired",
+            getSessionExpiredError(),
+            401
+          )
+          if (showToast) toast.error(error.pastoralMessage)
+          throw error
         }
       }
 
@@ -168,7 +176,7 @@ export function useAdminApi() {
 
       return response.json() as Promise<T>
     },
-    [accessToken, refreshAccessToken, logout, navigate]
+    [refreshAccessToken, logout, navigate]
   )
 
   return { adminFetch }

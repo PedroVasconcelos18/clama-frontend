@@ -9,29 +9,24 @@ interface User {
 }
 
 interface AuthState {
+  // ADR-01: os tokens vivem em cookie HttpOnly com escopo Path=/api e nunca
+  // chegam ao JavaScript. O storage guarda só o `user`, que sustenta
+  // `isAuthenticated` e os guards de rota.
   user: User | null
-  accessToken: string | null
-  refreshToken: string | null
 }
 
 interface LoginResponse {
-  access: string
-  refresh: string
   user: User
-}
-
-interface RefreshResponse {
-  access: string
 }
 
 interface AuthContextValue {
   user: User | null
-  accessToken: string | null
   isAuthenticated: boolean
   isLoading: boolean
   login: (email: string, password: string) => Promise<void>
   logout: () => void
-  refreshAccessToken: () => Promise<string | null>
+  /** Renova a sessão via cookie. `true` se renovou. */
+  refreshAccessToken: () => Promise<boolean>
 }
 
 const AUTH_STORAGE_KEY = "clama:admin-auth"
@@ -42,13 +37,21 @@ function loadAuthFromStorage(): AuthState {
   try {
     const stored = localStorage.getItem(AUTH_STORAGE_KEY)
     if (stored) {
-      return JSON.parse(stored)
+      const parsed: unknown = JSON.parse(stored)
+      // Blob sem `user` válido não é sessão — descarta em vez de propagar
+      // um estado meio-autenticado.
+      if (parsed && typeof parsed === "object" && "user" in parsed) {
+        const u = (parsed as { user: unknown }).user
+        if (u && typeof u === "object" && "email" in u) {
+          return { user: u as User }
+        }
+      }
     }
   } catch {
-    // Invalid JSON, clear storage
+    // JSON inválido, limpa o storage
     localStorage.removeItem(AUTH_STORAGE_KEY)
   }
-  return { user: null, accessToken: null, refreshToken: null }
+  return { user: null }
 }
 
 function saveAuthToStorage(state: AuthState): void {
@@ -80,51 +83,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       body: JSON.stringify({ email, password }),
     })
 
-    const newState: AuthState = {
-      user: data.user,
-      accessToken: data.access,
-      refreshToken: data.refresh,
-    }
+    const newState: AuthState = { user: data.user }
     setAuthState(newState)
     saveAuthToStorage(newState)
   }, [])
 
   const logout = useCallback(() => {
-    setAuthState({ user: null, accessToken: null, refreshToken: null })
+    setAuthState({ user: null })
     clearAuthFromStorage()
   }, [])
 
-  const refreshAccessToken = useCallback(async (): Promise<string | null> => {
-    if (!authState.refreshToken) {
+  const refreshAccessToken = useCallback(async (): Promise<boolean> => {
+    if (!authState.user) {
       logout()
-      return null
+      return false
     }
 
     try {
-      const data = await apiFetch<RefreshResponse>("/api/admin/auth/refresh/", {
-        method: "POST",
-        body: JSON.stringify({ refresh: authState.refreshToken }),
-      })
-
-      const newState: AuthState = {
-        ...authState,
-        accessToken: data.access,
-      }
-      setAuthState(newState)
-      saveAuthToStorage(newState)
-      return data.access
+      // ADR-01: o refresh vem do cookie; corpo vazio. A resposta reemite os
+      // cookies — nenhum token chega ao JavaScript.
+      await apiFetch("/api/admin/auth/refresh/", { method: "POST" })
+      return true
     } catch (err) {
-      // Refresh failed, logout
       if (err instanceof PastoralApiError && err.httpStatus === 401) {
         logout()
       }
-      return null
+      return false
     }
-  }, [authState, logout])
+  }, [authState.user, logout])
 
   const value: AuthContextValue = {
     user: authState.user,
-    accessToken: authState.accessToken,
     isAuthenticated: !!authState.user,
     isLoading,
     login,

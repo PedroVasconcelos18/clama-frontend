@@ -108,8 +108,11 @@ describe("CustomerAuthContext", () => {
       await result.current.logout()
     })
 
-    expect(fetchMock).toHaveBeenCalledTimes(1)
-    const call = fetchMock.mock.calls[0]!
+    // Duas chamadas: a busca do token de CSRF e o logout em si.
+    const call = fetchMock.mock.calls.find((c) =>
+      String(c[0]).includes("/api/customer/auth/logout/"),
+    )!
+    expect(call).toBeDefined()
     const url = call[0] as RequestInfo
     const init = call[1] as RequestInit
     expect(String(url)).toContain("/api/customer/auth/logout/")
@@ -198,7 +201,7 @@ describe("CustomerAuthContext", () => {
     expect(localStorage.getItem(STORAGE_KEY)).toBeNull()
   })
 
-  it("loadAuthFromStorage rejects partial JSON shape (P-11)", async () => {
+  it("loadAuthFromStorage rejeita blob sem user utilizavel", async () => {
     // Storage has only `user.email` — missing id, accessToken, refreshToken.
     localStorage.setItem(
       STORAGE_KEY,
