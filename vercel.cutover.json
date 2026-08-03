@@ -1,0 +1,67 @@
+{
+  "_LEIA": "Story 6.1 — configuração-alvo do cutover. NÃO é o vercel.json ativo. A Story 6.7 copia este arquivo sobre o vercel.json depois que o gate da 6.5 estiver integralmente verde. Antes disso, apontar /blog para uma origem que não existe derruba o blog no primeiro deploy. Substitua ORIGEM_WORDPRESS e CHAVE_INDEXNOW pelos valores reais no mesmo commit da ativação.",
+
+  "framework": null,
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist/client",
+
+  "trailingSlash": false,
+
+  "redirects": [
+    {
+      "_comentario": "Story 5.6. Em redirects e não em rewrites: a URL antiga precisa de 301 real, senão duas URLs servem o mesmo conteúdo. Modo de falha sem esta regra: /blog?page=2 serve a página 1, com status 200 e sem erro.",
+      "source": "/blog",
+      "has": [{ "type": "query", "key": "page", "value": "(?<pagina>\\d+)" }],
+      "destination": "/blog/page/:pagina",
+      "permanent": true
+    }
+  ],
+
+  "rewrites": [
+    {
+      "_comentario": "Story 1.2. Primeira porque é a mais quente e a que torna a API same-origin — é dela que vem a ausência de preflight, não do rewrite do blog.",
+      "source": "/api/:path*",
+      "destination": "https://api.clama.me/api/:path*"
+    },
+
+    {
+      "_comentario": "Story 5.3. Caminho medido: com Rank Math o índice é sitemap_index.xml. O wp-sitemap.xml do core passa a 301 — fixá-lo aqui daria um salto extra em cada requisição do Google.",
+      "source": "/sitemap.xml",
+      "destination": "https://ORIGEM_WORDPRESS/sitemap_index.xml"
+    },
+    {
+      "_comentario": "Os sitemaps-filho. O \\d* cobre post-sitemap2.xml quando passar de 200 URLs.",
+      "source": "/:mapa(.*-sitemap\\d*\\.xml)",
+      "destination": "https://ORIGEM_WORDPRESS/:mapa"
+    },
+
+    {
+      "_comentario": "Story 5.4.",
+      "source": "/robots.txt",
+      "destination": "https://ORIGEM_WORDPRESS/robots.txt"
+    },
+
+    {
+      "_comentario": "Story 5.5. A chave vai LITERAL. Um padrão genérico mapearia qualquer .txt da raiz para a origem. Trocar a chave exige trocar aqui no mesmo PR — senão o Bing devolve 403 e nada sinaliza.",
+      "source": "/CHAVE_INDEXNOW.txt",
+      "destination": "https://ORIGEM_WORDPRESS/CHAVE_INDEXNOW.txt"
+    },
+
+    {
+      "_comentario": "AC3 — regra DEDICADA para /blog sem sufixo. Sem ela, /blog cai no catch-all e é servido pelo SPA: deploy verde, blog quebrado.",
+      "source": "/blog",
+      "destination": "https://ORIGEM_WORDPRESS/"
+    },
+    {
+      "_comentario": "O resto do blog, incluindo /blog/wp-admin, /blog/wp-json e a pré-visualização (medido na Story 2.10: as cinco superfícies do operador ficam sob /blog/).",
+      "source": "/blog/:path*",
+      "destination": "https://ORIGEM_WORDPRESS/:path*"
+    },
+
+    {
+      "_comentario": "Catch-all do SPA. SEMPRE por último — ele casa qualquer coisa, e toda regra abaixo dele é código morto.",
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
