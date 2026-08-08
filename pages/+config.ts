@@ -24,5 +24,15 @@ export default {
   // o auto-run do prerender (que NÃO dispara no build do Vercel — causa do 404)
   // é desligado em TODO ambiente; o build script roda `vike prerender`
   // explícito como passo único e determinístico, com dist/server intacto.
-  prerender: { enable: false, disableAutoRun: true },
+  // ⚠️ `enable: true` desde que as rotas do blog sairam.
+  //
+  // Antes ficava `false`, e funcionava porque as paginas do blog opinavam
+  // `prerender: true` individualmente — era isso que ligava o pre-render e, de
+  // carona, emitia o `index.html` do spa-fallback.
+  //
+  // Removidas elas, o `vike prerender` passou a sair com codigo 0 e **nao gerar
+  // arquivo nenhum**: sem `dist/client/index.html`, o catch-all do vercel.json
+  // aponta para um arquivo que nao existe e o site inteiro cai. Build verde,
+  // deploy verde, site fora.
+  prerender: { enable: true, disableAutoRun: true },
 } satisfies Config
