@@ -35,4 +35,23 @@ export default {
   // aponta para um arquivo que nao existe e o site inteiro cai. Build verde,
   // deploy verde, site fora.
   prerender: { enable: true, disableAutoRun: true },
+
+  /**
+   * 🔴 Client Routing do Vike DESLIGADO — e isso resolve uma classe de bug,
+   * nao um link.
+   *
+   * Quem roteia este app e o React Router. O Vike e so a casca que emite o
+   * `index.html`. Enquanto existiam paginas Vike (o blog), o Client Routing
+   * dele fazia sentido; hoje a unica pagina e o catch-all `spa-fallback`.
+   *
+   * Com ele ligado, o Vike intercepta clique em QUALQUER link de mesma
+   * origem, empurra o historico e re-renderiza a mesma pagina Vike. O React
+   * Router nao escuta essa troca de historico, entao a URL muda e a tela
+   * nao — foi o sintoma de "clico em Blog e nao vai" e de "clico em Clama
+   * estando no /conta e nao sai do lugar".
+   *
+   * Desligado: link interno navega de verdade, e o roteamento suave dentro
+   * do app continua pelo React Router, que e quem sempre mandou aqui.
+   */
+  clientRouting: false,
 } satisfies Config
