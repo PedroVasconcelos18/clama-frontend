@@ -8,6 +8,14 @@
       "destination": "https://api.clama.me/api/:caminho"
     },
     {
+      "source": "/blog",
+      "destination": "https://blog-production-1356.up.railway.app/"
+    },
+    {
+      "source": "/blog/:caminho(.*)",
+      "destination": "https://blog-production-1356.up.railway.app/:caminho"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
