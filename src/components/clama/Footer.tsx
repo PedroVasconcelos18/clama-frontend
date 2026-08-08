@@ -82,6 +82,7 @@ export function Footer() {
       >
         <a
           href="/blog"
+            rel="external"
           className="text-white/60 hover:text-clama-gold underline-offset-4 hover:underline"
         >
           Blog

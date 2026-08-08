@@ -42,6 +42,7 @@ export function StickyNav({ onCtaClick, showCta = true }: StickyNavProps) {
         <div className="flex items-center gap-3">
           <a
             href="/blog"
+            rel="external"
             className="font-sans text-[0.82rem] font-semibold text-clama-cream/80 hover:text-clama-gold transition-colors px-3 py-2 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-clama-gold"
           >
             Blog

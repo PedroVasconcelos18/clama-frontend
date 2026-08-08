@@ -37,13 +37,26 @@ export function SiteHeader({ active, onAfterLogout }: SiteHeaderProps) {
     }
   }, [logout, onAfterLogout])
 
+  /**
+   * ⚠️ `rel="external"` quando o destino sai do SPA.
+   *
+   * O Client Routing do Vike intercepta clique em link de mesma origem. Como
+   * a unica pagina Vike restante e o catch-all `spa-fallback`, um clique em
+   * /blog era roteado no cliente e re-renderizava o proprio SPA: a URL virava
+   * /blog e a pagina continuava sendo o app. O WordPress nunca era buscado.
+   *
+   * `rel="external"` e a saida sancionada pelo Vike para forcar navegacao
+   * real do navegador.
+   */
   const navLink = (
     href: string,
     label: string,
     isActive: boolean,
+    externo = false,
   ) => (
     <a
       href={href}
+      rel={externo ? "external" : undefined}
       className={
         isActive
           ? "font-sans text-[0.88rem] font-semibold text-clama-gold"
@@ -69,7 +82,7 @@ export function SiteHeader({ active, onAfterLogout }: SiteHeaderProps) {
           className="flex items-center gap-5"
           aria-label="Navegação principal"
         >
-          {navLink("/blog", "Blog", active === "blog")}
+          {navLink("/blog", "Blog", active === "blog", true)}
           {navLink("/conta", "Conta", active === "conta")}
 
           {mounted && isAuthenticated && !isLoading && (
