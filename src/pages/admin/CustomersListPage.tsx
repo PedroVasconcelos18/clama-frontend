@@ -24,6 +24,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { CustomerDetailDrawer } from "@/components/admin/CustomerDetailDrawer"
+import { NovoAdminDialog } from "@/components/admin/NovoAdminDialog"
 import { PedidoDetailDrawer } from "@/components/admin/PedidoDetailDrawer"
 import { LoadingSpinner } from "@/components/utility/LoadingSpinner"
 import { cn } from "@/lib/utils"
@@ -54,7 +55,9 @@ export default function CustomersListPage() {
   const [q, setQ] = useState("")
   const [bannedFilter, setBannedFilter] = useState<"" | "true" | "false">("")
   const [freemiumFilter, setFreemiumFilter] = useState<"" | "true" | "false">("")
+  const [adminFilter, setAdminFilter] = useState<"" | "true" | "false">("")
   const [offset, setOffset] = useState(0)
+  const [novoAdmin, setNovoAdmin] = useState(false)
 
   const [expandedId, setExpandedId] = useState<number | null>(null)
 
@@ -76,6 +79,7 @@ export default function CustomersListPage() {
     if (q.trim()) params.set("q", q.trim())
     if (bannedFilter) params.set("banned", bannedFilter)
     if (freemiumFilter) params.set("freemium", freemiumFilter)
+    if (adminFilter) params.set("admin", adminFilter)
 
     adminFetch<CustomersResponse>(`/api/admin/customers/?${params.toString()}`)
       .then((res) => {
@@ -91,7 +95,7 @@ export default function CustomersListPage() {
     return () => {
       cancelled = true
     }
-  }, [adminFetch, q, bannedFilter, freemiumFilter, offset, reloadToken])
+  }, [adminFetch, q, bannedFilter, freemiumFilter, adminFilter, offset, reloadToken])
 
   // Reset offset quando filtros mudam
   const resetFilters = useCallback(
@@ -153,7 +157,12 @@ export default function CustomersListPage() {
             Lista de todos os usuários do Clama, com pedidos e moderação do blog.
           </p>
         </div>
-        <span className="text-sm text-clama-cream/60">{total} no total</span>
+        <div className="flex items-center gap-3">
+          <span className="text-sm text-clama-cream/60">{total} no total</span>
+          <Button size="sm" onClick={() => setNovoAdmin(true)}>
+            Novo admin
+          </Button>
+        </div>
       </header>
 
       {/* Filtros */}
@@ -175,6 +184,26 @@ export default function CustomersListPage() {
               className="pl-8 bg-clama-night border-clama-gold/30 text-clama-cream"
             />
           </div>
+        </div>
+        <div>
+          <Label
+            htmlFor="cust-tipo"
+            className="text-xs uppercase tracking-wider text-clama-gold/80"
+          >
+            Tipo
+          </Label>
+          <select
+            id="cust-tipo"
+            value={adminFilter}
+            onChange={(e) =>
+              resetFilters(() => setAdminFilter(e.target.value as typeof adminFilter))
+            }
+            className="mt-1 block bg-clama-night border border-clama-gold/30 text-clama-cream rounded-md h-9 px-2 text-sm"
+          >
+            <option value="">Todos</option>
+            <option value="true">Admins</option>
+            <option value="false">Customers</option>
+          </select>
         </div>
         <div>
           <Label className="text-xs uppercase tracking-wider text-clama-gold/80">
@@ -329,6 +358,13 @@ export default function CustomersListPage() {
       <CustomerDetailDrawer
         customerId={detailCustomerId}
         onClose={() => setDetailCustomerId(null)}
+        onChanged={() => setReloadToken((n) => n + 1)}
+      />
+
+      <NovoAdminDialog
+        open={novoAdmin}
+        onClose={() => setNovoAdmin(false)}
+        onCreated={() => setReloadToken((n) => n + 1)}
       />
 
       <PedidoDetailDrawer

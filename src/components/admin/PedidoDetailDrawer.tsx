@@ -5,25 +5,21 @@ import { LoadingSpinner } from "@/components/utility/LoadingSpinner"
 import { PastoralAlert } from "@/components/utility/PastoralAlert"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import { X, ExternalLink, RefreshCw, Gift } from "lucide-react"
+import { X, ExternalLink, RefreshCw, Gift, Pencil } from "lucide-react"
 import { toast } from "sonner"
+import { PedidoEditForm } from "@/components/admin/PedidoEditForm"
+import { PEDIDO_STATUS_COLORS } from "@/lib/pedido-status"
 import type { AdminPedido } from "@/types/admin.types"
 
 interface PedidoDetailDrawerProps {
   pedidoId: string | null
   onClose: () => void
+  /** Chamado depois de salvar uma edição, para a lista recarregar. */
+  onChanged?: () => void
 }
 
-const STATUS_COLORS: Record<string, string> = {
-  aguardando_pagamento: "bg-yellow-500/20 text-yellow-400",
-  pago: "bg-green-500/20 text-green-400",
-  gerando_oracao: "bg-blue-500/20 text-blue-400",
-  oracao_enviada: "bg-green-500/20 text-green-400",
-  erro: "bg-red-500/20 text-red-400",
-  aguardando_reenvio: "bg-yellow-500/20 text-yellow-400",
-}
 
-export function PedidoDetailDrawer({ pedidoId, onClose }: PedidoDetailDrawerProps) {
+export function PedidoDetailDrawer({ pedidoId, onClose, onChanged }: PedidoDetailDrawerProps) {
   const { adminFetch } = useAdminApi()
   const [pedido, setPedido] = useState<AdminPedido | null>(null)
   const [isLoading, setIsLoading] = useState(false)
@@ -32,8 +28,10 @@ export function PedidoDetailDrawer({ pedidoId, onClose }: PedidoDetailDrawerProp
   const [showConfirmResend, setShowConfirmResend] = useState(false)
   const [isMarkingFree, setIsMarkingFree] = useState(false)
   const [showConfirmFree, setShowConfirmFree] = useState(false)
+  const [editing, setEditing] = useState(false)
 
   useEffect(() => {
+    setEditing(false)
     if (!pedidoId) {
       setPedido(null)
       return
@@ -144,7 +142,7 @@ export function PedidoDetailDrawer({ pedidoId, onClose }: PedidoDetailDrawerProp
               <span
                 className={cn(
                   "px-2 py-1 text-xs rounded",
-                  STATUS_COLORS[pedido.status] || "bg-gray-500/20 text-gray-400"
+                  PEDIDO_STATUS_COLORS[pedido.status] || "bg-gray-500/20 text-gray-400"
                 )}
               >
                 {pedido.status.replace(/_/g, " ")}
@@ -175,7 +173,22 @@ export function PedidoDetailDrawer({ pedidoId, onClose }: PedidoDetailDrawerProp
           ) : error ? (
             <PastoralAlert variant="error">{error}</PastoralAlert>
           ) : pedido ? (
+            editing ? (
+              <PedidoEditForm
+                pedido={pedido}
+                onSaved={(p) => {
+                  setPedido(p)
+                  setEditing(false)
+                  onChanged?.()
+                }}
+                onCancel={() => setEditing(false)}
+              />
+            ) : (
             <>
+              <Button variant="outline" className="w-full" onClick={() => setEditing(true)}>
+                <Pencil className="w-4 h-4 mr-2" />
+                Editar pedido
+              </Button>
               {/* Pedido Info */}
               <section>
                 <h3 className="text-sm font-medium text-clama-gold mb-3">Pedido</h3>
@@ -390,6 +403,7 @@ export function PedidoDetailDrawer({ pedidoId, onClose }: PedidoDetailDrawerProp
                 </div>
               )}
             </>
+            )
           ) : null}
         </div>
       </div>

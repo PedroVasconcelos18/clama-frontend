@@ -4,12 +4,15 @@ import { useAdminApi } from "@/hooks/useAdminApi"
 import { PastoralApiError } from "@/lib/api"
 import { Button } from "@/components/ui/button"
 import { LoadingSpinner } from "@/components/utility/LoadingSpinner"
+import { CustomerAcesso } from "@/components/admin/CustomerAcesso"
 import { PastoralAlert } from "@/components/utility/PastoralAlert"
 import type { AdminCustomerDetail } from "@/types/admin.types"
 
 interface Props {
   customerId: number | null
   onClose: () => void
+  /** Depois de qualquer escrita (acesso, senha, exclusão): a lista recarrega. */
+  onChanged?: () => void
 }
 
 function fmt(iso: string | null | undefined): string {
@@ -17,11 +20,12 @@ function fmt(iso: string | null | undefined): string {
   return new Date(iso).toLocaleString("pt-BR")
 }
 
-export function CustomerDetailDrawer({ customerId, onClose }: Props) {
+export function CustomerDetailDrawer({ customerId, onClose, onChanged }: Props) {
   const { adminFetch } = useAdminApi()
   const [data, setData] = useState<AdminCustomerDetail | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [refresh, setRefresh] = useState(0)
 
   useEffect(() => {
     if (!customerId) {
@@ -49,7 +53,7 @@ export function CustomerDetailDrawer({ customerId, onClose }: Props) {
     return () => {
       cancelled = true
     }
-  }, [adminFetch, customerId])
+  }, [adminFetch, customerId, refresh])
 
   if (!customerId) return null
 
@@ -112,6 +116,18 @@ export function CustomerDetailDrawer({ customerId, onClose }: Props) {
                   }
                 />
               </Section>
+
+              <CustomerAcesso
+                customer={data}
+                onChanged={() => {
+                  setRefresh((n) => n + 1)
+                  onChanged?.()
+                }}
+                onDeleted={() => {
+                  onChanged?.()
+                  onClose()
+                }}
+              />
 
               <Section title="Dados sensíveis (LGPD)">
                 <Field label="CPF/CNPJ" value={data.cpf_cnpj || "—"} mono />
