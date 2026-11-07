@@ -79,6 +79,12 @@ export function PedidoEditForm({
       onSaved(salvo)
     } catch (err) {
       const base = (err as { pastoralMessage?: string })?.pastoralMessage ?? "Não foi possível salvar o pedido."
+      if ((err as { httpStatus?: number })?.httpStatus === 409) {
+        // pagamento_pendente: a mensagem pastoral já explica, sem rótulo de campo
+        setErro(base)
+        toast.error(base)
+        return
+      }
       // o servidor devolve só o texto; com um campo só, o rótulo dele identifica a origem
       const campos = Object.keys(corpo)
       const msg = campos.length === 1 && campos[0] ? `${ROTULOS[campos[0]] ?? campos[0]}: ${base}` : base
@@ -161,6 +167,8 @@ export function PedidoEditForm({
         <PastoralAlert variant="info">
           Mudar o status à mão não enfileira nenhum job (não gera oração, não envia, não cobra). Um pedido deixado
           num estado que o fluxo não espera pode ser marcado depois como pedido preso.
+          {inicial.status === "aguardando_pagamento" &&
+            " Sair de “aguardando pagamento” à mão é recusado: para entregar sem pagamento use Marcar gratuito; se o pagamento já caiu, reprocesse o webhook."}
         </PastoralAlert>
       )}
       {erro && <PastoralAlert variant="error">{erro}</PastoralAlert>}

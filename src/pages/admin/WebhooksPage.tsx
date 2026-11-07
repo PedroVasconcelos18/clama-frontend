@@ -36,6 +36,10 @@ const curto = (t: string, n: number) => (t.length > n ? `${t.slice(0, n)}…` : 
 const RESULTADO: Record<string, string> = {
   enfileirado: "Reprocesso enfileirado.",
   ja_na_fila: "Esse evento já estava na fila.",
+  ok: "Pagamento confirmado: pedido pago e oração na fila.",
+  already_paid: "Esse pedido já estava pago; o evento foi marcado como ignorado.",
+  already_processed: "Esse evento já tinha sido processado por outra chamada.",
+  ignored: "Evento ignorado: não havia pagamento aprovado para processar.",
 }
 
 export default function WebhooksPage() {
@@ -75,7 +79,7 @@ export default function WebhooksPage() {
         `/api/admin/webhooks/${target.id}/reprocessar/`,
         { method: "POST", showToast: false },
       )
-      toast.success(RESULTADO[res.status] ?? `Reprocessado: ${res.status}.`)
+      toast.success(RESULTADO[res.status] ?? "Reprocessado.")
       setTarget(null)
       setDetailId(null)
       setReloadToken((n) => n + 1)

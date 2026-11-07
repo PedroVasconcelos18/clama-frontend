@@ -50,6 +50,20 @@ describe("PedidoEditForm", () => {
     expect(screen.getByText(/pedido preso/)).toBeTruthy()
   })
 
+  it("pedido aguardando pagamento avisa que sair dali e recusado e mostra a mensagem do 409", async () => {
+    const msg = "Esse pedido ainda espera o pagamento. Para entregar sem pagamento, use 'Marcar gratuito'."
+    adminFetch.mockRejectedValue({ pastoralMessage: msg, httpStatus: 409 })
+    render(
+      <PedidoEditForm pedido={{ ...pedido, status: "aguardando_pagamento" }} onSaved={onSaved} onCancel={vi.fn()} />,
+    )
+    expect(screen.queryByText(/Marcar gratuito/)).toBeNull()
+    await userEvent.selectOptions(screen.getByLabelText("Status"), "pago")
+    expect(screen.getByText(/é recusado.*Marcar gratuito.*reprocesse o webhook/)).toBeTruthy()
+    await userEvent.click(screen.getByRole("button", { name: "Salvar alterações" }))
+    expect(await screen.findByText(msg)).toBeTruthy() // sem o prefixo "Status:"
+    expect(onSaved).not.toHaveBeenCalled()
+  })
+
   it("erro 400 do servidor aparece no formulario", async () => {
     adminFetch.mockRejectedValue({ pastoralMessage: "Informe um endereço de email válido." })
     render(<PedidoEditForm pedido={pedido} onSaved={onSaved} onCancel={vi.fn()} />)
