@@ -127,15 +127,19 @@ export type LikeToggleResponse = {
 /** Shape do AdminComentarioSerializer (Story 5.2 backend). */
 export type AdminComentario = {
   id: string
-  post_slug: string
-  post_titulo: string
+  post: string | null
+  customer: number
   customer_email: string
-  customer_id?: string
   customer_nome: string
   conteudo: string
   is_suspeito: boolean
   ip_address: string
   created_at: string
+  updated_at: string
+  /** Espelho do post no WordPress; opcionais (só o Java envia, o Django não). */
+  post_espelho_slug?: string | null
+  post_espelho_titulo?: string | null
+  post_espelho_url?: string | null
 }
 
 export type PaginatedAdminComentarios = {
@@ -148,12 +152,13 @@ export type PaginatedAdminComentarios = {
 /** Shape do CustomerBanidoListSerializer (Story 5.2 backend). */
 export type AdminCustomerBanido = {
   id: string
-  customer_id: string
+  customer: number
   customer_email: string
   customer_nome: string
   motivo: string
   banido_em: string
   banido_por_email: string
+  revogado_em: string | null
 }
 
 export type PaginatedAdminBanidos = {

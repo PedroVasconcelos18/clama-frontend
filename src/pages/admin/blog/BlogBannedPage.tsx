@@ -53,7 +53,7 @@ export default function BlogBannedPage() {
     setActionInFlight(true)
     try {
       await adminFetch(
-        `/api/blog/admin/banned-customers/${unbanTarget.customer_id}/`,
+        `/api/blog/admin/banned-customers/${unbanTarget.customer}/`,
         { method: "DELETE" },
       )
       toast.success("Banimento revogado.")

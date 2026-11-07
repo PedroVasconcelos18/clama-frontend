@@ -43,7 +43,7 @@ export default function BlogCommentsPage() {
     const params = new URLSearchParams()
     params.set("page", String(page))
     if (statusFilter === "suspeitos") params.set("status", "suspeitos")
-    if (postSlugFilter.trim()) params.set("post__slug", postSlugFilter.trim())
+    if (postSlugFilter.trim()) params.set("post_espelho", postSlugFilter.trim())
     params.set("page_size", String(PAGE_SIZE))
 
     adminFetch<PaginatedAdminComentarios>(
@@ -89,13 +89,13 @@ export default function BlogCommentsPage() {
   }
 
   async function handleConfirmBan() {
-    if (!banTarget || !banTarget.customer_id) return
+    if (!banTarget) return
     setActionInFlight(true)
     try {
       await adminFetch(`/api/blog/admin/banned-customers/`, {
         method: "POST",
         body: JSON.stringify({
-          customer_id: banTarget.customer_id,
+          customer_id: banTarget.customer,
           motivo: banMotivo.trim() || "Sem motivo informado",
         }),
       })
@@ -196,12 +196,21 @@ export default function BlogCommentsPage() {
                   )}
                 </td>
                 <td className="p-3">
-                  <a
-                    href={`/blog/${c.post_slug}`}
-                    className="text-clama-gold hover:underline"
-                  >
-                    {c.post_titulo || c.post_slug}
-                  </a>
+                  {(() => {
+                    // Chaves do espelho são opcionais (o Django não as envia).
+                    const titulo = c.post_espelho_titulo || c.post_espelho_slug
+                    if (!titulo) return "—"
+                    const href =
+                      c.post_espelho_url ??
+                      (c.post_espelho_slug ? `/blog/${c.post_espelho_slug}` : null)
+                    return href ? (
+                      <a href={href} className="text-clama-gold hover:underline">
+                        {titulo}
+                      </a>
+                    ) : (
+                      titulo
+                    )
+                  })()}
                 </td>
                 <td className="p-3 text-clama-cream/70">
                   <div>{c.customer_nome}</div>
@@ -217,7 +226,7 @@ export default function BlogCommentsPage() {
                 </td>
                 <td className="p-3 text-right">
                   <div className="inline-flex gap-1">
-                    {c.customer_id && (
+                    {c.customer != null && (
                       <Button
                         variant="outline"
                         size="sm"
