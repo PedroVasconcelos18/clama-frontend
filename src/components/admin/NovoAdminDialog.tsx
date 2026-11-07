@@ -32,6 +32,16 @@ export function NovoAdminDialog({
   const [erro, setErro] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
+  // todo fechamento (cancelar, Esc, sucesso) limpa tudo, inclusive a senha
+  function fechar() {
+    setEmail("")
+    setNome("")
+    setSenha("")
+    setConfirma("")
+    setErro(null)
+    onClose()
+  }
+
   const ok = email.trim() !== "" && senha !== "" && senha === confirma
 
   async function criar() {
@@ -44,12 +54,8 @@ export function NovoAdminDialog({
         showToast: false,
       })
       toast.success(`Admin ${email.trim()} criado.`)
-      setEmail("")
-      setNome("")
-      setSenha("")
-      setConfirma("")
       onCreated()
-      onClose()
+      fechar()
     } catch (err) {
       const msg = (err as { pastoralMessage?: string })?.pastoralMessage ?? "Não foi possível criar o admin."
       setErro(msg)
@@ -60,7 +66,7 @@ export function NovoAdminDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={(o) => !o && !busy && onClose()}>
+    <Dialog open={open} onOpenChange={(o) => !o && !busy && fechar()}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Novo admin</DialogTitle>
@@ -93,7 +99,7 @@ export function NovoAdminDialog({
         </div>
         {erro && <PastoralAlert variant="error">{erro}</PastoralAlert>}
         <DialogFooter>
-          <Button variant="outline" onClick={onClose} disabled={busy}>
+          <Button variant="outline" onClick={fechar} disabled={busy}>
             Cancelar
           </Button>
           <Button onClick={criar} disabled={busy || !ok}>

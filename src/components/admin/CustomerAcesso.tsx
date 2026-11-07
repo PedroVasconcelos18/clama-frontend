@@ -43,6 +43,14 @@ export function CustomerAcesso({
   const [erro, setErro] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
+  // todo caminho de fechamento (cancelar, Esc, sucesso) passa por aqui: senha não fica em estado
+  function fechar() {
+    setAcao(null)
+    setSenha("")
+    setConfirma("")
+    setEmailDigitado("")
+  }
+
   function abrir(a: Acao) {
     setSenha("")
     setConfirma("")
@@ -56,7 +64,7 @@ export function CustomerAcesso({
     setErro(null)
     try {
       await fn()
-      setAcao(null)
+      fechar()
     } catch (err) {
       const msg = (err as { pastoralMessage?: string })?.pastoralMessage ?? "Não foi possível concluir a ação."
       setErro(msg)
@@ -104,7 +112,7 @@ export function CustomerAcesso({
         </Button>
       </div>
 
-      <Dialog open={acao !== null} onOpenChange={(o) => !o && !busy && setAcao(null)}>
+      <Dialog open={acao !== null} onOpenChange={(o) => !o && !busy && fechar()}>
         <DialogContent>
           {acao === "admin" && (
             <>
@@ -119,7 +127,7 @@ export function CustomerAcesso({
               {erro && <PastoralAlert variant="error">{erro}</PastoralAlert>}
               <Rodape
                 busy={busy}
-                onCancel={() => setAcao(null)}
+                onCancel={fechar}
                 label={customer.is_clama_admin ? "Remover admin" : "Tornar admin"}
                 onOk={() =>
                   patch(
@@ -144,7 +152,7 @@ export function CustomerAcesso({
               {erro && <PastoralAlert variant="error">{erro}</PastoralAlert>}
               <Rodape
                 busy={busy}
-                onCancel={() => setAcao(null)}
+                onCancel={fechar}
                 label={customer.is_active ? "Desativar conta" : "Reativar"}
                 onOk={() =>
                   patch(
@@ -189,7 +197,7 @@ export function CustomerAcesso({
               <Rodape
                 busy={busy}
                 disabled={!senhaOk}
-                onCancel={() => setAcao(null)}
+                onCancel={fechar}
                 label="Definir senha"
                 onOk={() =>
                   executar(async () => {
@@ -231,7 +239,7 @@ export function CustomerAcesso({
                 busy={busy}
                 disabled={!emailOk}
                 danger
-                onCancel={() => setAcao(null)}
+                onCancel={fechar}
                 label="Excluir usuário"
                 onOk={() =>
                   executar(async () => {

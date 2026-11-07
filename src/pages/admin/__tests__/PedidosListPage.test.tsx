@@ -43,4 +43,14 @@ describe("PedidosListPage", () => {
     render(<PedidosListPage />)
     expect(await screen.findByText(/não tem conta/)).toBeTruthy()
   })
+
+  it("busca q tem debounce: digitar 3 letras faz uma so chamada com q", async () => {
+    render(<PedidosListPage />)
+    await screen.findByText("Ana")
+    adminFetch.mockClear()
+    await userEvent.type(screen.getByLabelText("Buscar pedidos"), "ana")
+    expect(adminFetch).not.toHaveBeenCalled()
+    await waitFor(() => expect(adminFetch).toHaveBeenCalledTimes(1))
+    expect(adminFetch).toHaveBeenLastCalledWith("/api/admin/pedidos/?limit=20&offset=0&q=ana")
+  })
 })

@@ -46,6 +46,15 @@ const BLOQUEIO = {
   tem_telefone: true, tem_device: false, tem_ip: true,
 }
 
+// rotas da API sem mock: o teste falha (afterEach) em vez de passar em cima de um 200 inventado
+let desconhecidas: string[] = []
+test.beforeEach(() => {
+  desconhecidas = []
+})
+test.afterEach(() => {
+  expect(desconhecidas).toEqual([])
+})
+
 async function preparar(page: Page) {
   const chamadas: Chamada[] = []
   await page.addInitScript(() => {
@@ -72,8 +81,15 @@ async function preparar(page: Page) {
       route.fulfill({ status, contentType: "application/json", body: JSON.stringify(data) })
 
     if (path === "/api/csrf/") return json({ csrf_token: "t" })
-    if (method === "DELETE") return route.fulfill({ status: 204 })
-    if (method !== "GET") return json({ status: "PROCESSADO", detail: "ok" })
+    const conhecidas: Record<string, string> = {
+      "DELETE /api/blog/admin/banned-customers/42/": "",
+      "DELETE /api/admin/customers/7/": "",
+    }
+    if (method !== "GET") {
+      if (`${method} ${path}` in conhecidas) return route.fulfill({ status: 204 })
+      desconhecidas.push(`escrita ${method} ${path}`)
+      return json({ detail: "sem mock" }, 500)
+    }
     if (path === "/api/admin/customers/") return json(pagina([CLIENTE]))
     if (path === "/api/admin/customers/7/") return json(DETALHE)
     if (path === "/api/admin/pedidos/") return json(pagina([PEDIDO]))
@@ -83,7 +99,8 @@ async function preparar(page: Page) {
     if (path === "/api/admin/webhooks/w1/") return json({ ...WEBHOOK, payload: {} })
     if (path === "/api/admin/repasses/") return json(pagina([REPASSE]))
     if (path === "/api/admin/freemium/bloqueios/") return json(pagina([BLOQUEIO]))
-    return json(pagina([]))
+    desconhecidas.push(`leitura GET ${path}`)
+    return json({ detail: "sem mock" }, 500)
   })
   const escritas = () => chamadas.filter((c) => c.method !== "GET")
   const ultima = (path: string) => chamadas.filter((c) => c.method === "GET" && c.path === path).at(-1)

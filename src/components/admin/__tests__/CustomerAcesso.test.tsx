@@ -107,4 +107,16 @@ describe("CustomerAcesso", () => {
     expect((screen.getByRole("button", { name: "Excluir usuário" }) as HTMLButtonElement).disabled).toBe(true)
     expect((screen.getByRole("button", { name: "Tornar admin" }) as HTMLButtonElement).disabled).toBe(true)
   })
+
+  it("cancelar limpa a senha: ao reabrir os campos estao vazios", async () => {
+    montar()
+    await userEvent.click(screen.getByRole("button", { name: "Definir senha" }))
+    await userEvent.type(await screen.findByLabelText("Nova senha"), "segredo")
+    await userEvent.type(screen.getByLabelText("Confirmar senha"), "segredo")
+    await userEvent.click(screen.getByRole("button", { name: "Cancelar" }))
+    await waitFor(() => expect(screen.queryByLabelText("Nova senha")).toBeNull())
+    await userEvent.click(screen.getByRole("button", { name: "Definir senha" }))
+    expect((await screen.findByLabelText("Nova senha") as HTMLInputElement).value).toBe("")
+    expect((screen.getByLabelText("Confirmar senha") as HTMLInputElement).value).toBe("")
+  })
 })

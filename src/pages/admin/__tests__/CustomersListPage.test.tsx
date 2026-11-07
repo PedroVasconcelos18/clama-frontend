@@ -38,4 +38,16 @@ describe("CustomersListPage", () => {
       method: "POST", body: JSON.stringify({ email: "a@x.com", nome_completo: "", password: "abc" }), showToast: false,
     })
   })
+
+  it("Novo admin: cancelar e reabrir deixa os campos vazios", async () => {
+    render(<CustomersListPage />)
+    await userEvent.click(await screen.findByRole("button", { name: "Novo admin" }))
+    await userEvent.type(await screen.findByLabelText("E-mail"), "a@x.com")
+    await userEvent.type(screen.getByLabelText("Senha"), "segredo")
+    await userEvent.click(screen.getByRole("button", { name: "Cancelar" }))
+    await waitFor(() => expect(screen.queryByLabelText("Senha")).toBeNull())
+    await userEvent.click(screen.getByRole("button", { name: "Novo admin" }))
+    expect((await screen.findByLabelText("Senha") as HTMLInputElement).value).toBe("")
+    expect((screen.getByLabelText("E-mail") as HTMLInputElement).value).toBe("")
+  })
 })

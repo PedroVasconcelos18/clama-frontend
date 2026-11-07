@@ -56,7 +56,37 @@ describe("PedidoEditForm", () => {
     await userEvent.clear(screen.getByLabelText("E-mail"))
     await userEvent.type(screen.getByLabelText("E-mail"), "x")
     await userEvent.click(screen.getByRole("button", { name: "Salvar alterações" }))
-    expect(await screen.findByText("Informe um endereço de email válido.")).toBeTruthy()
+    expect(await screen.findByText("E-mail: Informe um endereço de email válido.")).toBeTruthy()
     expect(onSaved).not.toHaveBeenCalled()
+  })
+
+  it("idade ou valor nao numericos nao sao enviados e mostram erro no campo", async () => {
+    render(<PedidoEditForm pedido={pedido} onSaved={onSaved} onCancel={vi.fn()} />)
+    await userEvent.clear(screen.getByLabelText("Idade"))
+    await userEvent.type(screen.getByLabelText("Idade"), "abc")
+    await userEvent.clear(screen.getByLabelText("Valor (centavos)"))
+    await userEvent.type(screen.getByLabelText("Valor (centavos)"), "10,5")
+    await userEvent.click(screen.getByRole("button", { name: "Salvar alterações" }))
+    expect(await screen.findByText("Use só dígitos.")).toBeTruthy()
+    expect(screen.getByText("Use só dígitos (centavos).")).toBeTruthy()
+    expect(adminFetch).not.toHaveBeenCalled()
+  })
+
+  it("idade vazia limpa a idade (null) de proposito", async () => {
+    render(<PedidoEditForm pedido={pedido} onSaved={onSaved} onCancel={vi.fn()} />)
+    await userEvent.clear(screen.getByLabelText("Idade"))
+    await userEvent.click(screen.getByRole("button", { name: "Salvar alterações" }))
+    await waitFor(() => expect(adminFetch).toHaveBeenCalledWith("/api/admin/pedidos/p1/", expect.objectContaining({
+      body: JSON.stringify({ idade: null }),
+    })))
+  })
+
+  it("erro do servidor com um campo so leva o rotulo do campo", async () => {
+    adminFetch.mockRejectedValue({ pastoralMessage: "Garanta que este valor seja menor ou igual a 32767." })
+    render(<PedidoEditForm pedido={pedido} onSaved={onSaved} onCancel={vi.fn()} />)
+    await userEvent.clear(screen.getByLabelText("Idade"))
+    await userEvent.type(screen.getByLabelText("Idade"), "99999")
+    await userEvent.click(screen.getByRole("button", { name: "Salvar alterações" }))
+    expect(await screen.findByText("Idade: Garanta que este valor seja menor ou igual a 32767.")).toBeTruthy()
   })
 })

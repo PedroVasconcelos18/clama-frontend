@@ -12,6 +12,12 @@ import type { AdminPedido } from "@/types/admin.types"
 const SELECT =
   "mt-1 block w-full bg-clama-night border border-clama-gold/30 text-clama-cream rounded-md h-9 px-2 text-sm"
 
+const ROTULOS: Record<string, string> = {
+  nome: "Nome", email: "E-mail", telefone: "Telefone", idade: "Idade", sexo: "Sexo",
+  pedido_oracao: "Pedido de oração", oracao_gerada: "Oração gerada", valor_centavos: "Valor",
+  canal_entrega: "Canal", status: "Status",
+}
+
 /** Edição do PedidoAdmin do Django: só os campos editáveis; plano, pagamento e datas ficam de fora. */
 export function PedidoEditForm({
   pedido,
@@ -37,11 +43,18 @@ export function PedidoEditForm({
   }
   const [f, setF] = useState(inicial)
   const [erro, setErro] = useState<string | null>(null)
+  const [errosCampo, setErrosCampo] = useState<Partial<Record<"idade" | "valor_centavos", string>>>({})
   const [saving, setSaving] = useState(false)
   const set = (k: keyof typeof inicial) => (v: string) => setF((cur) => ({ ...cur, [k]: v }))
   const txt = (k: keyof typeof inicial, e: { target: { value: string } }) => set(k)(e.target.value)
 
   async function salvar() {
+    // número inválido nunca vai ao servidor (Number("abc") viraria null no JSON e apagaria a idade)
+    const invalidos: typeof errosCampo = {}
+    if (f.idade.trim() !== "" && !/^\d+$/.test(f.idade.trim())) invalidos.idade = "Use só dígitos."
+    if (!/^\d+$/.test(f.valor_centavos.trim())) invalidos.valor_centavos = "Use só dígitos (centavos)."
+    setErrosCampo(invalidos)
+    if (Object.keys(invalidos).length > 0) return
     // PATCH parcial: manda só o que mudou
     const corpo: Record<string, unknown> = {}
     for (const k of Object.keys(inicial) as (keyof typeof inicial)[]) {
@@ -65,7 +78,10 @@ export function PedidoEditForm({
       toast.success("Pedido atualizado.")
       onSaved(salvo)
     } catch (err) {
-      const msg = (err as { pastoralMessage?: string })?.pastoralMessage ?? "Não foi possível salvar o pedido."
+      const base = (err as { pastoralMessage?: string })?.pastoralMessage ?? "Não foi possível salvar o pedido."
+      // o servidor devolve só o texto; com um campo só, o rótulo dele identifica a origem
+      const campos = Object.keys(corpo)
+      const msg = campos.length === 1 && campos[0] ? `${ROTULOS[campos[0]] ?? campos[0]}: ${base}` : base
       setErro(msg)
       toast.error(msg)
     } finally {
@@ -97,6 +113,7 @@ export function PedidoEditForm({
         <div>
           <Label htmlFor="ped-idade">Idade</Label>
           <Input id="ped-idade" inputMode="numeric" value={f.idade} onChange={(e) => txt("idade", e)} />
+          {errosCampo.idade && <p className="text-xs text-red-300">{errosCampo.idade}</p>}
         </div>
       </div>
       <div className="grid grid-cols-2 gap-3">
@@ -120,6 +137,7 @@ export function PedidoEditForm({
       <div>
         <Label htmlFor="ped-valor">Valor (centavos)</Label>
         <Input id="ped-valor" inputMode="numeric" value={f.valor_centavos} onChange={(e) => txt("valor_centavos", e)} />
+        {errosCampo.valor_centavos && <p className="text-xs text-red-300">{errosCampo.valor_centavos}</p>}
       </div>
       <div>
         <Label htmlFor="ped-pedido">Pedido de oração</Label>

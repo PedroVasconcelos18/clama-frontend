@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useAdminList } from "@/hooks/useAdminList"
 import { AdminPager } from "@/components/admin/AdminPager"
 import { PastoralAlert } from "@/components/utility/PastoralAlert"
@@ -16,6 +16,7 @@ const SELECT =
 
 export default function PedidosListPage() {
   const [q, setQ] = useState("")
+  const [qBusca, setQBusca] = useState("") // q já com debounce: a busca do back decifra pedidos sem conta
   const [status, setStatus] = useState("")
   const [canal, setCanal] = useState("")
   const [ordering, setOrdering] = useState("") // "" = padrão do back (mais novo primeiro)
@@ -25,12 +26,21 @@ export default function PedidosListPage() {
 
   const { data, loading: isLoading, error } = useAdminList<AdminPedidoListItem>(
     "/api/admin/pedidos/",
-    { q, status, canal, ordering },
+    { q: qBusca, status, canal, ordering },
     offset,
     reloadToken,
   )
   const pedidos = data?.results ?? []
   const totalCount = data?.count ?? 0
+
+  useEffect(() => {
+    if (q === qBusca) return
+    const t = setTimeout(() => {
+      setQBusca(q)
+      setOffset(0)
+    }, 300)
+    return () => clearTimeout(t)
+  }, [q, qBusca])
 
   // qualquer mudança de filtro volta à primeira página
   const filtro = (set: (v: string) => void) => (v: string) => {
@@ -53,7 +63,7 @@ export default function PedidosListPage() {
               aria-label="Buscar pedidos"
               placeholder="E-mail ou nome da conta, ou início do ID"
               value={q}
-              onChange={(e) => filtro(setQ)(e.target.value)}
+              onChange={(e) => setQ(e.target.value)}
               className="pl-9 bg-clama-night border-clama-gold/30 text-clama-cream placeholder:text-clama-cream/40"
             />
           </div>
