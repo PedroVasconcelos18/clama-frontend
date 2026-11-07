@@ -27,15 +27,6 @@ import InstituicoesPage from "@/pages/admin/InstituicoesPage"
 import PromptEditorPage from "@/pages/admin/PromptEditorPage"
 import DocumentosPage from "@/pages/admin/DocumentosPage"
 
-const BlogPostEditorPage = lazy(
-  () => import("@/pages/admin/blog/BlogPostEditorPage"),
-)
-const BlogPostsListPage = lazy(
-  () => import("@/pages/admin/blog/BlogPostsListPage"),
-)
-const BlogDashboardPage = lazy(
-  () => import("@/pages/admin/blog/BlogDashboardPage"),
-)
 const BlogCommentsPage = lazy(
   () => import("@/pages/admin/blog/BlogCommentsPage"),
 )
@@ -83,38 +74,6 @@ export default function App() {
             <Route path="instituicoes" element={<InstituicoesPage />} />
             <Route path="prompts" element={<PromptEditorPage />} />
             <Route path="documentos" element={<DocumentosPage />} />
-            <Route
-              path="blog"
-              element={
-                <LazyAdmin>
-                  <BlogDashboardPage />
-                </LazyAdmin>
-              }
-            />
-            <Route
-              path="blog/posts"
-              element={
-                <LazyAdmin>
-                  <BlogPostsListPage />
-                </LazyAdmin>
-              }
-            />
-            <Route
-              path="blog/posts/novo"
-              element={
-                <LazyAdmin>
-                  <BlogPostEditorPage />
-                </LazyAdmin>
-              }
-            />
-            <Route
-              path="blog/posts/:id/editar"
-              element={
-                <LazyAdmin>
-                  <BlogPostEditorPage />
-                </LazyAdmin>
-              }
-            />
             <Route
               path="blog/comentarios"
               element={

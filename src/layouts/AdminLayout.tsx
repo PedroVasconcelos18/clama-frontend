@@ -9,7 +9,6 @@ import {
   HandHeart,
   MessageSquare,
   FolderOpen,
-  Newspaper,
   MessagesSquare,
   UserX,
   Menu,
@@ -27,7 +26,6 @@ const navItems = [
   { to: "/admin/instituicoes", icon: HandHeart, label: "Instituições" },
   { to: "/admin/prompts", icon: MessageSquare, label: "Prompts" },
   { to: "/admin/documentos", icon: FolderOpen, label: "Documentos" },
-  { to: "/admin/blog", icon: Newspaper, label: "Blog" },
   {
     to: "/admin/blog/comentarios",
     icon: MessagesSquare,
