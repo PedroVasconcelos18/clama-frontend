@@ -78,4 +78,43 @@ describe("FreemiumBloqueiosPage", () => {
     await userEvent.click(screen.getByRole("tab", { name: "Tokens de confirmação" }))
     expect(await screen.findByText("abcd1234…")).toBeTruthy()
   })
+
+  it("tokens: coluna de estado e busca por pedido via query", async () => {
+    adminFetch.mockImplementation(() => {
+      const vivo = new Date(Date.now() + 3600e3).toISOString()
+      return Promise.resolve({
+        count: 3, next: null, previous: null,
+        results: [
+          { ...token, id: "a", token_curto: "usado000…", used_at: "2026-11-01T11:00:00Z" },
+          { ...token, id: "b", token_curto: "velho000…" },
+          { ...token, id: "c", token_curto: "novo0000…", expires_at: vivo },
+        ],
+      })
+    })
+    render(<FreemiumBloqueiosPage />)
+    await userEvent.click(screen.getByRole("tab", { name: "Tokens de confirmação" }))
+    await screen.findByText("usado000…")
+    expect(screen.getByText("usado")).toBeTruthy()
+    expect(screen.getByText("expirado")).toBeTruthy()
+    expect(screen.getByText("válido")).toBeTruthy()
+
+    const uuid = "12345678-1234-1234-1234-1234567890ab"
+    await userEvent.type(screen.getByLabelText("Id do pedido"), uuid)
+    await userEvent.click(screen.getByRole("button", { name: /Buscar token/ }))
+    await waitFor(() =>
+      expect(adminFetch).toHaveBeenLastCalledWith(
+        `/api/admin/freemium/tokens/?limit=20&offset=0&pedido=${uuid}`,
+      ),
+    )
+  })
+
+  it("tokens: pedido malformado nao chama a API", async () => {
+    render(<FreemiumBloqueiosPage />)
+    await userEvent.click(screen.getByRole("tab", { name: "Tokens de confirmação" }))
+    await screen.findByText("abcd1234…")
+    const n = adminFetch.mock.calls.length
+    await userEvent.type(screen.getByLabelText("Id do pedido"), "abc")
+    await userEvent.click(screen.getByRole("button", { name: /Buscar token/ }))
+    expect(adminFetch.mock.calls.length).toBe(n)
+  })
 })

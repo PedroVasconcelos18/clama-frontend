@@ -16,6 +16,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { PedidoDetailDrawer } from "@/components/admin/PedidoDetailDrawer"
 import { LoadingSpinner } from "@/components/utility/LoadingSpinner"
 import { PastoralAlert } from "@/components/utility/PastoralAlert"
 import type { AdminWebhook } from "@/types/admin.types"
@@ -29,6 +30,9 @@ const podeReprocessar = (w: AdminWebhook) =>
   (w.status === "RECEBIDO" || w.status === "ERRO") &&
   (w.provider === "MERCADO_PAGO" || w.provider === "WORDPRESS")
 
+const EVENT_TYPES = ["payment", "post_publicado", "post_atualizado", "post_removido"]
+const curto = (t: string, n: number) => (t.length > n ? `${t.slice(0, n)}…` : t)
+
 const RESULTADO: Record<string, string> = {
   enfileirado: "Reprocesso enfileirado.",
   ja_na_fila: "Esse evento já estava na fila.",
@@ -38,6 +42,8 @@ export default function WebhooksPage() {
   const { adminFetch } = useAdminApi()
   const [provider, setProvider] = useState("")
   const [status, setStatus] = useState("")
+  const [eventType, setEventType] = useState("")
+  const [pedidoId, setPedidoId] = useState<string | null>(null)
   const [q, setQ] = useState("")
   const [offset, setOffset] = useState(0)
   const [reloadToken, setReloadToken] = useState(0)
@@ -47,7 +53,7 @@ export default function WebhooksPage() {
 
   const { data, loading, error } = useAdminList<AdminWebhook>(
     "/api/admin/webhooks/",
-    { provider, status, q },
+    { provider, status, event_type: eventType, q },
     offset,
     reloadToken,
   )
@@ -71,6 +77,7 @@ export default function WebhooksPage() {
       )
       toast.success(RESULTADO[res.status] ?? `Reprocessado: ${res.status}.`)
       setTarget(null)
+      setDetailId(null)
       setReloadToken((n) => n + 1)
     } catch (err) {
       toast.error(
@@ -120,6 +127,17 @@ export default function WebhooksPage() {
           </select>
         </div>
         <div>
+          <Label htmlFor="wh-event" className="text-xs uppercase tracking-wider text-clama-gold/80">
+            Tipo
+          </Label>
+          <select id="wh-event" value={eventType} onChange={(e) => filtro(setEventType)(e.target.value)} className={selectCls}>
+            <option value="">Todos</option>
+            {EVENT_TYPES.map((t) => (
+              <option key={t} value={t}>{t}</option>
+            ))}
+          </select>
+        </div>
+        <div>
           <Label htmlFor="wh-status" className="text-xs uppercase tracking-wider text-clama-gold/80">
             Status
           </Label>
@@ -144,20 +162,22 @@ export default function WebhooksPage() {
               <th className="p-3">Tipo</th>
               <th className="p-3">Evento</th>
               <th className="p-3">Status</th>
+              <th className="p-3">Pedido</th>
+              <th className="p-3">Erro</th>
               <th className="p-3 text-right">Ações</th>
             </tr>
           </thead>
           <tbody>
             {loading && (
               <tr>
-                <td colSpan={6} className="p-6 text-center">
+                <td colSpan={8} className="p-6 text-center">
                   <LoadingSpinner size={20} />
                 </td>
               </tr>
             )}
             {!loading && !error && rows.length === 0 && (
               <tr>
-                <td colSpan={6} className="p-6 text-center text-clama-cream/60">
+                <td colSpan={8} className="p-6 text-center text-clama-cream/60">
                   Nenhum webhook encontrado.
                 </td>
               </tr>
@@ -170,19 +190,25 @@ export default function WebhooksPage() {
                   <td className="p-3 text-clama-cream/80">{w.event_type}</td>
                   <td className="p-3 font-mono text-xs text-clama-cream/60">{w.external_event_id}</td>
                   <td className="p-3 text-clama-cream/80">{w.status}</td>
+                  <td className="p-3 font-mono text-xs">
+                    {w.pedido_id ? (
+                      <button type="button" onClick={() => setPedidoId(w.pedido_id)}
+                        className="text-clama-gold hover:underline">
+                        {w.pedido_id.slice(0, 8)}
+                      </button>
+                    ) : (
+                      "—"
+                    )}
+                  </td>
+                  <td className="p-3 text-xs text-red-300" title={w.error_message || undefined}>
+                    {w.error_message ? curto(w.error_message, 60) : "—"}
+                  </td>
                   <td className="p-3 text-right">
                     <div className="inline-flex gap-2">
                       <Button variant="outline" size="sm" onClick={() => setDetailId(w.id)}
                         className="border-clama-gold/40 text-clama-gold hover:bg-clama-gold/10">
                         Detalhes
                       </Button>
-                      {podeReprocessar(w) && (
-                        <Button variant="outline" size="sm" onClick={() => setTarget(w)}
-                          className="border-clama-gold/40 text-clama-gold hover:bg-clama-gold/10">
-                          <RotateCw className="h-3.5 w-3.5 mr-1" />
-                          Reprocessar
-                        </Button>
-                      )}
                     </div>
                   </td>
                 </tr>
@@ -213,12 +239,28 @@ export default function WebhooksPage() {
         </DialogContent>
       </Dialog>
 
-      <WebhookDrawer id={detailId} onClose={() => setDetailId(null)} />
+      <WebhookDrawer
+        id={detailId}
+        onClose={() => setDetailId(null)}
+        onReprocessar={setTarget}
+        reloadToken={reloadToken}
+      />
+      <PedidoDetailDrawer pedidoId={pedidoId} onClose={() => setPedidoId(null)} />
     </div>
   )
 }
 
-function WebhookDrawer({ id, onClose }: { id: string | null; onClose: () => void }) {
+function WebhookDrawer({
+  id,
+  onClose,
+  onReprocessar,
+  reloadToken,
+}: {
+  id: string | null
+  onClose: () => void
+  onReprocessar: (w: AdminWebhook) => void
+  reloadToken: number
+}) {
   const { adminFetch } = useAdminApi()
   const [res, setRes] = useState<{ id: string; data?: AdminWebhook; error?: string } | null>(null)
 
@@ -234,7 +276,14 @@ function WebhookDrawer({ id, onClose }: { id: string | null; onClose: () => void
     return () => {
       cancelled = true
     }
-  }, [adminFetch, id])
+  }, [adminFetch, id, reloadToken])
+
+  useEffect(() => {
+    if (!id) return
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose()
+    document.addEventListener("keydown", onKey)
+    return () => document.removeEventListener("keydown", onKey)
+  }, [id, onClose])
 
   const atual = res?.id === id ? res : null
   const data = atual?.data
@@ -247,11 +296,12 @@ function WebhookDrawer({ id, onClose }: { id: string | null; onClose: () => void
       <aside
         className="fixed right-0 top-0 z-50 h-full w-full max-w-[560px] overflow-y-auto bg-clama-night-deep border-l border-clama-gold/20 shadow-xl"
         role="dialog"
+        aria-modal="true"
         aria-label="Detalhes do webhook"
       >
         <header className="sticky top-0 flex items-center justify-between border-b border-clama-gold/20 bg-clama-night-deep px-5 py-4">
           <h2 className="font-serif text-lg text-clama-gold">Detalhes do webhook</h2>
-          <Button variant="ghost" size="icon-sm" onClick={onClose} aria-label="Fechar"
+          <Button autoFocus variant="ghost" size="icon-sm" onClick={onClose} aria-label="Fechar"
             className="text-clama-cream/60 hover:text-clama-cream hover:bg-clama-gold/10">
             <X className="h-4 w-4" />
           </Button>
@@ -273,6 +323,13 @@ function WebhookDrawer({ id, onClose }: { id: string | null; onClose: () => void
               </p>
               {data.error_message && (
                 <PastoralAlert variant="error">{data.error_message}</PastoralAlert>
+              )}
+              {podeReprocessar(data) && (
+                <Button variant="outline" size="sm" onClick={() => onReprocessar(data)}
+                  className="border-clama-gold/40 text-clama-gold hover:bg-clama-gold/10">
+                  <RotateCw className="h-3.5 w-3.5 mr-1" />
+                  Reprocessar
+                </Button>
               )}
               <h3 className="text-xs font-bold uppercase tracking-[2px] text-clama-gold">Payload</h3>
               <pre className="overflow-x-auto rounded-md bg-clama-night p-3 text-xs">

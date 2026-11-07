@@ -91,19 +91,20 @@ export default function RepassesPage() {
               <th className="p-3 text-right">Repasse</th>
               <th className="p-3">Status</th>
               <th className="p-3">Transferido em</th>
+              <th className="p-3">Comprovante</th>
             </tr>
           </thead>
           <tbody>
             {loading && (
               <tr>
-                <td colSpan={8} className="p-6 text-center">
+                <td colSpan={9} className="p-6 text-center">
                   <LoadingSpinner size={20} />
                 </td>
               </tr>
             )}
             {!loading && !error && rows.length === 0 && (
               <tr>
-                <td colSpan={8} className="p-6 text-center text-clama-cream/60">
+                <td colSpan={9} className="p-6 text-center text-clama-cream/60">
                   Nenhum repasse encontrado.
                 </td>
               </tr>
@@ -125,6 +126,16 @@ export default function RepassesPage() {
                     {r.status === "transferido" ? "Transferido" : "Registrado"}
                   </td>
                   <td className="p-3 text-clama-cream/60">{data(r.transferido_em)}</td>
+                  <td className="p-3 text-xs text-clama-cream/80">
+                    {/^https?:\/\//.test(r.comprovante) ? (
+                      <a href={r.comprovante} target="_blank" rel="noopener noreferrer"
+                        className="text-clama-gold hover:underline">
+                        Abrir
+                      </a>
+                    ) : (
+                      r.comprovante || "—"
+                    )}
+                  </td>
                 </tr>
               ))}
           </tbody>

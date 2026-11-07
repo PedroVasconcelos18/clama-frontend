@@ -9,7 +9,7 @@ vi.mock("@/hooks/useAdminApi", () => ({ useAdminApi: () => ({ adminFetch }) }))
 const repasse = {
   id: "r1", pedido_id: "12345678-aaaa-bbbb-cccc-1234567890ab", instituicao_id: "i1",
   instituicao_nome: "Mar de Espanha", valor_base_centavos: 10000, percentual: 10,
-  valor_centavos: 1000, status: "registrado", transferido_em: null, comprovante: "",
+  valor_centavos: 1000, status: "registrado", transferido_em: null, comprovante: "https://x.test/c.pdf",
   created_at: "2026-11-01T10:00:00Z", updated_at: "2026-11-01T10:00:00Z",
 }
 
@@ -23,6 +23,7 @@ describe("RepassesPage", () => {
     render(<RepassesPage />)
     expect(await screen.findByText("Mar de Espanha")).toBeTruthy()
     expect(screen.getByText(/10,00/)).toBeTruthy()
+    expect(screen.getByRole("link", { name: "Abrir" }).getAttribute("href")).toBe("https://x.test/c.pdf")
   })
 
   it("paginacao envia limit e offset; filtro de status volta ao offset 0", async () => {

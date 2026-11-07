@@ -242,16 +242,51 @@ function Bloqueios() {
   )
 }
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+function estadoDoToken(t: AdminFreemiumToken): string {
+  if (t.used_at) return "usado"
+  return new Date(t.expires_at).getTime() <= Date.now() ? "expirado" : "válido"
+}
+
 function Tokens() {
   const [offset, setOffset] = useState(0)
+  const [pedidoIn, setPedidoIn] = useState("")
+  const [pedido, setPedido] = useState("")
   const { data, loading, error } = useAdminList<AdminFreemiumToken>(
     "/api/admin/freemium/tokens/",
-    {},
+    { pedido },
     offset,
   )
   const rows = data?.results ?? []
+
+  function buscar(e: React.FormEvent) {
+    e.preventDefault()
+    const v = pedidoIn.trim()
+    if (v && !UUID_RE.test(v)) {
+      toast.error("Informe o id do pedido completo (UUID).")
+      return
+    }
+    setPedido(v)
+    setOffset(0)
+  }
+
   return (
     <div className="space-y-4">
+      <form onSubmit={buscar}
+        className="flex flex-wrap items-end gap-3 rounded-md border border-clama-gold/15 bg-clama-night-deep p-3">
+        <div className="flex-1 min-w-[260px]">
+          <Label htmlFor="tk-pedido" className="text-xs uppercase tracking-wider text-clama-gold/80">
+            Id do pedido
+          </Label>
+          <Input id="tk-pedido" value={pedidoIn} onChange={(e) => setPedidoIn(e.target.value)}
+            autoComplete="off" className="mt-1 bg-clama-night border-clama-gold/30 text-clama-cream" />
+        </div>
+        <Button type="submit">
+          <Search className="h-4 w-4 mr-1" />
+          Buscar token
+        </Button>
+      </form>
       {error && <PastoralAlert variant="error">{error}</PastoralAlert>}
       <div className="overflow-x-auto rounded-md border border-clama-gold/20">
         <table className="w-full text-left text-sm">
@@ -262,14 +297,15 @@ function Tokens() {
               <th className="p-3">Criado em</th>
               <th className="p-3">Expira em</th>
               <th className="p-3">Usado em</th>
+              <th className="p-3">Estado</th>
             </tr>
           </thead>
           <tbody>
             {loading && (
-              <tr><td colSpan={5} className="p-6 text-center"><LoadingSpinner size={20} /></td></tr>
+              <tr><td colSpan={6} className="p-6 text-center"><LoadingSpinner size={20} /></td></tr>
             )}
             {!loading && !error && rows.length === 0 && (
-              <tr><td colSpan={5} className="p-6 text-center text-clama-cream/60">Nenhum token.</td></tr>
+              <tr><td colSpan={6} className="p-6 text-center text-clama-cream/60">Nenhum token.</td></tr>
             )}
             {!loading &&
               rows.map((t) => (
@@ -279,6 +315,7 @@ function Tokens() {
                   <td className="p-3 text-clama-cream/60">{fmt(t.created_at)}</td>
                   <td className="p-3 text-clama-cream/60">{fmt(t.expires_at)}</td>
                   <td className="p-3 text-clama-cream/60">{fmt(t.used_at)}</td>
+                  <td className="p-3 text-clama-cream/80">{estadoDoToken(t)}</td>
                 </tr>
               ))}
           </tbody>
