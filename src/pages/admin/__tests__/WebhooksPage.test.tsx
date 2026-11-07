@@ -8,7 +8,7 @@ const adminFetch = vi.fn()
 vi.mock("@/hooks/useAdminApi", () => ({ useAdminApi: () => ({ adminFetch }) }))
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }))
 
-let postResult: Promise<unknown>
+let postResult: () => Promise<unknown>
 let lista: unknown[]
 const evento = {
   id: "w1", created_at: "2026-11-01T10:00:00Z", updated_at: "2026-11-01T10:00:00Z",
@@ -20,9 +20,9 @@ describe("WebhooksPage", () => {
   beforeEach(() => {
     adminFetch.mockReset()
     lista = [evento]
-    postResult = Promise.resolve({ status: "PROCESSADO" })
+    postResult = () => Promise.resolve({ status: "PROCESSADO" })
     adminFetch.mockImplementation((url: string, init?: { method?: string }) => {
-      if (init?.method === "POST") return postResult
+      if (init?.method === "POST") return postResult()
       if (url === "/api/admin/webhooks/w1/")
         return Promise.resolve({ ...(lista[0] as object), payload: { data: { id: "999" } } })
       return Promise.resolve({ count: 45, next: null, previous: null, results: lista })
@@ -72,7 +72,7 @@ describe("WebhooksPage", () => {
   })
 
   it("ja_na_fila mostra a mensagem propria", async () => {
-    postResult = Promise.resolve({ status: "ja_na_fila" })
+    postResult = () => Promise.resolve({ status: "ja_na_fila" })
     await abrirReprocessar()
     await userEvent.click(screen.getByRole("button", { name: "Confirmar reprocesso" }))
     await waitFor(() =>
@@ -81,7 +81,7 @@ describe("WebhooksPage", () => {
   })
 
   it("409 mostra a mensagem pastoral e reabilita o botao", async () => {
-    postResult = Promise.reject({ pastoralMessage: "Esse evento já foi processado." })
+    postResult = () => Promise.reject({ pastoralMessage: "Esse evento já foi processado." })
     await abrirReprocessar()
     await userEvent.click(screen.getByRole("button", { name: "Confirmar reprocesso" }))
     await waitFor(() =>
@@ -120,5 +120,12 @@ describe("WebhooksPage", () => {
     await screen.findByText("Payload")
     await userEvent.keyboard("{Escape}")
     await waitFor(() => expect(screen.queryByText("Payload")).toBeNull())
+  })
+
+  it("Escape com a confirmacao aberta nao fecha o drawer", async () => {
+    await abrirReprocessar()
+    await userEvent.keyboard("{Escape}")
+    await waitFor(() => expect(screen.queryByText("Reprocessar webhook?")).toBeNull())
+    expect(screen.getByText("Payload")).toBeTruthy()
   })
 })

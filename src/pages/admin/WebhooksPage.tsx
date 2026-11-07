@@ -243,6 +243,7 @@ export default function WebhooksPage() {
         id={detailId}
         onClose={() => setDetailId(null)}
         onReprocessar={setTarget}
+        confirmando={!!target}
         reloadToken={reloadToken}
       />
       <PedidoDetailDrawer pedidoId={pedidoId} onClose={() => setPedidoId(null)} />
@@ -254,11 +255,14 @@ function WebhookDrawer({
   id,
   onClose,
   onReprocessar,
+  confirmando,
   reloadToken,
 }: {
   id: string | null
   onClose: () => void
   onReprocessar: (w: AdminWebhook) => void
+  /** Dialog de confirmação aberto: Escape é dele, não do drawer. */
+  confirmando: boolean
   reloadToken: number
 }) {
   const { adminFetch } = useAdminApi()
@@ -279,11 +283,11 @@ function WebhookDrawer({
   }, [adminFetch, id, reloadToken])
 
   useEffect(() => {
-    if (!id) return
+    if (!id || confirmando) return
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose()
     document.addEventListener("keydown", onKey)
     return () => document.removeEventListener("keydown", onKey)
-  }, [id, onClose])
+  }, [id, onClose, confirmando])
 
   const atual = res?.id === id ? res : null
   const data = atual?.data
