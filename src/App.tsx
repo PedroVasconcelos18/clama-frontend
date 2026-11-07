@@ -26,6 +26,9 @@ import PlanosPage from "@/pages/admin/PlanosPage"
 import InstituicoesPage from "@/pages/admin/InstituicoesPage"
 import PromptEditorPage from "@/pages/admin/PromptEditorPage"
 import DocumentosPage from "@/pages/admin/DocumentosPage"
+import RepassesPage from "@/pages/admin/RepassesPage"
+import WebhooksPage from "@/pages/admin/WebhooksPage"
+import FreemiumBloqueiosPage from "@/pages/admin/FreemiumBloqueiosPage"
 
 const BlogCommentsPage = lazy(
   () => import("@/pages/admin/blog/BlogCommentsPage"),
@@ -74,6 +77,9 @@ export default function App() {
             <Route path="instituicoes" element={<InstituicoesPage />} />
             <Route path="prompts" element={<PromptEditorPage />} />
             <Route path="documentos" element={<DocumentosPage />} />
+            <Route path="repasses" element={<RepassesPage />} />
+            <Route path="webhooks" element={<WebhooksPage />} />
+            <Route path="freemium" element={<FreemiumBloqueiosPage />} />
             <Route
               path="blog/comentarios"
               element={

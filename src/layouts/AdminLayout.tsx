@@ -11,6 +11,9 @@ import {
   FolderOpen,
   MessagesSquare,
   UserX,
+  Banknote,
+  Webhook,
+  ShieldBan,
   Menu,
   X,
   LogOut,
@@ -32,6 +35,9 @@ const navItems = [
     label: "Comentários",
   },
   { to: "/admin/blog/banidos", icon: UserX, label: "Banidos" },
+  { to: "/admin/repasses", icon: Banknote, label: "Repasses" },
+  { to: "/admin/webhooks", icon: Webhook, label: "Webhooks" },
+  { to: "/admin/freemium", icon: ShieldBan, label: "Freemium" },
 ]
 
 export default function AdminLayout() {

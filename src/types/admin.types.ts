@@ -161,3 +161,58 @@ export interface AdminDocumentoContexto {
   created_at: string
   updated_at: string
 }
+
+// ---------------------------------------------------------------------------
+// Etapa 7: Repasses, Webhooks e Freemium
+// ---------------------------------------------------------------------------
+
+export interface AdminRepasse {
+  id: string
+  pedido_id: string
+  instituicao_id: string
+  instituicao_nome: string
+  valor_base_centavos: number
+  percentual: number
+  valor_centavos: number
+  status: "registrado" | "transferido"
+  transferido_em: string | null
+  comprovante: string
+  created_at: string
+  updated_at: string
+}
+
+export type AdminWebhookStatus = "RECEBIDO" | "PROCESSADO" | "IGNORADO" | "ERRO"
+export type AdminWebhookProvider = "MERCADO_PAGO" | "WORDPRESS" | "ASAAS" | "ZAPI"
+
+export interface AdminWebhook {
+  id: string
+  created_at: string
+  updated_at: string
+  provider: AdminWebhookProvider
+  event_type: string
+  status: AdminWebhookStatus
+  external_event_id: string
+  pedido_id: string | null
+  error_message: string
+  /** Só no detalhe. */
+  payload?: unknown
+}
+
+export interface AdminFreemiumBloqueio {
+  id: string
+  created_at: string
+  cpf_hash_curto: string
+  email_hash_curto: string
+  tem_telefone: boolean
+  tem_device: boolean
+  tem_ip: boolean
+}
+
+export interface AdminFreemiumToken {
+  id: string
+  token_curto: string
+  pedido_id: string
+  created_at: string
+  expires_at: string
+  used_at: string | null
+}
