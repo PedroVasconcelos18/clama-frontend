@@ -1,5 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
+import { SessaoProvider } from "@/contexts/SessaoContext";
 import { describe, it, expect } from "vitest";
 
 import Confirmado from "../Confirmado";
@@ -7,7 +8,9 @@ import Confirmado from "../Confirmado";
 function renderAt(path: string) {
   return render(
     <MemoryRouter initialEntries={[path]}>
+      <SessaoProvider>
       <Confirmado />
+    </SessaoProvider>
     </MemoryRouter>,
   );
 }

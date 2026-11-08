@@ -1,5 +1,6 @@
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
+import { SessaoProvider } from "@/contexts/SessaoContext";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 import Confirmar from "../Confirmar";
@@ -21,7 +22,9 @@ vi.mock("react-router-dom", async () => {
 function renderAt(path: string) {
   return render(
     <MemoryRouter initialEntries={[path]}>
+      <SessaoProvider>
       <Confirmar />
+    </SessaoProvider>
     </MemoryRouter>,
   );
 }

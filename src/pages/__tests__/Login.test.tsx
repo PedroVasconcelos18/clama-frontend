@@ -3,8 +3,8 @@ import { MemoryRouter } from "react-router-dom"
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest"
 
 import Login from "@/pages/Login"
-import { CustomerAuthProvider } from "@/contexts/CustomerAuthContext"
-import * as apiModule from "@/lib/api"
+import { SessaoProvider } from "@/contexts/SessaoContext"
+import { mockApiFetch, usuarioFixture } from "@/test/sessao"
 import { PastoralApiError } from "@/lib/api"
 
 const navigateMock = vi.fn()
@@ -36,9 +36,9 @@ vi.mock("sonner", async () => {
 function renderLogin(initialUrl = "/login") {
   return render(
     <MemoryRouter initialEntries={[initialUrl]}>
-      <CustomerAuthProvider>
+      <SessaoProvider>
         <Login />
-      </CustomerAuthProvider>
+      </SessaoProvider>
     </MemoryRouter>,
   )
 }
@@ -68,39 +68,19 @@ describe("Login (/login)", () => {
     vi.restoreAllMocks()
   })
 
-  it("happy path: login com flag false redireciona para next (default '/')", async () => {
-    vi.spyOn(apiModule, "apiFetch").mockResolvedValue({
-      access: "access-1",
-      refresh: "refresh-1",
-      user: {
-        id: 1,
-        email: "fiel@example.com",
-        nome_completo: "Pedro",
-        force_change_password: false,
-        freemium_used_at: null,
-      },
-    })
+  it("happy path: login redireciona para o next default (/conta)", async () => {
+    mockApiFetch({ outras: () => usuarioFixture })
 
     renderLogin("/login")
     await fillAndSubmit()
 
     await waitFor(() => {
-      expect(navigateMock).toHaveBeenCalledWith("/", { replace: true })
+      expect(navigateMock).toHaveBeenCalledWith("/conta", { replace: true })
     })
   })
 
-  it("happy path: login com flag false e ?next=X redireciona para X", async () => {
-    vi.spyOn(apiModule, "apiFetch").mockResolvedValue({
-      access: "access-1",
-      refresh: "refresh-1",
-      user: {
-        id: 1,
-        email: "fiel@example.com",
-        nome_completo: "Pedro",
-        force_change_password: false,
-        freemium_used_at: null,
-      },
-    })
+  it("happy path: login com ?next=X redireciona para X", async () => {
+    mockApiFetch({ outras: () => usuarioFixture })
 
     renderLogin("/login?next=%2F%23pedido")
     await fillAndSubmit()
@@ -110,39 +90,17 @@ describe("Login (/login)", () => {
     })
   })
 
-  it("flag true redireciona para /trocar-senha?next=...", async () => {
-    vi.spyOn(apiModule, "apiFetch").mockResolvedValue({
-      access: "access-1",
-      refresh: "refresh-1",
-      user: {
-        id: 1,
-        email: "fiel@example.com",
-        nome_completo: "Pedro",
-        force_change_password: true,
-        freemium_used_at: null,
+  it("credenciais erradas (401): mostra toast pastoral", async () => {
+    mockApiFetch({
+      outras: () => {
+        throw new PastoralApiError(
+          "Erro",
+          "invalid_credentials",
+          "E-mail ou senha não conferem. Tente novamente.",
+          401,
+        )
       },
     })
-
-    renderLogin("/login?next=%2F%23pedido")
-    await fillAndSubmit()
-
-    await waitFor(() => {
-      expect(navigateMock).toHaveBeenCalledWith(
-        `/trocar-senha?next=${encodeURIComponent("/#pedido")}`,
-        { replace: true },
-      )
-    })
-  })
-
-  it("credenciais erradas (401): mostra toast pastoral", async () => {
-    vi.spyOn(apiModule, "apiFetch").mockRejectedValue(
-      new PastoralApiError(
-        "Erro",
-        "invalid_credentials",
-        "E-mail ou senha não conferem. Tente novamente.",
-        401,
-      ),
-    )
 
     renderLogin("/login")
     await fillAndSubmit("errado@example.com", "senha-errada")
@@ -156,14 +114,16 @@ describe("Login (/login)", () => {
   })
 
   it("admin tentando logar (401 genérica): mostra mesmo toast", async () => {
-    vi.spyOn(apiModule, "apiFetch").mockRejectedValue(
-      new PastoralApiError(
-        "Erro",
-        "invalid_credentials",
-        "E-mail ou senha não conferem. Tente novamente.",
-        401,
-      ),
-    )
+    mockApiFetch({
+      outras: () => {
+        throw new PastoralApiError(
+          "Erro",
+          "invalid_credentials",
+          "E-mail ou senha não conferem. Tente novamente.",
+          401,
+        )
+      },
+    })
 
     renderLogin("/login")
     await fillAndSubmit("admin@clama.me", "admin-senha")
@@ -177,14 +137,16 @@ describe("Login (/login)", () => {
   })
 
   it("rate-limit (429): mostra toast pastoral", async () => {
-    vi.spyOn(apiModule, "apiFetch").mockRejectedValue(
-      new PastoralApiError(
-        "Erro",
-        "rate_limit",
-        "Muitas tentativas seguidas. Aguarde um instante e tente de novo.",
-        429,
-      ),
-    )
+    mockApiFetch({
+      outras: () => {
+        throw new PastoralApiError(
+          "Erro",
+          "rate_limit",
+          "Muitas tentativas seguidas. Aguarde um instante e tente de novo.",
+          429,
+        )
+      },
+    })
 
     renderLogin("/login")
     await fillAndSubmit()
@@ -197,49 +159,25 @@ describe("Login (/login)", () => {
     expect(navigateMock).not.toHaveBeenCalled()
   })
 
-  it("redirects to next when already authenticated and force_change_password=false (P-17)", async () => {
-    // Pre-populate storage with valid auth + flag false
-    localStorage.setItem(
-      "clama:customer-auth",
-      JSON.stringify({
-        user: {
-          id: 1,
-          email: "fiel@example.com",
-          nome_completo: "Pedro",
-          force_change_password: false,
-          freemium_used_at: null,
-        },
-        accessToken: "access-1",
-        refreshToken: "refresh-1",
-      }),
-    )
+  it("redireciona para next quando a sessão já existe (P-17)", async () => {
+    mockApiFetch({ usuario: usuarioFixture })
 
     renderLogin("/login")
 
     // Effect-based redirect to default `/`
     await waitFor(() => {
-      expect(navigateMock).toHaveBeenCalledWith("/", { replace: true })
+      expect(navigateMock).toHaveBeenCalledWith("/conta", { replace: true })
     })
   })
 
-  it("rejects open-redirect via ?next (P-8): //evil.com folds to '/'", async () => {
-    vi.spyOn(apiModule, "apiFetch").mockResolvedValue({
-      access: "access-1",
-      refresh: "refresh-1",
-      user: {
-        id: 1,
-        email: "fiel@example.com",
-        nome_completo: "Pedro",
-        force_change_password: false,
-        freemium_used_at: null,
-      },
-    })
+  it("rejects open-redirect via ?next (P-8): //evil.com folds to default", async () => {
+    mockApiFetch({ outras: () => usuarioFixture })
 
     renderLogin("/login?next=" + encodeURIComponent("//evil.com"))
     await fillAndSubmit()
 
     await waitFor(() => {
-      expect(navigateMock).toHaveBeenCalledWith("/", { replace: true })
+      expect(navigateMock).toHaveBeenCalledWith("/conta", { replace: true })
     })
   })
 })

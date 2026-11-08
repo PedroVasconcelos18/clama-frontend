@@ -45,7 +45,7 @@ export default defineConfig(({ mode }) => {
       // e recebe o index.html da SPA — falha silenciosa com status 200.
       proxy: {
         "/api": {
-          target: env.VITE_DEV_API_PROXY_TARGET || "http://localhost:8000",
+          target: env.VITE_DEV_API_PROXY_TARGET || "http://localhost:8080",
           changeOrigin: true,
         },
       },

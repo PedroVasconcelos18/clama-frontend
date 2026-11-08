@@ -4,8 +4,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 import { toast } from "sonner"
 import WebhooksPage from "../WebhooksPage"
 
-const adminFetch = vi.fn()
-vi.mock("@/hooks/useAdminApi", () => ({ useAdminApi: () => ({ adminFetch }) }))
+const fetchApi = vi.fn()
+vi.mock("@/hooks/useApi", () => ({ useApi: () => ({ fetchApi }) }))
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }))
 
 let postResult: () => Promise<unknown>
@@ -18,10 +18,10 @@ const evento = {
 
 describe("WebhooksPage", () => {
   beforeEach(() => {
-    adminFetch.mockReset()
+    fetchApi.mockReset()
     lista = [evento]
     postResult = () => Promise.resolve({ status: "PROCESSADO" })
-    adminFetch.mockImplementation((url: string, init?: { method?: string }) => {
+    fetchApi.mockImplementation((url: string, init?: { method?: string }) => {
       if (init?.method === "POST") return postResult()
       if (url === "/api/admin/webhooks/w1/")
         return Promise.resolve({ ...(lista[0] as object), payload: { data: { id: "999" } } })
@@ -41,7 +41,7 @@ describe("WebhooksPage", () => {
     render(<WebhooksPage />)
     await userEvent.click(await screen.findByRole("button", { name: /Próxima/ }))
     await waitFor(() =>
-      expect(adminFetch).toHaveBeenLastCalledWith("/api/admin/webhooks/?limit=20&offset=20"),
+      expect(fetchApi).toHaveBeenLastCalledWith("/api/admin/webhooks/?limit=20&offset=20"),
     )
   })
 
@@ -61,10 +61,10 @@ describe("WebhooksPage", () => {
   it("Reprocessar (no drawer) pede confirmacao antes de chamar o POST", async () => {
     await abrirReprocessar()
     expect(screen.getByText(/marcado como pago/)).toBeTruthy()
-    expect(adminFetch.mock.calls.some(([, i]) => i?.method === "POST")).toBe(false)
+    expect(fetchApi.mock.calls.some(([, i]) => i?.method === "POST")).toBe(false)
     await userEvent.click(screen.getByRole("button", { name: "Confirmar reprocesso" }))
     await waitFor(() =>
-      expect(adminFetch).toHaveBeenCalledWith("/api/admin/webhooks/w1/reprocessar/", {
+      expect(fetchApi).toHaveBeenCalledWith("/api/admin/webhooks/w1/reprocessar/", {
         method: "POST",
         showToast: false,
       }),
@@ -108,7 +108,7 @@ describe("WebhooksPage", () => {
     render(<WebhooksPage />)
     await userEvent.selectOptions(await screen.findByLabelText("Tipo"), "post_publicado")
     await waitFor(() =>
-      expect(adminFetch).toHaveBeenLastCalledWith(
+      expect(fetchApi).toHaveBeenLastCalledWith(
         "/api/admin/webhooks/?limit=20&offset=0&event_type=post_publicado",
       ),
     )

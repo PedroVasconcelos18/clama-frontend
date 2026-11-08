@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
-import { useAdminApi } from "@/hooks/useAdminApi"
+import { useApi } from "@/hooks/useApi"
 import { PastoralApiError } from "@/lib/api"
 import { LoadingSpinner } from "@/components/utility/LoadingSpinner"
 import { PastoralAlert } from "@/components/utility/PastoralAlert"
@@ -55,7 +55,7 @@ const documentoSchema = z.object({
 type DocumentoFormData = z.infer<typeof documentoSchema>
 
 export default function DocumentosPage() {
-  const { adminFetch } = useAdminApi()
+  const { fetchApi } = useApi()
   const [documentos, setDocumentos] = useState<AdminDocumentoContexto[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -88,7 +88,7 @@ export default function DocumentosPage() {
     setIsLoading(true)
     setError(null)
     try {
-      const data = await adminFetch<AdminDocumentoContexto[]>("/api/admin/documentos/", {
+      const data = await fetchApi<AdminDocumentoContexto[]>("/api/admin/documentos/", {
         showToast: false,
       })
       setDocumentos(data)
@@ -105,7 +105,7 @@ export default function DocumentosPage() {
 
   useEffect(() => {
     loadDocumentos()
-  }, [adminFetch])
+  }, [fetchApi])
 
   function openNewDialog() {
     reset({ nome: "", descricao: "" })
@@ -156,7 +156,7 @@ export default function DocumentosPage() {
     formData.append("arquivo", selectedFile)
 
     try {
-      await adminFetch("/api/admin/documentos/", {
+      await fetchApi("/api/admin/documentos/", {
         method: "POST",
         body: formData,
       })
@@ -164,7 +164,7 @@ export default function DocumentosPage() {
       setIsDialogOpen(false)
       loadDocumentos()
     } catch {
-      // Toast de erro já exibido pelo adminFetch
+      // Toast de erro já exibido pelo fetchApi
     }
   }
 
@@ -172,7 +172,7 @@ export default function DocumentosPage() {
     setTogglingId(doc.id)
     setConfirmToggle(null)
     try {
-      await adminFetch(`/api/admin/documentos/${doc.id}/toggle_ativo/`, {
+      await fetchApi(`/api/admin/documentos/${doc.id}/toggle_ativo/`, {
         method: "POST",
       })
       if (doc.ativo) {
@@ -182,7 +182,7 @@ export default function DocumentosPage() {
       }
       loadDocumentos()
     } catch {
-      // Toast de erro já exibido pelo adminFetch
+      // Toast de erro já exibido pelo fetchApi
     } finally {
       setTogglingId(null)
     }
@@ -190,14 +190,14 @@ export default function DocumentosPage() {
 
   async function handleDelete(doc: AdminDocumentoContexto) {
     try {
-      await adminFetch(`/api/admin/documentos/${doc.id}/`, {
+      await fetchApi(`/api/admin/documentos/${doc.id}/`, {
         method: "DELETE",
       })
       toast.success("Documento removido.")
       setConfirmDelete(null)
       loadDocumentos()
     } catch {
-      // Toast de erro já exibido pelo adminFetch
+      // Toast de erro já exibido pelo fetchApi
     }
   }
 

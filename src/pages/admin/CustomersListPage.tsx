@@ -10,7 +10,7 @@ import {
   UserX,
 } from "lucide-react"
 
-import { useAdminApi } from "@/hooks/useAdminApi"
+import { useApi } from "@/hooks/useApi"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -45,7 +45,7 @@ function dateOnly(iso: string | null): string {
 }
 
 export default function CustomersListPage() {
-  const { adminFetch } = useAdminApi()
+  const { fetchApi } = useApi()
 
   const [data, setData] = useState<CustomersResponse | null>(null)
   const [loading, setLoading] = useState(true)
@@ -81,7 +81,7 @@ export default function CustomersListPage() {
     if (freemiumFilter) params.set("freemium", freemiumFilter)
     if (adminFilter) params.set("admin", adminFilter)
 
-    adminFetch<CustomersResponse>(`/api/admin/customers/?${params.toString()}`)
+    fetchApi<CustomersResponse>(`/api/admin/customers/?${params.toString()}`)
       .then((res) => {
         if (!cancelled) setData(res)
       })
@@ -95,7 +95,7 @@ export default function CustomersListPage() {
     return () => {
       cancelled = true
     }
-  }, [adminFetch, q, bannedFilter, freemiumFilter, adminFilter, offset, reloadToken])
+  }, [fetchApi, q, bannedFilter, freemiumFilter, adminFilter, offset, reloadToken])
 
   // Reset offset quando filtros mudam
   const resetFilters = useCallback(
@@ -112,7 +112,7 @@ export default function CustomersListPage() {
     async (motivo: string) => {
       if (!banTarget) return
       try {
-        await adminFetch(`/api/blog/admin/banned-customers/`, {
+        await fetchApi(`/api/blog/admin/banned-customers/`, {
           method: "POST",
           body: JSON.stringify({ customer_id: banTarget.id, motivo }),
         })
@@ -124,13 +124,13 @@ export default function CustomersListPage() {
         toast.error(e?.pastoralMessage ?? "Falha ao banir.")
       }
     },
-    [adminFetch, banTarget],
+    [fetchApi, banTarget],
   )
 
   const onUnbanConfirm = useCallback(async () => {
     if (!unbanTarget) return
     try {
-      await adminFetch(
+      await fetchApi(
         `/api/blog/admin/banned-customers/${unbanTarget.id}/`,
         { method: "DELETE" },
       )
@@ -141,7 +141,7 @@ export default function CustomersListPage() {
       const e = err as { pastoralMessage?: string }
       toast.error(e?.pastoralMessage ?? "Falha ao revogar banimento.")
     }
-  }, [adminFetch, unbanTarget])
+  }, [fetchApi, unbanTarget])
 
   const customers = data?.results ?? []
   const total = data?.count ?? 0
@@ -521,7 +521,7 @@ function PedidosOfCustomer({
   customerId: number
   onViewPedido: (id: string) => void
 }) {
-  const { adminFetch } = useAdminApi()
+  const { fetchApi } = useApi()
   const [pedidos, setPedidos] = useState<AdminPedidoListItem[] | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -529,7 +529,7 @@ function PedidosOfCustomer({
     let cancelled = false
     setPedidos(null)
     setError(null)
-    adminFetch<PedidosResponse>(
+    fetchApi<PedidosResponse>(
       `/api/admin/pedidos/?user_id=${customerId}&limit=50&ordering=-created_at`,
     )
       .then((res) => {
@@ -542,7 +542,7 @@ function PedidosOfCustomer({
     return () => {
       cancelled = true
     }
-  }, [adminFetch, customerId])
+  }, [fetchApi, customerId])
 
   if (error) {
     return <p className="text-sm text-red-300">{error}</p>

@@ -3,7 +3,7 @@ export const ptBR = {
     // Erros genéricos
     generic: "Algo não saiu como o esperado. Tente novamente.",
     networkError: "Parece que sua conexão oscilou. Tente novamente daqui a pouco.",
-    sessionExpired: "Sua sessão expirou. Por favor, faça login novamente.",
+    sessionExpired: "Sua sessão expirou. Faça login pra continuar.",
 
     // Validações do Django REST Framework
     validation: {

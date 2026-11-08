@@ -3,8 +3,8 @@ import userEvent from "@testing-library/user-event"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import BlogCommentsPage from "../BlogCommentsPage"
 
-const adminFetch = vi.fn()
-vi.mock("@/hooks/useAdminApi", () => ({ useAdminApi: () => ({ adminFetch }) }))
+const fetchApi = vi.fn()
+vi.mock("@/hooks/useApi", () => ({ useApi: () => ({ fetchApi }) }))
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }))
 
 const base = {
@@ -21,11 +21,11 @@ const base = {
 }
 
 function responder(results: object[]) {
-  adminFetch.mockResolvedValue({ count: results.length, next: null, previous: null, results })
+  fetchApi.mockResolvedValue({ count: results.length, next: null, previous: null, results })
 }
 
 describe("BlogCommentsPage", () => {
-  beforeEach(() => adminFetch.mockReset())
+  beforeEach(() => fetchApi.mockReset())
 
   it("mostra o botão Banir e envia customer_id com o id do customer", async () => {
     responder([base])
@@ -38,7 +38,7 @@ describe("BlogCommentsPage", () => {
       )!,
     )
     await waitFor(() => {
-      const post = adminFetch.mock.calls.find(([, i]) => i?.method === "POST")
+      const post = fetchApi.mock.calls.find(([, i]) => i?.method === "POST")
       expect(post?.[0]).toBe("/api/blog/admin/banned-customers/")
       expect(JSON.parse(post![1].body)).toMatchObject({ customer_id: 42 })
     })
@@ -50,7 +50,7 @@ describe("BlogCommentsPage", () => {
     await screen.findByText("amém")
     await userEvent.type(screen.getByPlaceholderText(/slug do post/i), "meu-post")
     await waitFor(() => {
-      const url = adminFetch.mock.calls.at(-1)![0] as string
+      const url = fetchApi.mock.calls.at(-1)![0] as string
       expect(url).toContain("post_espelho=meu-post")
       expect(url).not.toContain("post__slug")
     })

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { useAdminApi } from "@/hooks/useAdminApi"
+import { useApi } from "@/hooks/useApi"
 import { PastoralApiError } from "@/lib/api"
 import { LoadingSpinner } from "@/components/utility/LoadingSpinner"
 import { PastoralAlert } from "@/components/utility/PastoralAlert"
@@ -20,7 +20,7 @@ interface PedidoDetailDrawerProps {
 
 
 export function PedidoDetailDrawer({ pedidoId, onClose, onChanged }: PedidoDetailDrawerProps) {
-  const { adminFetch } = useAdminApi()
+  const { fetchApi } = useApi()
   const [pedido, setPedido] = useState<AdminPedido | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -41,7 +41,7 @@ export function PedidoDetailDrawer({ pedidoId, onClose, onChanged }: PedidoDetai
       setIsLoading(true)
       setError(null)
       try {
-        const data = await adminFetch<AdminPedido>(`/api/admin/pedidos/${pedidoId}/`)
+        const data = await fetchApi<AdminPedido>(`/api/admin/pedidos/${pedidoId}/`)
         setPedido(data)
       } catch (err) {
         if (err instanceof PastoralApiError) {
@@ -55,7 +55,7 @@ export function PedidoDetailDrawer({ pedidoId, onClose, onChanged }: PedidoDetai
     }
 
     loadPedido()
-  }, [pedidoId, adminFetch])
+  }, [pedidoId, fetchApi])
 
   const canResend =
     pedido &&
@@ -72,13 +72,13 @@ export function PedidoDetailDrawer({ pedidoId, onClose, onChanged }: PedidoDetai
     if (!pedido) return
     setIsResending(true)
     try {
-      await adminFetch(`/api/admin/pedidos/${pedido.id}/reenviar/`, {
+      await fetchApi(`/api/admin/pedidos/${pedido.id}/reenviar/`, {
         method: "POST",
       })
       toast.success("Reenvio agendado. Acompanhe pelo status.")
       setShowConfirmResend(false)
       // Reload pedido
-      const data = await adminFetch<AdminPedido>(`/api/admin/pedidos/${pedido.id}/`)
+      const data = await fetchApi<AdminPedido>(`/api/admin/pedidos/${pedido.id}/`)
       setPedido(data)
     } catch (err) {
       if (err instanceof PastoralApiError) {
@@ -95,12 +95,12 @@ export function PedidoDetailDrawer({ pedidoId, onClose, onChanged }: PedidoDetai
     if (!pedido) return
     setIsMarkingFree(true)
     try {
-      await adminFetch(`/api/admin/pedidos/${pedido.id}/marcar-gratuito/`, {
+      await fetchApi(`/api/admin/pedidos/${pedido.id}/marcar-gratuito/`, {
         method: "POST",
       })
       toast.success("Pedido marcado como gratuito. Gerando oração.")
       setShowConfirmFree(false)
-      const data = await adminFetch<AdminPedido>(`/api/admin/pedidos/${pedido.id}/`)
+      const data = await fetchApi<AdminPedido>(`/api/admin/pedidos/${pedido.id}/`)
       setPedido(data)
     } catch (err) {
       if (err instanceof PastoralApiError) {

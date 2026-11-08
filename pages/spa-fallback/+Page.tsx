@@ -5,8 +5,7 @@ import { detectLocale } from "@/i18n"
 import { purgeLegacyTokens } from "@/lib/purgeLegacyTokens"
 
 if (typeof window !== "undefined") {
-  // Antes de qualquer render — os providers de auth leem o storage no
-  // inicializador de `useState`, e um script de terceiro pode executar depois.
+  // Antes de qualquer render: apaga o storage legado de auth.
   purgeLegacyTokens()
   detectLocale()
 }

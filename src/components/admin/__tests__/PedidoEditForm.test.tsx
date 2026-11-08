@@ -4,8 +4,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 import { PedidoEditForm } from "../PedidoEditForm"
 import type { AdminPedido } from "@/types/admin.types"
 
-const adminFetch = vi.fn()
-vi.mock("@/hooks/useAdminApi", () => ({ useAdminApi: () => ({ adminFetch }) }))
+const fetchApi = vi.fn()
+vi.mock("@/hooks/useApi", () => ({ useApi: () => ({ fetchApi }) }))
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }))
 
 const pedido = {
@@ -16,7 +16,7 @@ const onSaved = vi.fn()
 
 describe("PedidoEditForm", () => {
   beforeEach(() => {
-    adminFetch.mockReset().mockResolvedValue({ ...pedido, nome: "Bia" })
+    fetchApi.mockReset().mockResolvedValue({ ...pedido, nome: "Bia" })
     onSaved.mockReset()
   })
 
@@ -35,7 +35,7 @@ describe("PedidoEditForm", () => {
     await userEvent.type(screen.getByLabelText("Nome"), "Bia")
     await userEvent.click(screen.getByRole("button", { name: "Salvar alterações" }))
     await waitFor(() =>
-      expect(adminFetch).toHaveBeenCalledWith("/api/admin/pedidos/p1/", {
+      expect(fetchApi).toHaveBeenCalledWith("/api/admin/pedidos/p1/", {
         method: "PATCH", body: JSON.stringify({ nome: "Bia" }), showToast: false,
       }),
     )
@@ -52,7 +52,7 @@ describe("PedidoEditForm", () => {
 
   it("pedido aguardando pagamento avisa que sair dali e recusado e mostra a mensagem do 409", async () => {
     const msg = "Esse pedido ainda espera o pagamento. Para entregar sem pagamento, use 'Marcar gratuito'."
-    adminFetch.mockRejectedValue({ pastoralMessage: msg, httpStatus: 409 })
+    fetchApi.mockRejectedValue({ pastoralMessage: msg, httpStatus: 409 })
     render(
       <PedidoEditForm pedido={{ ...pedido, status: "aguardando_pagamento" }} onSaved={onSaved} onCancel={vi.fn()} />,
     )
@@ -65,7 +65,7 @@ describe("PedidoEditForm", () => {
   })
 
   it("erro 400 do servidor aparece no formulario", async () => {
-    adminFetch.mockRejectedValue({ pastoralMessage: "Informe um endereço de email válido." })
+    fetchApi.mockRejectedValue({ pastoralMessage: "Informe um endereço de email válido." })
     render(<PedidoEditForm pedido={pedido} onSaved={onSaved} onCancel={vi.fn()} />)
     await userEvent.clear(screen.getByLabelText("E-mail"))
     await userEvent.type(screen.getByLabelText("E-mail"), "x")
@@ -83,20 +83,20 @@ describe("PedidoEditForm", () => {
     await userEvent.click(screen.getByRole("button", { name: "Salvar alterações" }))
     expect(await screen.findByText("Use só dígitos.")).toBeTruthy()
     expect(screen.getByText("Use só dígitos (centavos).")).toBeTruthy()
-    expect(adminFetch).not.toHaveBeenCalled()
+    expect(fetchApi).not.toHaveBeenCalled()
   })
 
   it("idade vazia limpa a idade (null) de proposito", async () => {
     render(<PedidoEditForm pedido={pedido} onSaved={onSaved} onCancel={vi.fn()} />)
     await userEvent.clear(screen.getByLabelText("Idade"))
     await userEvent.click(screen.getByRole("button", { name: "Salvar alterações" }))
-    await waitFor(() => expect(adminFetch).toHaveBeenCalledWith("/api/admin/pedidos/p1/", expect.objectContaining({
+    await waitFor(() => expect(fetchApi).toHaveBeenCalledWith("/api/admin/pedidos/p1/", expect.objectContaining({
       body: JSON.stringify({ idade: null }),
     })))
   })
 
   it("erro do servidor com um campo so leva o rotulo do campo", async () => {
-    adminFetch.mockRejectedValue({ pastoralMessage: "Garanta que este valor seja menor ou igual a 32767." })
+    fetchApi.mockRejectedValue({ pastoralMessage: "Garanta que este valor seja menor ou igual a 32767." })
     render(<PedidoEditForm pedido={pedido} onSaved={onSaved} onCancel={vi.fn()} />)
     await userEvent.clear(screen.getByLabelText("Idade"))
     await userEvent.type(screen.getByLabelText("Idade"), "99999")

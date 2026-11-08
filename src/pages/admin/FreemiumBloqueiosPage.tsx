@@ -2,7 +2,7 @@ import { useState } from "react"
 import { toast } from "sonner"
 import { LockOpen, Search } from "lucide-react"
 
-import { useAdminApi } from "@/hooks/useAdminApi"
+import { useApi } from "@/hooks/useApi"
 import { useAdminList } from "@/hooks/useAdminList"
 import { AdminPager } from "@/components/admin/AdminPager"
 import { Button } from "@/components/ui/button"
@@ -60,7 +60,7 @@ export default function FreemiumBloqueiosPage() {
 }
 
 function Bloqueios() {
-  const { adminFetch } = useAdminApi()
+  const { fetchApi } = useApi()
   const [offset, setOffset] = useState(0)
   const [reloadToken, setReloadToken] = useState(0)
   const [busca, setBusca] = useState({ email: "", cpf_cnpj: "", telefone: "" })
@@ -91,13 +91,13 @@ function Bloqueios() {
     setBuscando(true)
     try {
       setAchados(
-        await adminFetch<AdminFreemiumBloqueio[]>("/api/admin/freemium/bloqueios/buscar/", {
+        await fetchApi<AdminFreemiumBloqueio[]>("/api/admin/freemium/bloqueios/buscar/", {
           method: "POST",
           body: JSON.stringify(corpo),
         }),
       )
     } catch {
-      setAchados(null) // adminFetch já avisou com o toast
+      setAchados(null) // fetchApi já avisou com o toast
     } finally {
       setBuscando(false)
     }
@@ -107,7 +107,7 @@ function Bloqueios() {
     if (!target) return
     setBusy(true)
     try {
-      await adminFetch(`/api/admin/freemium/bloqueios/${target.id}/`, {
+      await fetchApi(`/api/admin/freemium/bloqueios/${target.id}/`, {
         method: "DELETE",
         showToast: false,
       })

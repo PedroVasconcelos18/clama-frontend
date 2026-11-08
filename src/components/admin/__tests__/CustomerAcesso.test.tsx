@@ -5,8 +5,8 @@ import { toast } from "sonner"
 import { CustomerAcesso } from "../CustomerAcesso"
 import type { AdminCustomerDetail } from "@/types/admin.types"
 
-const adminFetch = vi.fn()
-vi.mock("@/hooks/useAdminApi", () => ({ useAdminApi: () => ({ adminFetch }) }))
+const fetchApi = vi.fn()
+vi.mock("@/hooks/useApi", () => ({ useApi: () => ({ fetchApi }) }))
 vi.mock("@/contexts/AuthContext", () => ({ useAuth: () => ({ user: { id: "1" } }) }))
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }))
 
@@ -19,11 +19,11 @@ const onChanged = vi.fn()
 const onDeleted = vi.fn()
 const montar = (c: Partial<AdminCustomerDetail> = {}) =>
   render(<CustomerAcesso customer={{ ...base, ...c }} onChanged={onChanged} onDeleted={onDeleted} />)
-const chamadas = () => adminFetch.mock.calls.filter(([, i]) => i?.method)
+const chamadas = () => fetchApi.mock.calls.filter(([, i]) => i?.method)
 
 describe("CustomerAcesso", () => {
   beforeEach(() => {
-    adminFetch.mockReset().mockResolvedValue({})
+    fetchApi.mockReset().mockResolvedValue({})
     onChanged.mockReset()
     onDeleted.mockReset()
     vi.mocked(toast.error).mockReset()
@@ -36,7 +36,7 @@ describe("CustomerAcesso", () => {
     expect(await screen.findByText("Tornar admin?")).toBeTruthy()
     await userEvent.click(screen.getAllByRole("button", { name: "Tornar admin" }).at(-1)!)
     await waitFor(() =>
-      expect(adminFetch).toHaveBeenCalledWith("/api/admin/customers/7/", {
+      expect(fetchApi).toHaveBeenCalledWith("/api/admin/customers/7/", {
         method: "PATCH", body: JSON.stringify({ is_clama_admin: true }), showToast: false,
       }),
     )
@@ -50,7 +50,7 @@ describe("CustomerAcesso", () => {
     expect(chamadas()).toHaveLength(0)
     await userEvent.click(screen.getAllByRole("button", { name: "Desativar conta" }).at(-1)!)
     await waitFor(() =>
-      expect(adminFetch).toHaveBeenCalledWith("/api/admin/customers/7/", expect.objectContaining({
+      expect(fetchApi).toHaveBeenCalledWith("/api/admin/customers/7/", expect.objectContaining({
         body: JSON.stringify({ is_active: false }),
       })),
     )
@@ -70,13 +70,13 @@ describe("CustomerAcesso", () => {
     expect(chamadas()).toHaveLength(0)
     await userEvent.click(confirmar)
     await waitFor(() =>
-      expect(adminFetch).toHaveBeenCalledWith("/api/admin/customers/7/", { method: "DELETE", showToast: false }),
+      expect(fetchApi).toHaveBeenCalledWith("/api/admin/customers/7/", { method: "DELETE", showToast: false }),
     )
     expect(onDeleted).toHaveBeenCalled()
   })
 
   it("403 do back aparece na tela e no toast", async () => {
-    adminFetch.mockRejectedValue({ pastoralMessage: "Só o superusuário gerencia usuários." })
+    fetchApi.mockRejectedValue({ pastoralMessage: "Só o superusuário gerencia usuários." })
     montar()
     await userEvent.click(screen.getByRole("button", { name: "Tornar admin" }))
     await userEvent.click(screen.getAllByRole("button", { name: "Tornar admin" }).at(-1)!)
@@ -86,7 +86,7 @@ describe("CustomerAcesso", () => {
   })
 
   it("definir senha exige confirmacao igual e mostra as mensagens do servidor", async () => {
-    adminFetch.mockRejectedValue({ pastoralMessage: "Esta senha é muito curta." })
+    fetchApi.mockRejectedValue({ pastoralMessage: "Esta senha é muito curta." })
     montar()
     await userEvent.click(screen.getByRole("button", { name: "Definir senha" }))
     await userEvent.type(await screen.findByLabelText("Nova senha"), "abc")
@@ -97,7 +97,7 @@ describe("CustomerAcesso", () => {
     await userEvent.type(screen.getByLabelText("Confirmar senha"), "abc")
     await userEvent.click(ok)
     expect(await screen.findByText("Esta senha é muito curta.")).toBeTruthy()
-    expect(adminFetch).toHaveBeenCalledWith("/api/admin/customers/7/senha/", {
+    expect(fetchApi).toHaveBeenCalledWith("/api/admin/customers/7/senha/", {
       method: "POST", body: JSON.stringify({ password: "abc" }), showToast: false,
     })
   })

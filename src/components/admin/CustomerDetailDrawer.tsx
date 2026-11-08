@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { X } from "lucide-react"
-import { useAdminApi } from "@/hooks/useAdminApi"
+import { useApi } from "@/hooks/useApi"
 import { PastoralApiError } from "@/lib/api"
 import { Button } from "@/components/ui/button"
 import { LoadingSpinner } from "@/components/utility/LoadingSpinner"
@@ -21,7 +21,7 @@ function fmt(iso: string | null | undefined): string {
 }
 
 export function CustomerDetailDrawer({ customerId, onClose, onChanged }: Props) {
-  const { adminFetch } = useAdminApi()
+  const { fetchApi } = useApi()
   const [data, setData] = useState<AdminCustomerDetail | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -35,7 +35,7 @@ export function CustomerDetailDrawer({ customerId, onClose, onChanged }: Props) 
     let cancelled = false
     setLoading(true)
     setError(null)
-    adminFetch<AdminCustomerDetail>(`/api/admin/customers/${customerId}/`)
+    fetchApi<AdminCustomerDetail>(`/api/admin/customers/${customerId}/`)
       .then((res) => {
         if (!cancelled) setData(res)
       })
@@ -53,7 +53,7 @@ export function CustomerDetailDrawer({ customerId, onClose, onChanged }: Props) 
     return () => {
       cancelled = true
     }
-  }, [adminFetch, customerId, refresh])
+  }, [fetchApi, customerId, refresh])
 
   if (!customerId) return null
 

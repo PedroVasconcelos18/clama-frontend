@@ -3,8 +3,8 @@ import userEvent from "@testing-library/user-event"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import FreemiumBloqueiosPage from "../FreemiumBloqueiosPage"
 
-const adminFetch = vi.fn()
-vi.mock("@/hooks/useAdminApi", () => ({ useAdminApi: () => ({ adminFetch }) }))
+const fetchApi = vi.fn()
+vi.mock("@/hooks/useApi", () => ({ useApi: () => ({ fetchApi }) }))
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }))
 
 const bloqueio = {
@@ -18,8 +18,8 @@ const token = {
 
 describe("FreemiumBloqueiosPage", () => {
   beforeEach(() => {
-    adminFetch.mockReset()
-    adminFetch.mockImplementation((url: string, init?: { method?: string }) => {
+    fetchApi.mockReset()
+    fetchApi.mockImplementation((url: string, init?: { method?: string }) => {
       if (url.includes("/buscar/")) return Promise.resolve([bloqueio])
       if (init?.method === "DELETE") return Promise.resolve({})
       if (url.startsWith("/api/admin/freemium/tokens/"))
@@ -37,7 +37,7 @@ describe("FreemiumBloqueiosPage", () => {
     render(<FreemiumBloqueiosPage />)
     await userEvent.click(await screen.findByRole("button", { name: /Próxima/ }))
     await waitFor(() =>
-      expect(adminFetch).toHaveBeenLastCalledWith("/api/admin/freemium/bloqueios/?limit=20&offset=20"),
+      expect(fetchApi).toHaveBeenLastCalledWith("/api/admin/freemium/bloqueios/?limit=20&offset=20"),
     )
   })
 
@@ -47,12 +47,12 @@ describe("FreemiumBloqueiosPage", () => {
     await userEvent.type(screen.getByLabelText("Telefone"), "11999998888")
     await userEvent.click(screen.getByRole("button", { name: /Buscar bloqueio/ }))
     await waitFor(() =>
-      expect(adminFetch).toHaveBeenCalledWith("/api/admin/freemium/bloqueios/buscar/", {
+      expect(fetchApi).toHaveBeenCalledWith("/api/admin/freemium/bloqueios/buscar/", {
         method: "POST",
         body: JSON.stringify({ email: "ana@x.com", telefone: "11999998888" }),
       }),
     )
-    for (const [url] of adminFetch.mock.calls) {
+    for (const [url] of fetchApi.mock.calls) {
       expect(url).not.toContain("ana")
       expect(url).not.toContain("1199999")
     }
@@ -63,10 +63,10 @@ describe("FreemiumBloqueiosPage", () => {
     await userEvent.click((await screen.findAllByRole("button", { name: /Desbloquear/ }))[0]!)
     const dialog = await screen.findByRole("dialog")
     expect(dialog.textContent).toMatch(/oração gratuita/)
-    expect(adminFetch.mock.calls.some(([, i]) => i?.method === "DELETE")).toBe(false)
+    expect(fetchApi.mock.calls.some(([, i]) => i?.method === "DELETE")).toBe(false)
     await userEvent.click(screen.getByRole("button", { name: "Confirmar desbloqueio" }))
     await waitFor(() =>
-      expect(adminFetch).toHaveBeenCalledWith("/api/admin/freemium/bloqueios/b1/", {
+      expect(fetchApi).toHaveBeenCalledWith("/api/admin/freemium/bloqueios/b1/", {
         method: "DELETE",
         showToast: false,
       }),
@@ -80,7 +80,7 @@ describe("FreemiumBloqueiosPage", () => {
   })
 
   it("tokens: coluna de estado e busca por pedido via query", async () => {
-    adminFetch.mockImplementation(() => {
+    fetchApi.mockImplementation(() => {
       const vivo = new Date(Date.now() + 3600e3).toISOString()
       return Promise.resolve({
         count: 3, next: null, previous: null,
@@ -102,7 +102,7 @@ describe("FreemiumBloqueiosPage", () => {
     await userEvent.type(screen.getByLabelText("Id do pedido"), uuid)
     await userEvent.click(screen.getByRole("button", { name: /Buscar token/ }))
     await waitFor(() =>
-      expect(adminFetch).toHaveBeenLastCalledWith(
+      expect(fetchApi).toHaveBeenLastCalledWith(
         `/api/admin/freemium/tokens/?limit=20&offset=0&pedido=${uuid}`,
       ),
     )
@@ -112,9 +112,9 @@ describe("FreemiumBloqueiosPage", () => {
     render(<FreemiumBloqueiosPage />)
     await userEvent.click(screen.getByRole("tab", { name: "Tokens de confirmação" }))
     await screen.findByText("abcd1234…")
-    const n = adminFetch.mock.calls.length
+    const n = fetchApi.mock.calls.length
     await userEvent.type(screen.getByLabelText("Id do pedido"), "abc")
     await userEvent.click(screen.getByRole("button", { name: /Buscar token/ }))
-    expect(adminFetch.mock.calls.length).toBe(n)
+    expect(fetchApi.mock.calls.length).toBe(n)
   })
 })

@@ -5,7 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { toast } from "sonner"
 
 import { useCustomerAuth } from "@/contexts/CustomerAuthContext"
-import { useCustomerApi } from "@/hooks/useCustomerApi"
+import { useApi } from "@/hooks/useApi"
 import { PastoralApiError } from "@/lib/api"
 import { goToNext, validateNextPath } from "@/lib/redirects"
 import {
@@ -24,7 +24,7 @@ export default function TrocarSenha() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const { isAuthenticated, isLoading, setUser } = useCustomerAuth()
-  const { customerFetch } = useCustomerApi()
+  const { fetchApi } = useApi()
 
   const [error, setError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -55,7 +55,7 @@ export default function TrocarSenha() {
     setIsSubmitting(true)
 
     try {
-      await customerFetch("/api/customer/auth/change-password/", {
+      await fetchApi("/api/customer/auth/change-password/", {
         method: "POST",
         body: JSON.stringify({
           senha_atual: data.senha_atual,
@@ -66,7 +66,7 @@ export default function TrocarSenha() {
 
       // Refaz o /me/ pra refletir flag zerada
       try {
-        const refreshedUser = await customerFetch<CustomerUser>(
+        const refreshedUser = await fetchApi<CustomerUser>(
           "/api/customer/me/",
           { method: "GET", showToast: false },
         )

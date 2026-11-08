@@ -6,7 +6,7 @@ import { apiFetch, PastoralApiError } from "@/lib/api";
 import { reaisToInt } from "@/lib/formatters";
 import { useFormDraft } from "@/hooks/useFormDraft";
 import { useCustomerAuth } from "@/contexts/CustomerAuthContext";
-import { useCustomerApi } from "@/hooks/useCustomerApi";
+import { useApi } from "@/hooks/useApi";
 import { criarPedidoGratuito } from "@/lib/api/freemium";
 import { criarDoacaoAnonima, gerarCheckout } from "@/lib/api/doacoes";
 import { type Plan } from "@/types/plano.types";
@@ -81,7 +81,7 @@ export const PedidoSection = forwardRef<HTMLElement, PedidoSectionProps>(
   const isDark = theme === "dark";
   const navigate = useNavigate();
   const { isAuthenticated, user } = useCustomerAuth();
-  const { customerFetch } = useCustomerApi();
+  const { fetchApi } = useApi();
 
   // Cliente logado: semeia "Seus dados" com o cadastro dele (editável).
   // Anônimo: sem prefill.
@@ -235,7 +235,7 @@ export const PedidoSection = forwardRef<HTMLElement, PedidoSectionProps>(
     return draft.offering.valorLivre ?? 0;
   };
 
-  // ---- LOGADO: PrayerForm (customerFetch) ----
+  // ---- LOGADO: PrayerForm (fetchApi) ----
   const handleLoggedSubmit = async (formData: PedidoFormData) => {
     if (!ofertaValida()) return;
 
@@ -245,7 +245,7 @@ export const PedidoSection = forwardRef<HTMLElement, PedidoSectionProps>(
     // Gratuito: cria o pedido sem checkout.
     if (draft.offering.gratuito) {
       try {
-        const { id } = await customerFetch<{ id: string }>(
+        const { id } = await fetchApi<{ id: string }>(
           "/api/pedidos/gratuito/",
           {
             method: "POST",
@@ -279,12 +279,12 @@ export const PedidoSection = forwardRef<HTMLElement, PedidoSectionProps>(
         payload.instituicao = instituicaoId;
       }
 
-      const { id } = await customerFetch<{ id: string }>("/api/pedidos/", {
+      const { id } = await fetchApi<{ id: string }>("/api/pedidos/", {
         method: "POST",
         body: JSON.stringify(payload),
         showToast: false,
       });
-      await customerFetch(`/api/pedidos/${id}/checkout/`, {
+      await fetchApi(`/api/pedidos/${id}/checkout/`, {
         method: "POST",
         showToast: false,
       });

@@ -12,7 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { useAdminApi } from "@/hooks/useAdminApi"
+import { useApi } from "@/hooks/useApi"
 import { tempoRelativo } from "@/lib/datetime"
 import { cn } from "@/lib/utils"
 import type {
@@ -25,7 +25,7 @@ type StatusFilter = "todos" | "suspeitos"
 const PAGE_SIZE = 20
 
 export default function BlogCommentsPage() {
-  const { adminFetch } = useAdminApi()
+  const { fetchApi } = useApi()
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("todos")
   const [postSlugFilter, setPostSlugFilter] = useState("")
   const [page, setPage] = useState(1)
@@ -46,7 +46,7 @@ export default function BlogCommentsPage() {
     if (postSlugFilter.trim()) params.set("post_espelho", postSlugFilter.trim())
     params.set("page_size", String(PAGE_SIZE))
 
-    adminFetch<PaginatedAdminComentarios>(
+    fetchApi<PaginatedAdminComentarios>(
       `/api/blog/admin/comments/?${params.toString()}`,
     )
       .then((response) => {
@@ -62,7 +62,7 @@ export default function BlogCommentsPage() {
     return () => {
       cancelled = true
     }
-  }, [adminFetch, statusFilter, postSlugFilter, page, reloadToken])
+  }, [fetchApi, statusFilter, postSlugFilter, page, reloadToken])
 
   function reload() {
     setReloadToken((n) => n + 1)
@@ -77,7 +77,7 @@ export default function BlogCommentsPage() {
     if (!deleteTarget) return
     setActionInFlight(true)
     try {
-      await adminFetch(`/api/blog/admin/comments/${deleteTarget.id}/`, {
+      await fetchApi(`/api/blog/admin/comments/${deleteTarget.id}/`, {
         method: "DELETE",
       })
       toast.success("Comentário excluído.")
@@ -92,7 +92,7 @@ export default function BlogCommentsPage() {
     if (!banTarget) return
     setActionInFlight(true)
     try {
-      await adminFetch(`/api/blog/admin/banned-customers/`, {
+      await fetchApi(`/api/blog/admin/banned-customers/`, {
         method: "POST",
         body: JSON.stringify({
           customer_id: banTarget.customer,

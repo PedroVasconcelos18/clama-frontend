@@ -1,5 +1,5 @@
 import type { ReactNode } from "react"
-import { CustomerAuthProvider } from "@/contexts/CustomerAuthContext"
+import { SessaoProvider } from "@/contexts/SessaoContext"
 import "@/styles/index.css"
 import { purgeLegacyTokens } from "@/lib/purgeLegacyTokens"
 
@@ -14,5 +14,5 @@ if (typeof document !== "undefined") {
 }
 
 export default function Layout({ children }: { children: ReactNode }) {
-  return <CustomerAuthProvider>{children}</CustomerAuthProvider>
+  return <SessaoProvider>{children}</SessaoProvider>
 }

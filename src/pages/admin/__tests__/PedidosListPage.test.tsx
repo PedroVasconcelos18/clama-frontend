@@ -3,8 +3,8 @@ import userEvent from "@testing-library/user-event"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import PedidosListPage from "../PedidosListPage"
 
-const adminFetch = vi.fn()
-vi.mock("@/hooks/useAdminApi", () => ({ useAdminApi: () => ({ adminFetch }) }))
+const fetchApi = vi.fn()
+vi.mock("@/hooks/useApi", () => ({ useApi: () => ({ fetchApi }) }))
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }))
 
 const item = {
@@ -14,13 +14,13 @@ const item = {
 
 describe("PedidosListPage", () => {
   beforeEach(() => {
-    adminFetch.mockReset().mockResolvedValue({ count: 45, next: null, previous: null, results: [item] })
+    fetchApi.mockReset().mockResolvedValue({ count: 45, next: null, previous: null, results: [item] })
   })
 
   it("paginacao envia limit e offset (nao page)", async () => {
     render(<PedidosListPage />)
     await userEvent.click(await screen.findByRole("button", { name: /Próxima/ }))
-    await waitFor(() => expect(adminFetch).toHaveBeenLastCalledWith("/api/admin/pedidos/?limit=20&offset=20"))
+    await waitFor(() => expect(fetchApi).toHaveBeenLastCalledWith("/api/admin/pedidos/?limit=20&offset=20"))
   })
 
   it("canal vai em canal, busca em q, status com o valor do model; filtro volta ao offset 0", async () => {
@@ -28,12 +28,12 @@ describe("PedidosListPage", () => {
     await userEvent.click(await screen.findByRole("button", { name: /Próxima/ }))
     await userEvent.selectOptions(screen.getByLabelText("Canal"), "whatsapp")
     await waitFor(() =>
-      expect(adminFetch).toHaveBeenLastCalledWith("/api/admin/pedidos/?limit=20&offset=0&canal=whatsapp"),
+      expect(fetchApi).toHaveBeenLastCalledWith("/api/admin/pedidos/?limit=20&offset=0&canal=whatsapp"),
     )
     await userEvent.selectOptions(screen.getByLabelText("Status"), "enviada")
     await userEvent.type(screen.getByLabelText("Buscar pedidos"), "ana")
     await waitFor(() =>
-      expect(adminFetch).toHaveBeenLastCalledWith(
+      expect(fetchApi).toHaveBeenLastCalledWith(
         "/api/admin/pedidos/?limit=20&offset=0&q=ana&status=enviada&canal=whatsapp",
       ),
     )
@@ -47,10 +47,10 @@ describe("PedidosListPage", () => {
   it("busca q tem debounce: digitar 3 letras faz uma so chamada com q", async () => {
     render(<PedidosListPage />)
     await screen.findByText("Ana")
-    adminFetch.mockClear()
+    fetchApi.mockClear()
     await userEvent.type(screen.getByLabelText("Buscar pedidos"), "ana")
-    expect(adminFetch).not.toHaveBeenCalled()
-    await waitFor(() => expect(adminFetch).toHaveBeenCalledTimes(1))
-    expect(adminFetch).toHaveBeenLastCalledWith("/api/admin/pedidos/?limit=20&offset=0&q=ana")
+    expect(fetchApi).not.toHaveBeenCalled()
+    await waitFor(() => expect(fetchApi).toHaveBeenCalledTimes(1))
+    expect(fetchApi).toHaveBeenLastCalledWith("/api/admin/pedidos/?limit=20&offset=0&q=ana")
   })
 })

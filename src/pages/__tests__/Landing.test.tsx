@@ -3,15 +3,15 @@ import { MemoryRouter } from "react-router-dom";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 import Landing from "../Landing";
-import * as apiModule from "@/lib/api";
-import { CustomerAuthProvider } from "@/contexts/CustomerAuthContext";
+import { mockApiFetch } from "@/test/sessao";
+import { SessaoProvider } from "@/contexts/SessaoContext";
 
 function renderLanding() {
   return render(
     <MemoryRouter>
-      <CustomerAuthProvider>
+      <SessaoProvider>
         <Landing />
-      </CustomerAuthProvider>
+      </SessaoProvider>
     </MemoryRouter>,
   );
 }
@@ -35,10 +35,10 @@ describe("Landing", () => {
       };
     }) as unknown as typeof IntersectionObserver;
 
-    vi.spyOn(apiModule, "apiFetch").mockResolvedValue([
+    mockApiFetch({ outras: () => [
       { id: "p1", nome: "Plano 1", valor_centavos: 199, ordem: 1 },
       { id: "p2", nome: "Plano 2", valor_centavos: 999, ordem: 2 },
-    ]);
+    ] });
   });
 
   afterEach(() => {

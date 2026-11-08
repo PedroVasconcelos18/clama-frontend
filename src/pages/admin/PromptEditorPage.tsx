@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { useAdminApi } from "@/hooks/useAdminApi"
+import { useApi } from "@/hooks/useApi"
 import { PastoralApiError } from "@/lib/api"
 import { LoadingSpinner } from "@/components/utility/LoadingSpinner"
 import { PastoralAlert } from "@/components/utility/PastoralAlert"
@@ -19,7 +19,7 @@ import { toast } from "sonner"
 import type { AdminPromptTemplate, PreviewResponse } from "@/types/admin.types"
 
 export default function PromptEditorPage() {
-  const { adminFetch } = useAdminApi()
+  const { fetchApi } = useApi()
   const [templates, setTemplates] = useState<AdminPromptTemplate[]>([])
   const [selectedTemplate, setSelectedTemplate] = useState<AdminPromptTemplate | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -55,7 +55,7 @@ export default function PromptEditorPage() {
     setIsLoading(true)
     setError(null)
     try {
-      const data = await adminFetch<AdminPromptTemplate[]>("/api/admin/prompts/")
+      const data = await fetchApi<AdminPromptTemplate[]>("/api/admin/prompts/")
       setTemplates(data)
       // Select active or first
       const active = data.find((t) => t.ativo) || data[0]
@@ -73,7 +73,7 @@ export default function PromptEditorPage() {
 
   useEffect(() => {
     loadTemplates()
-  }, [adminFetch])
+  }, [fetchApi])
 
   function startNewVersion() {
     if (!selectedTemplate) return
@@ -112,7 +112,7 @@ export default function PromptEditorPage() {
           com_profecia_e_versiculos: editBuffer.instrucoes_profecia,
         },
       }
-      await adminFetch("/api/admin/prompts/", {
+      await fetchApi("/api/admin/prompts/", {
         method: "POST",
         body: JSON.stringify(payload),
       })
@@ -133,7 +133,7 @@ export default function PromptEditorPage() {
 
   async function activateTemplate(template: AdminPromptTemplate) {
     try {
-      await adminFetch(`/api/admin/prompts/${template.id}/ativar/`, {
+      await fetchApi(`/api/admin/prompts/${template.id}/ativar/`, {
         method: "POST",
       })
       toast.success(`Versão ${template.versao} ativada.`)
@@ -153,7 +153,7 @@ export default function PromptEditorPage() {
     setIsLoadingPreview(true)
     setPreviewResult(null)
     try {
-      const data = await adminFetch<PreviewResponse>(
+      const data = await fetchApi<PreviewResponse>(
         `/api/admin/prompts/${selectedTemplate.id}/preview/`,
         {
           method: "POST",

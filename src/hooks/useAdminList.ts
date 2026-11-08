@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { useAdminApi } from "@/hooks/useAdminApi"
+import { useApi } from "@/hooks/useApi"
 import type { PaginatedResponse } from "@/types/admin.types"
 
 export const PAGE_SIZE = 20
@@ -11,7 +11,7 @@ export function useAdminList<T>(
   offset: number,
   reloadToken = 0,
 ) {
-  const { adminFetch } = useAdminApi()
+  const { fetchApi } = useApi()
   // resultado guardado com a chave da requisição: loading = ainda não chegou o da chave atual
   const [result, setResult] = useState<{
     key: string
@@ -29,7 +29,7 @@ export function useAdminList<T>(
     })
     for (const [k, v] of Object.entries(JSON.parse(filtersKey) as Record<string, string>))
       if (v.trim()) params.set(k, v.trim())
-    adminFetch<PaginatedResponse<T>>(`${path}?${params.toString()}`)
+    fetchApi<PaginatedResponse<T>>(`${path}?${params.toString()}`)
       .then((data) => !cancelled && setResult({ key, data, error: null }))
       .catch((err: { pastoralMessage?: string }) => {
         if (!cancelled)
@@ -42,7 +42,7 @@ export function useAdminList<T>(
     return () => {
       cancelled = true
     }
-  }, [adminFetch, path, filtersKey, offset, reloadToken, key])
+  }, [fetchApi, path, filtersKey, offset, reloadToken, key])
 
   const atual = result?.key === key ? result : null
   return {

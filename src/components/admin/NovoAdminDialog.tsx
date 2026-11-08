@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { toast } from "sonner"
-import { useAdminApi } from "@/hooks/useAdminApi"
+import { useApi } from "@/hooks/useApi"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -24,7 +24,7 @@ export function NovoAdminDialog({
   onClose: () => void
   onCreated: () => void
 }) {
-  const { adminFetch } = useAdminApi()
+  const { fetchApi } = useApi()
   const [email, setEmail] = useState("")
   const [nome, setNome] = useState("")
   const [senha, setSenha] = useState("")
@@ -48,7 +48,7 @@ export function NovoAdminDialog({
     setBusy(true)
     setErro(null)
     try {
-      await adminFetch("/api/admin/customers/", {
+      await fetchApi("/api/admin/customers/", {
         method: "POST",
         body: JSON.stringify({ email: email.trim(), nome_completo: nome.trim(), password: senha }),
         showToast: false,

@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { toast } from "sonner"
-import { useAdminApi } from "@/hooks/useAdminApi"
+import { useApi } from "@/hooks/useApi"
 import { useAuth } from "@/contexts/AuthContext"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -32,7 +32,7 @@ export function CustomerAcesso({
   onChanged: () => void
   onDeleted: () => void
 }) {
-  const { adminFetch } = useAdminApi()
+  const { fetchApi } = useApi()
   const { user } = useAuth()
   const propria = user != null && String(user.id) === String(customer.id)
 
@@ -77,7 +77,7 @@ export function CustomerAcesso({
   const url = `/api/admin/customers/${customer.id}/`
   const patch = (corpo: Record<string, boolean>, ok: string) =>
     executar(async () => {
-      await adminFetch(url, { method: "PATCH", body: JSON.stringify(corpo), showToast: false })
+      await fetchApi(url, { method: "PATCH", body: JSON.stringify(corpo), showToast: false })
       toast.success(ok)
       onChanged()
     })
@@ -201,7 +201,7 @@ export function CustomerAcesso({
                 label="Definir senha"
                 onOk={() =>
                   executar(async () => {
-                    await adminFetch(`${url}senha/`, {
+                    await fetchApi(`${url}senha/`, {
                       method: "POST",
                       body: JSON.stringify({ password: senha }),
                       showToast: false,
@@ -243,7 +243,7 @@ export function CustomerAcesso({
                 label="Excluir usuário"
                 onOk={() =>
                   executar(async () => {
-                    await adminFetch(url, { method: "DELETE", showToast: false })
+                    await fetchApi(url, { method: "DELETE", showToast: false })
                     toast.success(`${customer.email} excluído.`)
                     onDeleted()
                   })

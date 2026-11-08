@@ -1,13 +1,11 @@
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import { createRef } from "react";
 import { MemoryRouter } from "react-router-dom";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 import { PedidoSection } from "../PedidoSection";
-import * as apiModule from "@/lib/api";
-import { CustomerAuthProvider } from "@/contexts/CustomerAuthContext";
-
-const STORAGE_KEY = "clama:customer-auth";
+import { mockApiFetch, usuarioFixture } from "@/test/sessao";
+import { SessaoProvider } from "@/contexts/SessaoContext";
 
 const navigateMock = vi.fn();
 vi.mock("react-router-dom", async () => {
@@ -23,39 +21,24 @@ vi.mock("react-router-dom", async () => {
 function renderWithRouter(ui: React.ReactElement) {
   return render(
     <MemoryRouter>
-      <CustomerAuthProvider>{ui}</CustomerAuthProvider>
+      <SessaoProvider>{ui}</SessaoProvider>
     </MemoryRouter>,
   );
 }
 
-function setAuthenticated() {
-  localStorage.setItem(
-    STORAGE_KEY,
-    JSON.stringify({
-      user: {
-        id: 1,
-        email: "fiel@example.com",
-        nome_completo: "Pedro",
-        force_change_password: false,
-        freemium_used_at: null,
-      },
-      accessToken: "access-1",
-      refreshToken: "refresh-1",
-    }),
-  );
-}
-
 describe("PedidoSection", () => {
+  let planos: unknown[];
   const originalFetch = globalThis.fetch;
 
   beforeEach(() => {
     localStorage.clear();
     navigateMock.mockClear();
-    vi.spyOn(apiModule, "apiFetch").mockResolvedValue([
+    planos = [
       { id: "p1", nome: "Plano 1", valor_centavos: 199, ordem: 1 },
       { id: "p2", nome: "Plano 2", valor_centavos: 999, ordem: 2 },
       { id: "p3", nome: "Plano 3", valor_centavos: 4999, ordem: 3 },
-    ]);
+    ];
+    mockApiFetch({ outras: () => planos });
   });
 
   afterEach(() => {
@@ -82,12 +65,11 @@ describe("PedidoSection", () => {
     expect(screen.queryByText("Leve seu clamor")).toBeNull();
   });
 
-  it("renders the three form section labels after planos load", async () => {
+  it("renders the form section labels after planos load", async () => {
     renderWithRouter(<PedidoSection />);
     await waitFor(() => {
       expect(screen.getByText("Seus dados")).toBeInTheDocument();
     });
-    expect(screen.getByText("Receber oração por")).toBeInTheDocument();
     expect(screen.getByText("Escolha sua contribuição")).toBeInTheDocument();
   });
 
@@ -98,28 +80,22 @@ describe("PedidoSection", () => {
   });
 
   describe("AC8 — CTA condicional por auth", () => {
-    it("anônimo: CTA mostra 'Entrar para fazer pedido' e click navega /login?next=/#pedido", async () => {
+    it("anônimo: o pedido (UI unificada) não exige login nem mostra 'Levar meu clamor'", async () => {
       renderWithRouter(<PedidoSection />);
 
       await waitFor(() => {
-        expect(
-          screen.getByRole("button", { name: /Entrar para fazer pedido/i }),
-        ).toBeInTheDocument();
+        expect(screen.getByText("Seus dados")).toBeInTheDocument();
       });
-
-      // Botão "Levar meu clamor" não deve aparecer
+      expect(
+        screen.queryByRole("button", { name: /Entrar para fazer pedido/i }),
+      ).toBeNull();
       expect(
         screen.queryByRole("button", { name: /Levar meu clamor/i }),
       ).toBeNull();
-
-      fireEvent.click(
-        screen.getByRole("button", { name: /Entrar para fazer pedido/i }),
-      );
-      expect(navigateMock).toHaveBeenCalledWith("/login?next=/#pedido");
     });
 
     it("autenticado: CTA é 'Levar meu clamor' (comportamento atual preservado)", async () => {
-      setAuthenticated();
+      mockApiFetch({ usuario: usuarioFixture, outras: () => planos });
       renderWithRouter(<PedidoSection />);
 
       await waitFor(() => {

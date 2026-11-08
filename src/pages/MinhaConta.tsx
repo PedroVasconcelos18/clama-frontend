@@ -12,7 +12,7 @@ import {
 } from "lucide-react"
 
 import { useCustomerAuth } from "@/contexts/CustomerAuthContext"
-import { useCustomerApi } from "@/hooks/useCustomerApi"
+import { useApi } from "@/hooks/useApi"
 import { PastoralApiError } from "@/lib/api"
 import LoadingSpinner from "@/components/utility/LoadingSpinner"
 import { PastoralAlert } from "@/components/utility/PastoralAlert"
@@ -204,7 +204,7 @@ function HistoricoTab({
   onGoToNovo: () => void
   primeiroNome: string
 }) {
-  const { customerFetch } = useCustomerApi()
+  const { fetchApi } = useApi()
   const [pedidos, setPedidos] = useState<CustomerPedido[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [expandedId, setExpandedId] = useState<string | null>(null)
@@ -220,7 +220,7 @@ function HistoricoTab({
       if (to) params.set("to", to)
       const qs = params.toString()
       const url = `/api/customer/pedidos/${qs ? `?${qs}` : ""}`
-      const data = await customerFetch<CustomerPedido[]>(url, {
+      const data = await fetchApi<CustomerPedido[]>(url, {
         method: "GET",
         showToast: false,
       })
@@ -229,7 +229,7 @@ function HistoricoTab({
       const e = err as PastoralApiError
       setError(e.pastoralMessage ?? "Não conseguimos carregar seus pedidos.")
     }
-  }, [customerFetch, from, to])
+  }, [fetchApi, from, to])
 
   useEffect(() => {
     const t = setTimeout(() => {

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react"
 import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
-import { useAdminApi } from "@/hooks/useAdminApi"
+import { useApi } from "@/hooks/useApi"
 import { PastoralApiError } from "@/lib/api"
 import { LoadingSpinner } from "@/components/utility/LoadingSpinner"
 import { PastoralAlert } from "@/components/utility/PastoralAlert"
@@ -107,7 +107,7 @@ type PlanoFormInput = z.input<typeof planoSchema>
 type PlanoFormData = z.output<typeof planoSchema>
 
 export default function PlanosPage() {
-  const { adminFetch } = useAdminApi()
+  const { fetchApi } = useApi()
   const [planos, setPlanos] = useState<AdminPlano[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -137,7 +137,7 @@ export default function PlanosPage() {
     setIsLoading(true)
     setError(null)
     try {
-      const data = await adminFetch<AdminPlano[]>("/api/admin/planos/", {
+      const data = await fetchApi<AdminPlano[]>("/api/admin/planos/", {
         showToast: false,
       })
       setPlanos(data)
@@ -154,7 +154,7 @@ export default function PlanosPage() {
 
   useEffect(() => {
     loadPlanos()
-  }, [adminFetch])
+  }, [fetchApi])
 
   function openNewDialog() {
     setEditingPlano(null)
@@ -197,13 +197,13 @@ export default function PlanosPage() {
 
     try {
       if (editingPlano) {
-        await adminFetch(`/api/admin/planos/${editingPlano.id}/`, {
+        await fetchApi(`/api/admin/planos/${editingPlano.id}/`, {
           method: "PATCH",
           body: JSON.stringify(payload),
         })
         toast.success("Plano atualizado.")
       } else {
-        await adminFetch("/api/admin/planos/", {
+        await fetchApi("/api/admin/planos/", {
           method: "POST",
           body: JSON.stringify(payload),
         })
@@ -212,19 +212,19 @@ export default function PlanosPage() {
       setIsDialogOpen(false)
       loadPlanos()
     } catch {
-      // Toast de erro já exibido automaticamente pelo adminFetch
+      // Toast de erro já exibido automaticamente pelo fetchApi
     }
   }
 
   async function handleToggleAtivo(plano: AdminPlano) {
     try {
       if (plano.ativo) {
-        await adminFetch(`/api/admin/planos/${plano.id}/desativar/`, {
+        await fetchApi(`/api/admin/planos/${plano.id}/desativar/`, {
           method: "POST",
         })
         toast.success("Plano desativado.")
       } else {
-        await adminFetch(`/api/admin/planos/${plano.id}/`, {
+        await fetchApi(`/api/admin/planos/${plano.id}/`, {
           method: "PATCH",
           body: JSON.stringify({ ativo: true }),
         })
@@ -233,7 +233,7 @@ export default function PlanosPage() {
       setConfirmToggle(null)
       loadPlanos()
     } catch {
-      // Toast de erro já exibido automaticamente pelo adminFetch
+      // Toast de erro já exibido automaticamente pelo fetchApi
     }
   }
 

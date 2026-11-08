@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { useAdminApi } from "@/hooks/useAdminApi"
+import { useApi } from "@/hooks/useApi"
 import { PastoralApiError } from "@/lib/api"
 import { PastoralAlert } from "@/components/utility/PastoralAlert"
 import { LoadingSpinner } from "@/components/utility/LoadingSpinner"
@@ -35,7 +35,7 @@ interface DistributionMetrics {
 type Period = "day" | "week" | "month"
 
 export default function DashboardPage() {
-  const { adminFetch } = useAdminApi()
+  const { fetchApi } = useApi()
   const [period, setPeriod] = useState<Period>("month")
   const [overview, setOverview] = useState<OverviewMetrics | null>(null)
   const [distribution, setDistribution] = useState<DistributionMetrics | null>(null)
@@ -49,8 +49,8 @@ export default function DashboardPage() {
 
       try {
         const [overviewData, distributionData] = await Promise.all([
-          adminFetch<OverviewMetrics>(`/api/admin/metrics/overview/?period=${period}`),
-          adminFetch<DistributionMetrics>(`/api/admin/metrics/distribution/?period=${period}`),
+          fetchApi<OverviewMetrics>(`/api/admin/metrics/overview/?period=${period}`),
+          fetchApi<DistributionMetrics>(`/api/admin/metrics/distribution/?period=${period}`),
         ])
         setOverview(overviewData)
         setDistribution(distributionData)
@@ -66,7 +66,7 @@ export default function DashboardPage() {
     }
 
     loadMetrics()
-  }, [adminFetch, period])
+  }, [fetchApi, period])
 
   const periodLabels: Record<Period, string> = {
     day: "Dia",

@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { toast } from "sonner"
-import { useAdminApi } from "@/hooks/useAdminApi"
+import { useApi } from "@/hooks/useApi"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -28,7 +28,7 @@ export function PedidoEditForm({
   onSaved: (p: AdminPedido) => void
   onCancel: () => void
 }) {
-  const { adminFetch } = useAdminApi()
+  const { fetchApi } = useApi()
   const inicial = {
     nome: pedido.nome,
     email: pedido.email,
@@ -70,7 +70,7 @@ export function PedidoEditForm({
     setSaving(true)
     setErro(null)
     try {
-      const salvo = await adminFetch<AdminPedido>(`/api/admin/pedidos/${pedido.id}/`, {
+      const salvo = await fetchApi<AdminPedido>(`/api/admin/pedidos/${pedido.id}/`, {
         method: "PATCH",
         body: JSON.stringify(corpo),
         showToast: false,

@@ -1,8 +1,6 @@
 import { lazy, Suspense } from "react"
 import { Routes, Route } from "react-router-dom"
 import { Toaster } from "@/components/ui/sonner"
-import { AuthProvider } from "@/contexts/AuthContext"
-import { CustomerAuthProvider } from "@/contexts/CustomerAuthContext"
 import { ProtectedRoute } from "@/components/admin/ProtectedRoute"
 import Landing from "@/pages/Landing"
 import Confirmar from "@/pages/Confirmar"
@@ -41,67 +39,65 @@ function LazyAdmin({ children }: { children: React.ReactNode }) {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <CustomerAuthProvider>
-        <Routes>
-          {/* Public routes */}
-          <Route path="/" element={<Landing />} />
-          <Route path="/confirmar" element={<Confirmar />} />
-          <Route path="/confirmado" element={<Confirmado />} />
-          <Route path="/confirmacao" element={<Confirmacao />} />
-          <Route path="/cancelado" element={<Cancelado />} />
-          <Route path="/privacidade" element={<Privacidade />} />
-          <Route path="/termos" element={<Termos />} />
-          <Route path="/_dev/showcase" element={<DevShowcase />} />
-          <Route path="/_health" element={<HealthDebug />} />
+    <>
+      <Routes>
+        {/* Public routes */}
+        <Route path="/" element={<Landing />} />
+        <Route path="/confirmar" element={<Confirmar />} />
+        <Route path="/confirmado" element={<Confirmado />} />
+        <Route path="/confirmacao" element={<Confirmacao />} />
+        <Route path="/cancelado" element={<Cancelado />} />
+        <Route path="/privacidade" element={<Privacidade />} />
+        <Route path="/termos" element={<Termos />} />
+        <Route path="/_dev/showcase" element={<DevShowcase />} />
+        <Route path="/_health" element={<HealthDebug />} />
 
-          {/* Customer auth routes (public — gating happens inside) */}
-          <Route path="/login" element={<Login />} />
-          <Route path="/trocar-senha" element={<TrocarSenha />} />
-          <Route path="/conta" element={<MinhaConta />} />
+        {/* Customer auth routes (public — gating happens inside) */}
+        <Route path="/login" element={<Login />} />
+        <Route path="/trocar-senha" element={<TrocarSenha />} />
+        <Route path="/conta" element={<MinhaConta />} />
 
-          {/* Admin routes */}
-          <Route path="/admin/login" element={<AdminLogin />} />
+        {/* Admin routes */}
+        <Route path="/admin/login" element={<AdminLogin />} />
+        <Route
+          path="/admin"
+          element={
+            <ProtectedRoute>
+              <AdminLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<DashboardPage />} />
+          <Route path="pedidos" element={<PedidosListPage />} />
+          <Route path="customers" element={<CustomersListPage />} />
+          <Route path="planos" element={<PlanosPage />} />
+          <Route path="instituicoes" element={<InstituicoesPage />} />
+          <Route path="prompts" element={<PromptEditorPage />} />
+          <Route path="documentos" element={<DocumentosPage />} />
+          <Route path="repasses" element={<RepassesPage />} />
+          <Route path="webhooks" element={<WebhooksPage />} />
+          <Route path="freemium" element={<FreemiumBloqueiosPage />} />
           <Route
-            path="/admin"
+            path="blog/comentarios"
             element={
-              <ProtectedRoute>
-                <AdminLayout />
-              </ProtectedRoute>
+              <LazyAdmin>
+                <BlogCommentsPage />
+              </LazyAdmin>
             }
-          >
-            <Route index element={<DashboardPage />} />
-            <Route path="pedidos" element={<PedidosListPage />} />
-            <Route path="customers" element={<CustomersListPage />} />
-            <Route path="planos" element={<PlanosPage />} />
-            <Route path="instituicoes" element={<InstituicoesPage />} />
-            <Route path="prompts" element={<PromptEditorPage />} />
-            <Route path="documentos" element={<DocumentosPage />} />
-            <Route path="repasses" element={<RepassesPage />} />
-            <Route path="webhooks" element={<WebhooksPage />} />
-            <Route path="freemium" element={<FreemiumBloqueiosPage />} />
-            <Route
-              path="blog/comentarios"
-              element={
-                <LazyAdmin>
-                  <BlogCommentsPage />
-                </LazyAdmin>
-              }
-            />
-            <Route
-              path="blog/banidos"
-              element={
-                <LazyAdmin>
-                  <BlogBannedPage />
-                </LazyAdmin>
-              }
-            />
-          </Route>
+          />
+          <Route
+            path="blog/banidos"
+            element={
+              <LazyAdmin>
+                <BlogBannedPage />
+              </LazyAdmin>
+            }
+          />
+        </Route>
 
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-        <Toaster />
-      </CustomerAuthProvider>
-    </AuthProvider>
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+      <Toaster />
+    </>
   )
 }

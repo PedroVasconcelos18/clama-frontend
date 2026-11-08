@@ -3,8 +3,8 @@ import userEvent from "@testing-library/user-event"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import RepassesPage from "../RepassesPage"
 
-const adminFetch = vi.fn()
-vi.mock("@/hooks/useAdminApi", () => ({ useAdminApi: () => ({ adminFetch }) }))
+const fetchApi = vi.fn()
+vi.mock("@/hooks/useApi", () => ({ useApi: () => ({ fetchApi }) }))
 
 const repasse = {
   id: "r1", pedido_id: "12345678-aaaa-bbbb-cccc-1234567890ab", instituicao_id: "i1",
@@ -15,8 +15,8 @@ const repasse = {
 
 describe("RepassesPage", () => {
   beforeEach(() => {
-    adminFetch.mockReset()
-    adminFetch.mockResolvedValue({ count: 45, next: null, previous: null, results: [repasse] })
+    fetchApi.mockReset()
+    fetchApi.mockResolvedValue({ count: 45, next: null, previous: null, results: [repasse] })
   })
 
   it("renderiza a lista", async () => {
@@ -30,11 +30,11 @@ describe("RepassesPage", () => {
     render(<RepassesPage />)
     await userEvent.click(await screen.findByRole("button", { name: /Próxima/ }))
     await waitFor(() =>
-      expect(adminFetch).toHaveBeenLastCalledWith("/api/admin/repasses/?limit=20&offset=20"),
+      expect(fetchApi).toHaveBeenLastCalledWith("/api/admin/repasses/?limit=20&offset=20"),
     )
     await userEvent.selectOptions(screen.getByLabelText("Status"), "transferido")
     await waitFor(() =>
-      expect(adminFetch).toHaveBeenLastCalledWith(
+      expect(fetchApi).toHaveBeenLastCalledWith(
         "/api/admin/repasses/?limit=20&offset=0&status=transferido",
       ),
     )

@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
-import { useAdminApi } from "@/hooks/useAdminApi"
+import { useApi } from "@/hooks/useApi"
 import { PastoralApiError } from "@/lib/api"
 import { LoadingSpinner } from "@/components/utility/LoadingSpinner"
 import { PastoralAlert } from "@/components/utility/PastoralAlert"
@@ -46,7 +46,7 @@ function handleImgError(event: React.SyntheticEvent<HTMLImageElement>) {
 }
 
 export default function InstituicoesPage() {
-  const { adminFetch } = useAdminApi()
+  const { fetchApi } = useApi()
   const [instituicoes, setInstituicoes] = useState<AdminInstituicao[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -90,7 +90,7 @@ export default function InstituicoesPage() {
     setIsLoading(true)
     setError(null)
     try {
-      const data = await adminFetch<AdminInstituicao[]>(
+      const data = await fetchApi<AdminInstituicao[]>(
         "/api/admin/instituicoes/",
         { showToast: false },
       )
@@ -108,7 +108,7 @@ export default function InstituicoesPage() {
 
   useEffect(() => {
     loadInstituicoes()
-  }, [adminFetch])
+  }, [fetchApi])
 
   function openNewDialog() {
     setEditingInstituicao(null)
@@ -139,13 +139,13 @@ export default function InstituicoesPage() {
 
     try {
       if (editingInstituicao) {
-        await adminFetch(`/api/admin/instituicoes/${editingInstituicao.id}/`, {
+        await fetchApi(`/api/admin/instituicoes/${editingInstituicao.id}/`, {
           method: "PATCH",
           body: formData,
         })
         toast.success("Instituição atualizada.")
       } else {
-        await adminFetch("/api/admin/instituicoes/", {
+        await fetchApi("/api/admin/instituicoes/", {
           method: "POST",
           body: formData,
         })
@@ -154,19 +154,19 @@ export default function InstituicoesPage() {
       setIsDialogOpen(false)
       loadInstituicoes()
     } catch {
-      // Toast de erro já exibido automaticamente pelo adminFetch
+      // Toast de erro já exibido automaticamente pelo fetchApi
     }
   }
 
   async function handleToggleAtivo(inst: AdminInstituicao) {
     try {
       if (inst.ativo) {
-        await adminFetch(`/api/admin/instituicoes/${inst.id}/desativar/`, {
+        await fetchApi(`/api/admin/instituicoes/${inst.id}/desativar/`, {
           method: "POST",
         })
         toast.success("Instituição desativada.")
       } else {
-        await adminFetch(`/api/admin/instituicoes/${inst.id}/`, {
+        await fetchApi(`/api/admin/instituicoes/${inst.id}/`, {
           method: "PATCH",
           body: JSON.stringify({ ativo: true }),
         })
@@ -175,7 +175,7 @@ export default function InstituicoesPage() {
       setConfirmToggle(null)
       loadInstituicoes()
     } catch {
-      // Toast de erro já exibido automaticamente pelo adminFetch
+      // Toast de erro já exibido automaticamente pelo fetchApi
     }
   }
 

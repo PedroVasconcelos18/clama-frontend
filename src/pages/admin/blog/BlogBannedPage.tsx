@@ -9,7 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { useAdminApi } from "@/hooks/useAdminApi"
+import { useApi } from "@/hooks/useApi"
 import { tempoRelativo } from "@/lib/datetime"
 import type {
   AdminCustomerBanido,
@@ -19,7 +19,7 @@ import type {
 const PAGE_SIZE = 20
 
 export default function BlogBannedPage() {
-  const { adminFetch } = useAdminApi()
+  const { fetchApi } = useApi()
   const [page, setPage] = useState(1)
   const [data, setData] = useState<PaginatedAdminBanidos | null>(null)
   const [loading, setLoading] = useState(false)
@@ -31,7 +31,7 @@ export default function BlogBannedPage() {
   useEffect(() => {
     let cancelled = false
     setLoading(true)
-    adminFetch<PaginatedAdminBanidos>(
+    fetchApi<PaginatedAdminBanidos>(
       `/api/blog/admin/banned-customers/?page=${page}&page_size=${PAGE_SIZE}`,
     )
       .then((response) => {
@@ -46,13 +46,13 @@ export default function BlogBannedPage() {
     return () => {
       cancelled = true
     }
-  }, [adminFetch, page, reloadToken])
+  }, [fetchApi, page, reloadToken])
 
   async function handleConfirmUnban() {
     if (!unbanTarget) return
     setActionInFlight(true)
     try {
-      await adminFetch(
+      await fetchApi(
         `/api/blog/admin/banned-customers/${unbanTarget.customer}/`,
         { method: "DELETE" },
       )

@@ -25,13 +25,14 @@ describe("purgeLegacyTokens", () => {
     expect(localStorage.getItem("clama:admin-auth")).toBeNull()
   })
 
-  it("preserva sessao no formato novo, que nao tem token", () => {
-    const novo = JSON.stringify({ user: { id: 1, email: "a@b.c" } })
-    localStorage.setItem("clama:customer-auth", novo)
+  it("remove também o formato sem token (só user): o usuário não vive mais no storage", () => {
+    localStorage.setItem("clama:customer-auth", JSON.stringify({ user: { id: 1, email: "a@b.c" } }))
+    localStorage.setItem("clama:admin-auth", JSON.stringify({ user: { id: 2 } }))
 
     purgeLegacyTokens()
 
-    expect(localStorage.getItem("clama:customer-auth")).toBe(novo)
+    expect(localStorage.getItem("clama:customer-auth")).toBeNull()
+    expect(localStorage.getItem("clama:admin-auth")).toBeNull()
   })
 
   it("nao toca em nenhuma outra chave", () => {

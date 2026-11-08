@@ -2,7 +2,7 @@ import { useEffect, useState } from "react"
 import { toast } from "sonner"
 import { RotateCw, X } from "lucide-react"
 
-import { useAdminApi } from "@/hooks/useAdminApi"
+import { useApi } from "@/hooks/useApi"
 import { useAdminList } from "@/hooks/useAdminList"
 import { AdminPager } from "@/components/admin/AdminPager"
 import { Button } from "@/components/ui/button"
@@ -43,7 +43,7 @@ const RESULTADO: Record<string, string> = {
 }
 
 export default function WebhooksPage() {
-  const { adminFetch } = useAdminApi()
+  const { fetchApi } = useApi()
   const [provider, setProvider] = useState("")
   const [status, setStatus] = useState("")
   const [eventType, setEventType] = useState("")
@@ -75,7 +75,7 @@ export default function WebhooksPage() {
     if (!target) return
     setBusy(true)
     try {
-      const res = await adminFetch<{ status: string }>(
+      const res = await fetchApi<{ status: string }>(
         `/api/admin/webhooks/${target.id}/reprocessar/`,
         { method: "POST", showToast: false },
       )
@@ -269,13 +269,13 @@ function WebhookDrawer({
   confirmando: boolean
   reloadToken: number
 }) {
-  const { adminFetch } = useAdminApi()
+  const { fetchApi } = useApi()
   const [res, setRes] = useState<{ id: string; data?: AdminWebhook; error?: string } | null>(null)
 
   useEffect(() => {
     if (!id) return
     let cancelled = false
-    adminFetch<AdminWebhook>(`/api/admin/webhooks/${id}/`)
+    fetchApi<AdminWebhook>(`/api/admin/webhooks/${id}/`)
       .then((data) => !cancelled && setRes({ id, data }))
       .catch((err: { pastoralMessage?: string }) => {
         if (!cancelled)
@@ -284,7 +284,7 @@ function WebhookDrawer({
     return () => {
       cancelled = true
     }
-  }, [adminFetch, id, reloadToken])
+  }, [fetchApi, id, reloadToken])
 
   useEffect(() => {
     if (!id || confirmando) return

@@ -38,52 +38,56 @@ describe("apiFetch", () => {
     )
   })
 
-  it("throws PastoralApiError with pastoral_message from API", async () => {
+  it("lê codigo e mensagemPastoral do ProblemDetail", async () => {
     globalThis.fetch = vi.fn().mockResolvedValue({
       ok: false,
       status: 400,
       json: () =>
         Promise.resolve({
-          error: {
-            code: "validation_error",
-            message: "Campo obrigatório",
-            pastoral_message:
-              "Por favor, preencha todos os campos necessários.",
-          },
+          type: "about:blank",
+          title: "Bad Request",
+          status: 400,
+          codigo: "validacao",
+          mensagemPastoral: "Por favor, preencha todos os campos necessários.",
+          erros: [{ campo: "email", mensagem: "obrigatório" }],
         }),
     })
 
-    await expect(apiFetch("/api/pedidos/")).rejects.toThrow(PastoralApiError)
-
-    try {
-      await apiFetch("/api/pedidos/")
-    } catch (e) {
-      const error = e as PastoralApiError
-      expect(error.code).toBe("validation_error")
-      expect(error.pastoralMessage).toBe(
-        "Por favor, preencha todos os campos necessários."
-      )
-      expect(error.httpStatus).toBe(400)
-    }
+    const error = (await apiFetch("/api/pedidos/", { showToast: false }).catch(
+      (e) => e
+    )) as PastoralApiError
+    expect(error).toBeInstanceOf(PastoralApiError)
+    expect(error.code).toBe("validacao")
+    expect(error.pastoralMessage).toBe(
+      "Por favor, preencha todos os campos necessários."
+    )
+    expect(error.httpStatus).toBe(400)
   })
 
-  it("throws PastoralApiError with fallback message when API response has no pastoral shape", async () => {
+  it("sem mensagem pastoral nem erros, usa detail; sem codigo, unknown", async () => {
     globalThis.fetch = vi.fn().mockResolvedValue({
       ok: false,
       status: 500,
-      json: () => Promise.resolve({ detail: "Internal server error" }),
+      json: () => Promise.resolve({ title: "Internal Server Error", detail: "Falhou" }),
     })
 
-    try {
-      await apiFetch("/api/pedidos/")
-    } catch (e) {
-      const error = e as PastoralApiError
-      expect(error.code).toBe("unknown")
-      expect(error.pastoralMessage).toBe(
-        "Algo não saiu como o esperado. Vamos tentar de novo em instantes."
-      )
-      expect(error.httpStatus).toBe(500)
-    }
+    const error = (await apiFetch("/api/pedidos/", { showToast: false }).catch(
+      (e) => e
+    )) as PastoralApiError
+    expect(error.code).toBe("unknown")
+    expect(error.pastoralMessage).toBe("Falhou")
+  })
+
+  it("POST leva X-XSRF-TOKEN do cookie lido na hora; 204 vira {}", async () => {
+    document.cookie = "XSRF-TOKEN=tok1; path=/"
+    globalThis.fetch = vi.fn().mockResolvedValue({ ok: true, status: 204 })
+
+    await expect(
+      apiFetch("/api/auth/logout", { method: "POST" })
+    ).resolves.toEqual({})
+    const headers = (fetch as ReturnType<typeof vi.fn>).mock.calls[0]?.[1].headers
+    expect(headers["X-XSRF-TOKEN"]).toBe("tok1")
+    document.cookie = "XSRF-TOKEN=; path=/; max-age=0"
   })
 
   it("throws PastoralApiError on network error", async () => {

@@ -3,10 +3,8 @@ import { MemoryRouter } from "react-router-dom"
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest"
 
 import TrocarSenha from "@/pages/TrocarSenha"
-import { CustomerAuthProvider } from "@/contexts/CustomerAuthContext"
+import { SessaoProvider } from "@/contexts/SessaoContext"
 import { PastoralApiError } from "@/lib/api"
-
-const STORAGE_KEY = "clama:customer-auth"
 
 const navigateMock = vi.fn()
 
@@ -36,29 +34,39 @@ vi.mock("sonner", async () => {
 
 const fetchMock = vi.fn()
 
-function setLoggedIn(forceChangePassword = true) {
-  localStorage.setItem(
-    STORAGE_KEY,
-    JSON.stringify({
-      user: {
-        id: 1,
-        email: "fiel@example.com",
-        nome_completo: "Pedro",
-        force_change_password: forceChangePassword,
-        freemium_used_at: null,
-      },
-      accessToken: "access-1",
-      refreshToken: "refresh-1",
-    }),
-  )
+let logado = false
+function setLoggedIn() {
+  logado = true
+}
+
+// `GET /api/auth/eu` (boot da sessão) é respondido aqui; o resto vai para o fetchMock.
+function fetchComSessao(input: RequestInfo | URL, init?: RequestInit) {
+  const url = typeof input === "string" ? input : (input as Request).url
+  if (url === "/api/auth/eu") {
+    return Promise.resolve(
+      logado
+        ? new Response(
+            JSON.stringify({
+              id: 1,
+              email: "fiel@example.com",
+              nomeCompleto: "Pedro",
+              nomeFormatoBlog: "Pedro",
+              papel: "CLIENTE",
+            }),
+            { status: 200 },
+          )
+        : new Response("{}", { status: 401 }),
+    )
+  }
+  return fetchMock(input, init)
 }
 
 function renderPage(url = "/trocar-senha") {
   return render(
     <MemoryRouter initialEntries={[url]}>
-      <CustomerAuthProvider>
+      <SessaoProvider>
         <TrocarSenha />
-      </CustomerAuthProvider>
+      </SessaoProvider>
     </MemoryRouter>,
   )
 }
@@ -85,12 +93,13 @@ async function submit() {
 
 describe("TrocarSenha (/trocar-senha)", () => {
   beforeEach(() => {
+    logado = false
     localStorage.clear()
     navigateMock.mockClear()
     toastErrorMock.mockClear()
     toastSuccessMock.mockClear()
     fetchMock.mockReset()
-    globalThis.fetch = fetchMock as unknown as typeof fetch
+    globalThis.fetch = fetchComSessao as unknown as typeof fetch
   })
 
   afterEach(() => {
@@ -109,7 +118,7 @@ describe("TrocarSenha (/trocar-senha)", () => {
   })
 
   it("happy path: troca senha, refaz /me/, redireciona para next", async () => {
-    setLoggedIn(true)
+    setLoggedIn()
 
     fetchMock.mockImplementation((input: RequestInfo) => {
       const url = typeof input === "string" ? input : (input as Request).url
@@ -117,7 +126,7 @@ describe("TrocarSenha (/trocar-senha)", () => {
         return Promise.resolve(
           new Response(
             JSON.stringify({
-              pastoral_message: "Senha trocada com sucesso.",
+              mensagemPastoral: "Senha trocada com sucesso.",
             }),
             { status: 200, headers: { "Content-Type": "application/json" } },
           ),
@@ -150,14 +159,10 @@ describe("TrocarSenha (/trocar-senha)", () => {
 
     // Toast de sucesso pastoral
     expect(toastSuccessMock).toHaveBeenCalled()
-
-    // Storage refletindo flag zerada após /me/
-    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "{}")
-    expect(stored.user.force_change_password).toBe(false)
   })
 
   it("senha errada (400): mostra toast pastoral", async () => {
-    setLoggedIn(true)
+    setLoggedIn()
 
     fetchMock.mockImplementation((input: RequestInfo) => {
       const url = typeof input === "string" ? input : (input as Request).url
@@ -165,10 +170,9 @@ describe("TrocarSenha (/trocar-senha)", () => {
         return Promise.resolve(
           new Response(
             JSON.stringify({
-              error: {
-                pastoral_message:
-                  "A senha atual não confere. Tente novamente, com calma.",
-              },
+              codigo: "senha_atual_incorreta",
+              mensagemPastoral:
+                "A senha atual não confere. Tente novamente, com calma.",
             }),
             { status: 400, headers: { "Content-Type": "application/json" } },
           ),
@@ -189,7 +193,7 @@ describe("TrocarSenha (/trocar-senha)", () => {
   })
 
   it("nova_senha != confirmar_senha: erro inline do Zod, sem chamar API", async () => {
-    setLoggedIn(true)
+    setLoggedIn()
     const beforeCount = fetchMock.mock.calls.length
 
     renderPage("/trocar-senha")
@@ -212,7 +216,7 @@ describe("TrocarSenha (/trocar-senha)", () => {
   })
 
   it("PastoralApiError direto (mock api.ts): exibe toast pastoral", async () => {
-    setLoggedIn(true)
+    setLoggedIn()
 
     // Esse teste cobre o caminho onde o backend retorna erro genérico.
     // Em vez de simular fetch, usamos mock no apiFetch interno via fetch mock.

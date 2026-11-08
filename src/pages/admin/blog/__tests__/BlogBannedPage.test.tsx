@@ -3,8 +3,8 @@ import userEvent from "@testing-library/user-event"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import BlogBannedPage from "../BlogBannedPage"
 
-const adminFetch = vi.fn()
-vi.mock("@/hooks/useAdminApi", () => ({ useAdminApi: () => ({ adminFetch }) }))
+const fetchApi = vi.fn()
+vi.mock("@/hooks/useApi", () => ({ useApi: () => ({ fetchApi }) }))
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }))
 
 const banido = {
@@ -20,8 +20,8 @@ const banido = {
 
 describe("BlogBannedPage", () => {
   beforeEach(() => {
-    adminFetch.mockReset()
-    adminFetch.mockImplementation((_url: string, init?: { method?: string }) =>
+    fetchApi.mockReset()
+    fetchApi.mockImplementation((_url: string, init?: { method?: string }) =>
       Promise.resolve(
         init?.method === "DELETE"
           ? null
@@ -40,7 +40,7 @@ describe("BlogBannedPage", () => {
       )!,
     )
     await waitFor(() =>
-      expect(adminFetch).toHaveBeenCalledWith(
+      expect(fetchApi).toHaveBeenCalledWith(
         "/api/blog/admin/banned-customers/42/",
         { method: "DELETE" },
       ),
