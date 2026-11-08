@@ -183,6 +183,30 @@ describe("TrocarSenha (/trocar-senha)", () => {
     })
   })
 
+  it("senha_fraca (400): mostra na tela o motivo vindo da API", async () => {
+    setLoggedIn()
+    const motivo =
+      "Esta senha é muito curta. Ela precisa conter pelo menos 8 caracteres. Esta senha é muito comum."
+    fetchMock.mockImplementation(() =>
+      Promise.resolve(
+        new Response(
+          JSON.stringify({
+            codigo: "senha_fraca",
+            mensagemPastoral: motivo,
+            erros: [{ campo: "novaSenha", mensagem: "Esta senha é muito comum." }],
+          }),
+          { status: 400, headers: { "Content-Type": "application/json" } },
+        ),
+      ),
+    )
+
+    renderPage("/trocar-senha")
+    await fillForm("temp-1234", "12345678", "12345678")
+    await submit()
+
+    expect(await screen.findByText(motivo)).toBeInTheDocument()
+  })
+
   it("nova_senha != confirmar_senha: erro inline do Zod, sem chamar API", async () => {
     setLoggedIn()
     const beforeCount = fetchMock.mock.calls.length

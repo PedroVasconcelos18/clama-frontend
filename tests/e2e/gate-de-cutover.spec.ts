@@ -144,7 +144,7 @@ test.describe("Gate — segurança", () => {
 
     await contexto.addCookies([
       {
-        name: "clama_access",
+        name: "SESSION",
         value: "token-de-teste",
         domain: url.hostname,
         path: "/api",
@@ -160,7 +160,7 @@ test.describe("Gate — segurança", () => {
     // O navegador decide pelo `Path`; o que se verifica é que ele existe com
     // o escopo certo e que o blog responde sem ele.
     const cookies = await contexto.cookies()
-    const auth = cookies.find((c) => c.name === "clama_access")
+    const auth = cookies.find((c) => c.name === "SESSION")
 
     expect(auth?.path).toBe("/api")
     expect(auth?.httpOnly).toBe(true)
