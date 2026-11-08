@@ -132,12 +132,15 @@ test.describe("Gate — SEO do domínio", () => {
 test.describe("Gate — segurança", () => {
   test("o cookie de auth não é enviado para /blog e é enviado para /api", async ({
     browser,
+    baseURL,
   }) => {
     // AC6, e é o coração do Epic 1: o cookie tem escopo `Path=/api`, então o
     // servidor WordPress nunca o recebe. Se ele vazar para `/blog`, o desenho
     // inteiro do ADR-01 cai.
     const contexto = await browser.newContext()
-    const url = new URL((await contexto.newPage()).url() || "http://localhost")
+    // o domínio do cookie vem da baseURL (BASE_URL): a página nova é about:blank, sem hostname, e o
+    // addCookies recusava ("Cookie should have a url or a domain/path pair")
+    const url = new URL(baseURL!)
 
     await contexto.addCookies([
       {
