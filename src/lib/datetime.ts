@@ -48,3 +48,16 @@ export function readingTimeMin(htmlOrText: string): number {
   const words = text.split(/\s+/).filter((w) => w.length > 0).length
   return Math.max(1, Math.ceil(words / WORDS_PER_MINUTE))
 }
+
+const FUSO = "America/Sao_Paulo"
+
+/** Instantes chegam da API em UTC (`...Z`); a tela mostra o horário de Brasília. */
+export function formatarDataHora(iso: string | null | undefined): string {
+  if (!iso) return "—"
+  return new Date(iso).toLocaleString("pt-BR", { timeZone: FUSO })
+}
+
+export function formatarData(iso: string | null | undefined): string {
+  if (!iso) return "—"
+  return new Date(iso).toLocaleDateString("pt-BR", { timeZone: FUSO })
+}

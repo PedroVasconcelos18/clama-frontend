@@ -1,5 +1,5 @@
 import { lazy, Suspense } from "react"
-import { Routes, Route } from "react-router-dom"
+import { Routes, Route, Navigate } from "react-router-dom"
 import { Toaster } from "@/components/ui/sonner"
 import { ProtectedRoute } from "@/components/admin/ProtectedRoute"
 import Landing from "@/pages/Landing"
@@ -14,12 +14,14 @@ import DevShowcase from "@/pages/_DevShowcase"
 import HealthDebug from "@/pages/HealthDebug"
 import Login from "@/pages/Login"
 import TrocarSenha from "@/pages/TrocarSenha"
+import RedefinirSenha from "@/pages/RedefinirSenha"
+import DefinirSenha from "@/pages/DefinirSenha"
 import MinhaConta from "@/pages/MinhaConta"
 import AdminLogin from "@/pages/admin/AdminLogin"
 import AdminLayout from "@/layouts/AdminLayout"
 import DashboardPage from "@/pages/admin/DashboardPage"
 import PedidosListPage from "@/pages/admin/PedidosListPage"
-import CustomersListPage from "@/pages/admin/CustomersListPage"
+import UsuariosPage from "@/pages/admin/UsuariosPage"
 import PlanosPage from "@/pages/admin/PlanosPage"
 import InstituicoesPage from "@/pages/admin/InstituicoesPage"
 import PromptEditorPage from "@/pages/admin/PromptEditorPage"
@@ -55,6 +57,8 @@ export default function App() {
         {/* Customer auth routes (public — gating happens inside) */}
         <Route path="/login" element={<Login />} />
         <Route path="/trocar-senha" element={<TrocarSenha />} />
+        <Route path="/redefinir-senha" element={<RedefinirSenha />} />
+        <Route path="/definir-senha" element={<DefinirSenha />} />
         <Route path="/conta" element={<MinhaConta />} />
 
         {/* Admin routes */}
@@ -69,7 +73,8 @@ export default function App() {
         >
           <Route index element={<DashboardPage />} />
           <Route path="pedidos" element={<PedidosListPage />} />
-          <Route path="customers" element={<CustomersListPage />} />
+          <Route path="usuarios" element={<UsuariosPage />} />
+          <Route path="customers" element={<Navigate to="/admin/usuarios" replace />} />
           <Route path="planos" element={<PlanosPage />} />
           <Route path="instituicoes" element={<InstituicoesPage />} />
           <Route path="prompts" element={<PromptEditorPage />} />

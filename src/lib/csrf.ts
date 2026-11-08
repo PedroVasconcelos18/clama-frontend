@@ -11,7 +11,7 @@ export function exigeCsrf(method?: string): boolean {
   return !METODOS_SEGUROS.has((method ?? "GET").toUpperCase())
 }
 
-function lerCookieXsrf(): string | null {
+export function lerCookieXsrf(): string | null {
   if (typeof document === "undefined") return null
   for (const par of document.cookie.split(";")) {
     const i = par.indexOf("=")

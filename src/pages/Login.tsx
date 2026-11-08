@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import {
   Link,
   useLocation,
@@ -9,7 +9,7 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { toast } from "sonner"
 
-import { useCustomerAuth } from "@/contexts/CustomerAuthContext"
+import { useSessao, type Usuario } from "@/contexts/SessaoContext"
 import { PastoralApiError } from "@/lib/api"
 import { goToNext, validateNextPath } from "@/lib/redirects"
 import { loginSchema, type LoginFormData } from "@/lib/schemas/customer"
@@ -32,7 +32,7 @@ export default function Login() {
   const navigate = useNavigate()
   const location = useLocation()
   const [searchParams] = useSearchParams()
-  const { login, isAuthenticated, user, isLoading } = useCustomerAuth()
+  const { login, usuario, carregando } = useSessao()
 
   const [error, setError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -77,30 +77,29 @@ export default function Login() {
 
   const emailValue = watch("email")
 
-  // Redireciona se já autenticado e flag false
-  useEffect(() => {
-    if (isLoading) return
-    if (isAuthenticated && user) {
-      if (user.force_change_password) {
-        navigate(`/trocar-senha?next=${encodeURIComponent(next)}`, { replace: true })
+  // Admin vai para o painel; cliente, para o destino pedido.
+  const seguir = useCallback(
+    (u: Usuario) => {
+      if (u.papel === "ADMIN" || u.papel === "SUPERUSUARIO") {
+        navigate("/admin", { replace: true })
       } else {
         goToNext(navigate, next, { replace: true })
       }
-    }
-  }, [isAuthenticated, user, isLoading, navigate, next])
+    },
+    [navigate, next],
+  )
+
+  // Já autenticado: não mostra o formulário.
+  useEffect(() => {
+    if (!carregando && usuario) seguir(usuario)
+  }, [carregando, usuario, seguir])
 
   async function onSubmit(data: LoginFormData) {
     setError(null)
     setIsSubmitting(true)
 
     try {
-      const loggedUser = await login(data.email, data.password)
-
-      if (loggedUser.force_change_password) {
-        navigate(`/trocar-senha?next=${encodeURIComponent(next)}`, { replace: true })
-      } else {
-        goToNext(navigate, next, { replace: true })
-      }
+      await login(data.email, data.password) // o efeito acima leva para o destino
     } catch (err) {
       let message = "Algo não saiu como o esperado. Tente novamente."
       if (err instanceof PastoralApiError) {
@@ -192,7 +191,7 @@ export default function Login() {
 
             <Button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isSubmitting || carregando}
               className="w-full h-10 mt-2"
             >
               {isSubmitting ? (

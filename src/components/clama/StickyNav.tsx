@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { useCustomerAuth } from "@/contexts/CustomerAuthContext";
+import { useSessao } from "@/contexts/SessaoContext";
 
 interface StickyNavProps {
   onCtaClick?: () => void;
@@ -9,7 +9,8 @@ interface StickyNavProps {
 
 export function StickyNav({ onCtaClick, showCta = true }: StickyNavProps) {
   const navigate = useNavigate();
-  const { isAuthenticated, user } = useCustomerAuth();
+  const { usuario } = useSessao();
+  const isAuthenticated = !!usuario;
 
   const handleCtaClick = () => {
     if (onCtaClick) {
@@ -53,10 +54,10 @@ export function StickyNav({ onCtaClick, showCta = true }: StickyNavProps) {
             <Link
               to="/conta"
               className="font-sans text-[0.82rem] font-semibold text-clama-cream/80 hover:text-clama-gold transition-colors px-3 py-2 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-clama-gold"
-              aria-label={`Minha conta (logada como ${user?.nome_completo?.split(" ")[0] || "amada"})`}
+              aria-label={`Minha conta (logada como ${usuario?.nomeCompleto?.split(" ")[0] || "amada"})`}
             >
               <span className="hidden sm:inline">
-                Olá, {user?.nome_completo?.split(" ")[0] || "amada"}
+                Olá, {usuario?.nomeCompleto?.split(" ")[0] || "amada"}
               </span>
               <span className="sm:hidden">Minha conta</span>
             </Link>

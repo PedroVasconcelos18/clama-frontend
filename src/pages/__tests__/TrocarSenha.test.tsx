@@ -117,30 +117,16 @@ describe("TrocarSenha (/trocar-senha)", () => {
     })
   })
 
-  it("happy path: troca senha, refaz /me/, redireciona para next", async () => {
+  it("happy path: troca a senha em /api/conta/senha e redireciona para next", async () => {
     setLoggedIn()
 
     fetchMock.mockImplementation((input: RequestInfo) => {
       const url = typeof input === "string" ? input : (input as Request).url
-      if (url.includes("/api/customer/auth/change-password/")) {
+      if (url.includes("/api/conta/senha")) {
         return Promise.resolve(
           new Response(
             JSON.stringify({
               mensagemPastoral: "Senha trocada com sucesso.",
-            }),
-            { status: 200, headers: { "Content-Type": "application/json" } },
-          ),
-        )
-      }
-      if (url.includes("/api/customer/me/")) {
-        return Promise.resolve(
-          new Response(
-            JSON.stringify({
-              id: 1,
-              email: "fiel@example.com",
-              nome_completo: "Pedro",
-              force_change_password: false,
-              freemium_used_at: null,
             }),
             { status: 200, headers: { "Content-Type": "application/json" } },
           ),
@@ -159,6 +145,11 @@ describe("TrocarSenha (/trocar-senha)", () => {
 
     // Toast de sucesso pastoral
     expect(toastSuccessMock).toHaveBeenCalled()
+    const [, init] = fetchMock.mock.calls.find(([u]) => String(u).includes("/api/conta/senha"))!
+    expect(JSON.parse(init.body)).toEqual({
+      senhaAtual: "temp-1234",
+      novaSenha: "minha-nova-senha-segura",
+    })
   })
 
   it("senha errada (400): mostra toast pastoral", async () => {
@@ -166,7 +157,7 @@ describe("TrocarSenha (/trocar-senha)", () => {
 
     fetchMock.mockImplementation((input: RequestInfo) => {
       const url = typeof input === "string" ? input : (input as Request).url
-      if (url.includes("/api/customer/auth/change-password/")) {
+      if (url.includes("/api/conta/senha")) {
         return Promise.resolve(
           new Response(
             JSON.stringify({
@@ -210,7 +201,7 @@ describe("TrocarSenha (/trocar-senha)", () => {
     const changePassCalls = fetchMock.mock.calls.filter(
       (c) =>
         typeof c[0] === "string" &&
-        (c[0] as string).includes("/api/customer/auth/change-password/"),
+        (c[0] as string).includes("/api/conta/senha"),
     )
     expect(changePassCalls.length).toBe(beforeCount)
   })

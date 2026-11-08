@@ -3,21 +3,20 @@ import userEvent from "@testing-library/user-event"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { toast } from "sonner"
 import { CustomerAcesso } from "../CustomerAcesso"
-import type { AdminCustomerDetail } from "@/types/admin.types"
+import type { UsuarioAdmin } from "@/types/usuario-admin"
 
 const fetchApi = vi.fn()
 vi.mock("@/hooks/useApi", () => ({ useApi: () => ({ fetchApi }) }))
-vi.mock("@/contexts/AuthContext", () => ({ useAuth: () => ({ user: { id: "1" } }) }))
+vi.mock("@/contexts/SessaoContext", () => ({ useSessao: () => ({ usuario: { id: 1, papel: "SUPERUSUARIO" } }) }))
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }))
 
 const base = {
-  id: 7, email: "Ana@Exemplo.com", nome_completo: "Ana", is_active: true, is_clama_admin: false,
-  total_pedidos: 3, total_comentarios: 2,
-} as AdminCustomerDetail
+  id: 7, email: "Ana@Exemplo.com", nomeCompleto: "Ana", ativo: true, papel: "CLIENTE", temSenha: true,
+} as UsuarioAdmin
 
 const onChanged = vi.fn()
 const onDeleted = vi.fn()
-const montar = (c: Partial<AdminCustomerDetail> = {}) =>
+const montar = (c: Partial<UsuarioAdmin> = {}) =>
   render(<CustomerAcesso customer={{ ...base, ...c }} onChanged={onChanged} onDeleted={onDeleted} />)
 const chamadas = () => fetchApi.mock.calls.filter(([, i]) => i?.method)
 
@@ -36,8 +35,8 @@ describe("CustomerAcesso", () => {
     expect(await screen.findByText("Tornar admin?")).toBeTruthy()
     await userEvent.click(screen.getAllByRole("button", { name: "Tornar admin" }).at(-1)!)
     await waitFor(() =>
-      expect(fetchApi).toHaveBeenCalledWith("/api/admin/customers/7/", {
-        method: "PATCH", body: JSON.stringify({ is_clama_admin: true }), showToast: false,
+      expect(fetchApi).toHaveBeenCalledWith("/api/admin/usuarios/7", {
+        method: "PATCH", body: JSON.stringify({ papel: "ADMIN" }), showToast: false,
       }),
     )
     expect(onChanged).toHaveBeenCalled()
@@ -50,8 +49,8 @@ describe("CustomerAcesso", () => {
     expect(chamadas()).toHaveLength(0)
     await userEvent.click(screen.getAllByRole("button", { name: "Desativar conta" }).at(-1)!)
     await waitFor(() =>
-      expect(fetchApi).toHaveBeenCalledWith("/api/admin/customers/7/", expect.objectContaining({
-        body: JSON.stringify({ is_active: false }),
+      expect(fetchApi).toHaveBeenCalledWith("/api/admin/usuarios/7", expect.objectContaining({
+        body: JSON.stringify({ ativo: false }),
       })),
     )
   })
@@ -61,7 +60,6 @@ describe("CustomerAcesso", () => {
     await userEvent.click(screen.getByRole("button", { name: "Excluir usuário" }))
     const confirmar = (await screen.findAllByRole("button", { name: "Excluir usuário" })).at(-1)!
     expect((confirmar as HTMLButtonElement).disabled).toBe(true)
-    expect(screen.getByText(/3 pedidos/)).toBeTruthy()
     await userEvent.type(screen.getByLabelText(/Digite/), "outro@x.com")
     expect((confirmar as HTMLButtonElement).disabled).toBe(true)
     await userEvent.clear(screen.getByLabelText(/Digite/))
@@ -70,7 +68,7 @@ describe("CustomerAcesso", () => {
     expect(chamadas()).toHaveLength(0)
     await userEvent.click(confirmar)
     await waitFor(() =>
-      expect(fetchApi).toHaveBeenCalledWith("/api/admin/customers/7/", { method: "DELETE", showToast: false }),
+      expect(fetchApi).toHaveBeenCalledWith("/api/admin/usuarios/7", { method: "DELETE", showToast: false }),
     )
     expect(onDeleted).toHaveBeenCalled()
   })
@@ -97,15 +95,29 @@ describe("CustomerAcesso", () => {
     await userEvent.type(screen.getByLabelText("Confirmar senha"), "abc")
     await userEvent.click(ok)
     expect(await screen.findByText("Esta senha é muito curta.")).toBeTruthy()
-    expect(fetchApi).toHaveBeenCalledWith("/api/admin/customers/7/senha/", {
-      method: "POST", body: JSON.stringify({ password: "abc" }), showToast: false,
+    expect(fetchApi).toHaveBeenCalledWith("/api/admin/usuarios/7/senha", {
+      method: "POST", body: JSON.stringify({ senha: "abc" }), showToast: false,
     })
   })
 
+  it("remover admin manda papel CLIENTE; superusuario nao tem botao de admin", async () => {
+    const { unmount } = montar({ papel: "ADMIN" })
+    await userEvent.click(screen.getByRole("button", { name: "Remover admin" }))
+    await userEvent.click(screen.getAllByRole("button", { name: "Remover admin" }).at(-1)!)
+    await waitFor(() =>
+      expect(fetchApi).toHaveBeenCalledWith("/api/admin/usuarios/7", expect.objectContaining({
+        body: JSON.stringify({ papel: "CLIENTE" }),
+      })),
+    )
+    unmount()
+    montar({ papel: "SUPERUSUARIO" })
+    expect(screen.queryByRole("button", { name: /admin/i })).toBeNull()
+  })
+
   it("na propria conta os botoes de acesso ficam desabilitados", () => {
-    montar({ id: 1 })
+    montar({ id: 1, papel: "ADMIN" })
     expect((screen.getByRole("button", { name: "Excluir usuário" }) as HTMLButtonElement).disabled).toBe(true)
-    expect((screen.getByRole("button", { name: "Tornar admin" }) as HTMLButtonElement).disabled).toBe(true)
+    expect((screen.getByRole("button", { name: "Remover admin" }) as HTMLButtonElement).disabled).toBe(true)
   })
 
   it("cancelar limpa a senha: ao reabrir os campos estao vazios", async () => {

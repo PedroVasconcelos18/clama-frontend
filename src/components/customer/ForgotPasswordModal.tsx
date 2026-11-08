@@ -61,10 +61,9 @@ function ForgotPasswordForm({
     setIsSubmitting(true)
 
     try {
-      const res = await forgotPassword(data.email)
+      await forgotPassword(data.email)
       setSuccessMessage(
-        res.detail ??
-          "Se este e-mail estiver cadastrado, você receberá uma senha temporária em instantes.",
+        "Se este e-mail estiver cadastrado, você receberá em instantes um link para escolher uma nova senha. Ele vale por 1 hora.",
       )
     } catch (err) {
       let message = "Algo não saiu como o esperado. Tente novamente."
@@ -116,7 +115,7 @@ function ForgotPasswordForm({
             Enviando...
           </>
         ) : (
-          "Enviar senha temporária"
+          "Enviar link"
         )}
       </Button>
     </form>
@@ -127,12 +126,12 @@ function ForgotPasswordForm({
  * Modal de recuperação de senha aberto a partir da tela `/login`.
  *
  * Fluxo: usuário informa o e-mail → backend (sempre 200 genérico,
- * anti-enumeração) gera uma senha temporária e envia por e-mail. Ao logar
- * com ela, `force_change_password=true` força a troca em `/trocar-senha`.
+ * anti-enumeração) envia um link de uso único, válido por 1 hora, que leva
+ * a `/redefinir-senha`.
  *
  * Mostra um estado de sucesso (em vez de fechar direto) para o usuário
  * saber que deve checar o e-mail — incluindo a caixa de spam. A mensagem é
- * a `detail` que o backend retorna (já pastoral e genérica).
+ * um texto genérico, igual exista ou não a conta.
  */
 export function ForgotPasswordModal({
   open,
@@ -148,8 +147,7 @@ export function ForgotPasswordModal({
           </DialogTitle>
           <DialogDescription className="text-clama-cream/70">
             Informe o e-mail da sua conta. Se ele estiver cadastrado,
-            enviaremos uma senha temporária — você troca por uma sua no
-            primeiro acesso.
+            enviaremos um link para você escolher uma nova senha.
           </DialogDescription>
         </DialogHeader>
 

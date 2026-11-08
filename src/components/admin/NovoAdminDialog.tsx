@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/dialog"
 import { PastoralAlert } from "@/components/utility/PastoralAlert"
 
-/** Criar admin: POST /api/admin/customers/. O front compara as duas senhas; o resto o servidor valida. */
+/** Criar admin: POST /api/admin/usuarios. O front compara as duas senhas; o resto o servidor valida. */
 export function NovoAdminDialog({
   open,
   onClose,
@@ -48,9 +48,9 @@ export function NovoAdminDialog({
     setBusy(true)
     setErro(null)
     try {
-      await fetchApi("/api/admin/customers/", {
+      await fetchApi("/api/admin/usuarios", {
         method: "POST",
-        body: JSON.stringify({ email: email.trim(), nome_completo: nome.trim(), password: senha }),
+        body: JSON.stringify({ email: email.trim(), nomeCompleto: nome.trim(), senha }),
         showToast: false,
       })
       toast.success(`Admin ${email.trim()} criado.`)
@@ -71,7 +71,7 @@ export function NovoAdminDialog({
         <DialogHeader>
           <DialogTitle>Novo admin</DialogTitle>
           <DialogDescription>
-            A pessoa passa a acessar todo o painel. Quem já é customer não é criada de novo: promova a conta existente.
+            A pessoa passa a acessar todo o painel. Quem já tem conta não é criada de novo: promova a conta existente.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-2">

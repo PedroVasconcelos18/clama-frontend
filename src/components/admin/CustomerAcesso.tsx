@@ -1,7 +1,7 @@
 import { useState } from "react"
 import { toast } from "sonner"
 import { useApi } from "@/hooks/useApi"
-import { useAuth } from "@/contexts/AuthContext"
+import { useSessao } from "@/contexts/SessaoContext"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -14,27 +14,28 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { PastoralAlert } from "@/components/utility/PastoralAlert"
-import type { AdminCustomerDetail } from "@/types/admin.types"
+import type { UsuarioAdmin } from "@/types/usuario-admin"
 
 type Acao = "admin" | "ativo" | "senha" | "excluir"
 
 /**
- * Seção "Acesso" do drawer. Aparece para todo admin: a autorização é do back (só superusuário; os demais
- * recebem 403 e a mensagem vai no toast). Toda ação passa por um Dialog de confirmação.
+ * Seção "Acesso" do drawer. O drawer só a mostra a SUPERUSUARIO (o servidor também recusa os demais com 403).
+ * Toda ação passa por um Dialog de confirmação.
  */
 export function CustomerAcesso({
   customer,
   onChanged,
   onDeleted,
 }: {
-  customer: AdminCustomerDetail
+  customer: UsuarioAdmin
   /** Depois de PATCH ou senha: o drawer e a lista recarregam. */
   onChanged: () => void
   onDeleted: () => void
 }) {
   const { fetchApi } = useApi()
-  const { user } = useAuth()
-  const propria = user != null && String(user.id) === String(customer.id)
+  const { usuario } = useSessao()
+  const propria = usuario != null && usuario.id === customer.id
+  const ehAdmin = customer.papel === "ADMIN"
 
   const [acao, setAcao] = useState<Acao | null>(null)
   const [senha, setSenha] = useState("")
@@ -74,8 +75,8 @@ export function CustomerAcesso({
     }
   }
 
-  const url = `/api/admin/customers/${customer.id}/`
-  const patch = (corpo: Record<string, boolean>, ok: string) =>
+  const url = `/api/admin/usuarios/${customer.id}`
+  const patch = (corpo: { papel?: string; ativo?: boolean }, ok: string) =>
     executar(async () => {
       await fetchApi(url, { method: "PATCH", body: JSON.stringify(corpo), showToast: false })
       toast.success(ok)
@@ -92,11 +93,13 @@ export function CustomerAcesso({
         <p className="mb-2 text-xs text-clama-cream/60">Esta é a sua conta: o acesso dela só outro superusuário muda.</p>
       )}
       <div className="flex flex-wrap gap-2">
-        <Button variant="outline" size="sm" disabled={propria} onClick={() => abrir("admin")}>
-          {customer.is_clama_admin ? "Remover admin" : "Tornar admin"}
-        </Button>
+        {customer.papel !== "SUPERUSUARIO" && (
+          <Button variant="outline" size="sm" disabled={propria} onClick={() => abrir("admin")}>
+            {ehAdmin ? "Remover admin" : "Tornar admin"}
+          </Button>
+        )}
         <Button variant="outline" size="sm" disabled={propria} onClick={() => abrir("ativo")}>
-          {customer.is_active ? "Desativar conta" : "Reativar"}
+          {customer.ativo ? "Desativar conta" : "Reativar"}
         </Button>
         <Button variant="outline" size="sm" onClick={() => abrir("senha")}>
           Definir senha
@@ -117,9 +120,9 @@ export function CustomerAcesso({
           {acao === "admin" && (
             <>
               <DialogHeader>
-                <DialogTitle>{customer.is_clama_admin ? "Remover admin?" : "Tornar admin?"}</DialogTitle>
+                <DialogTitle>{ehAdmin ? "Remover admin?" : "Tornar admin?"}</DialogTitle>
                 <DialogDescription>
-                  {customer.is_clama_admin
+                  {ehAdmin
                     ? `${customer.email} perde o acesso ao painel e as sessões dela são encerradas.`
                     : `${customer.email} passa a acessar todo o painel admin.`}
                 </DialogDescription>
@@ -128,11 +131,11 @@ export function CustomerAcesso({
               <Rodape
                 busy={busy}
                 onCancel={fechar}
-                label={customer.is_clama_admin ? "Remover admin" : "Tornar admin"}
+                label={ehAdmin ? "Remover admin" : "Tornar admin"}
                 onOk={() =>
                   patch(
-                    { is_clama_admin: !customer.is_clama_admin },
-                    customer.is_clama_admin ? "Admin removido." : "Agora é admin.",
+                    { papel: ehAdmin ? "CLIENTE" : "ADMIN" },
+                    ehAdmin ? "Admin removido." : "Agora é admin.",
                   )
                 }
               />
@@ -142,9 +145,9 @@ export function CustomerAcesso({
           {acao === "ativo" && (
             <>
               <DialogHeader>
-                <DialogTitle>{customer.is_active ? "Desativar conta?" : "Reativar conta?"}</DialogTitle>
+                <DialogTitle>{customer.ativo ? "Desativar conta?" : "Reativar conta?"}</DialogTitle>
                 <DialogDescription>
-                  {customer.is_active
+                  {customer.ativo
                     ? `${customer.email} não consegue mais entrar e as sessões dela são encerradas.`
                     : `${customer.email} volta a poder entrar.`}
                 </DialogDescription>
@@ -153,11 +156,11 @@ export function CustomerAcesso({
               <Rodape
                 busy={busy}
                 onCancel={fechar}
-                label={customer.is_active ? "Desativar conta" : "Reativar"}
+                label={customer.ativo ? "Desativar conta" : "Reativar"}
                 onOk={() =>
                   patch(
-                    { is_active: !customer.is_active },
-                    customer.is_active ? "Conta desativada." : "Conta reativada.",
+                    { ativo: !customer.ativo },
+                    customer.ativo ? "Conta desativada." : "Conta reativada.",
                   )
                 }
               />
@@ -201,9 +204,9 @@ export function CustomerAcesso({
                 label="Definir senha"
                 onOk={() =>
                   executar(async () => {
-                    await fetchApi(`${url}senha/`, {
+                    await fetchApi(`${url}/senha`, {
                       method: "POST",
-                      body: JSON.stringify({ password: senha }),
+                      body: JSON.stringify({ senha }),
                       showToast: false,
                     })
                     toast.success("Senha definida — a pessoa precisa entrar de novo.")
@@ -219,8 +222,7 @@ export function CustomerAcesso({
               <DialogHeader>
                 <DialogTitle>Excluir usuário?</DialogTitle>
                 <DialogDescription>
-                  Isto não tem volta. Os {customer.total_pedidos} pedidos ficam sem vínculo com a conta; os{" "}
-                  {customer.total_comentarios} comentários, as reações e os bans somem.
+                  Isto não tem volta: a conta e as sessões dela deixam de existir.
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-2">

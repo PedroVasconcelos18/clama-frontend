@@ -10,20 +10,30 @@ export const loginSchema = z.object({
 
 export type LoginFormData = z.infer<typeof loginSchema>
 
+const novaSenha = z.string().min(8, "A nova senha precisa ter pelo menos 8 caracteres.")
+const confirmacao = {
+  message: "As senhas não coincidem — confira novamente.",
+  path: ["confirmar_senha"],
+}
+
 export const changePasswordSchema = z
   .object({
     senha_atual: z.string().min(1, "Por favor, informe sua senha atual."),
-    nova_senha: z
-      .string()
-      .min(8, "A nova senha precisa ter pelo menos 8 caracteres."),
+    nova_senha: novaSenha,
     confirmar_senha: z.string().min(1, "Confirme a nova senha."),
   })
-  .refine((data) => data.nova_senha === data.confirmar_senha, {
-    message: "As senhas não coincidem — confira novamente.",
-    path: ["confirmar_senha"],
-  })
+  .refine((data) => data.nova_senha === data.confirmar_senha, confirmacao)
 
 export type ChangePasswordFormData = z.infer<typeof changePasswordSchema>
+
+export const redefinirSenhaSchema = z
+  .object({
+    nova_senha: novaSenha,
+    confirmar_senha: z.string().min(1, "Confirme a nova senha."),
+  })
+  .refine((data) => data.nova_senha === data.confirmar_senha, confirmacao)
+
+export type RedefinirSenhaFormData = z.infer<typeof redefinirSenhaSchema>
 
 export const forgotPasswordSchema = z.object({
   email: z

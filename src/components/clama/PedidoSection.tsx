@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { apiFetch, PastoralApiError } from "@/lib/api";
 import { reaisToInt } from "@/lib/formatters";
 import { useFormDraft } from "@/hooks/useFormDraft";
-import { useCustomerAuth } from "@/contexts/CustomerAuthContext";
+import { useSessao } from "@/contexts/SessaoContext";
 import { useApi } from "@/hooks/useApi";
 import { criarPedidoGratuito } from "@/lib/api/freemium";
 import { criarDoacaoAnonima, gerarCheckout } from "@/lib/api/doacoes";
@@ -80,20 +80,22 @@ export const PedidoSection = forwardRef<HTMLElement, PedidoSectionProps>(
   ({ theme = "light" }, ref) => {
   const isDark = theme === "dark";
   const navigate = useNavigate();
-  const { isAuthenticated, user } = useCustomerAuth();
+  const { usuario } = useSessao();
+  const isAuthenticated = !!usuario;
   const { fetchApi } = useApi();
 
   // Cliente logado: semeia "Seus dados" com o cadastro dele (editável).
   // Anônimo: sem prefill.
   const prefill =
-    isAuthenticated && user
+    usuario
       ? {
-          nome: user.nome_completo || "",
-          email: user.email || "",
-          cpf_cnpj: user.cpf_cnpj || "",
-          telefone: user.telefone || "",
-          idade: user.idade ?? null,
-          sexo: user.sexo || "",
+          nome: usuario.nomeCompleto || "",
+          email: usuario.email || "",
+          // CPF, telefone, idade e sexo voltam com a cifra (ondas 4 e 5).
+          cpf_cnpj: "",
+          telefone: "",
+          idade: null,
+          sexo: "",
         }
       : undefined;
 

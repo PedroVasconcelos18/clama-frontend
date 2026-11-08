@@ -11,7 +11,7 @@ import {
   X,
 } from "lucide-react"
 
-import { useCustomerAuth } from "@/contexts/CustomerAuthContext"
+import { useSessao } from "@/contexts/SessaoContext"
 import { useApi } from "@/hooks/useApi"
 import { PastoralApiError } from "@/lib/api"
 import LoadingSpinner from "@/components/utility/LoadingSpinner"
@@ -42,7 +42,8 @@ type TabId = "historico" | "novo"
 export default function MinhaConta() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
-  const { user, isAuthenticated, isLoading } = useCustomerAuth()
+  const { usuario, carregando: isLoading } = useSessao()
+  const isAuthenticated = !!usuario
 
   const rawTab = searchParams.get("tab")
   const activeTab: TabId = rawTab === "novo" ? "novo" : "historico"
@@ -69,9 +70,9 @@ export default function MinhaConta() {
   }, [navigate])
 
   const primeiroNome = useMemo(() => {
-    if (!user?.nome_completo) return "amada"
-    return user.nome_completo.split(" ")[0] || "amada"
-  }, [user])
+    if (!usuario?.nomeCompleto) return "amada"
+    return usuario.nomeCompleto.split(" ")[0] || "amada"
+  }, [usuario])
 
   if (isLoading || !isAuthenticated) {
     return (

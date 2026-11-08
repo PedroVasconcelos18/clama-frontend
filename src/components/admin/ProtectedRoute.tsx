@@ -1,5 +1,5 @@
 import { Navigate, useLocation } from "react-router-dom"
-import { useAuth } from "@/contexts/AuthContext"
+import { useSessao } from "@/contexts/SessaoContext"
 import { LoadingSpinner } from "@/components/utility/LoadingSpinner"
 
 interface ProtectedRouteProps {
@@ -7,7 +7,8 @@ interface ProtectedRouteProps {
 }
 
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
-  const { isAuthenticated, isLoading } = useAuth()
+  const { usuario, carregando: isLoading } = useSessao()
+  const isAuthenticated = usuario?.papel === "ADMIN" || usuario?.papel === "SUPERUSUARIO"
   const location = useLocation()
 
   if (isLoading) {

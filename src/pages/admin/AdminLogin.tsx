@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
-import { useAuth } from "@/contexts/AuthContext"
+import { useSessao } from "@/contexts/SessaoContext"
 import { PastoralApiError } from "@/lib/api"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -21,7 +21,7 @@ type LoginFormData = z.infer<typeof loginSchema>
 export default function AdminLogin() {
   const navigate = useNavigate()
   const location = useLocation()
-  const { login } = useAuth()
+  const { login, logout, carregando } = useSessao()
   const [error, setError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -40,7 +40,12 @@ export default function AdminLogin() {
     setIsSubmitting(true)
 
     try {
-      await login(data.email, data.password)
+      const u = await login(data.email, data.password)
+      if (u.papel === "CLIENTE") {
+        await logout()
+        setError("Esse espaço é só para admins do Clama.")
+        return
+      }
       navigate(from, { replace: true })
     } catch (err) {
       if (err instanceof PastoralApiError) {
@@ -105,7 +110,7 @@ export default function AdminLogin() {
 
             <Button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isSubmitting || carregando}
               className="w-full h-10 mt-2"
             >
               {isSubmitting ? (

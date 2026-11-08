@@ -8,15 +8,16 @@ import { test, expect, type Page } from "@playwright/test"
 type Chamada = { method: string; path: string; query: URLSearchParams; body: unknown }
 
 const pagina = <T,>(results: T[]) => ({ count: results.length, next: null, previous: null, results })
+// PagedModel do clama-api (`/api/admin/usuarios`)
+const paginaUsuarios = <T,>(content: T[]) => ({
+  content,
+  page: { number: 0, size: 20, totalElements: content.length, totalPages: 1 },
+})
+const SUPERUSUARIO = { id: 1, email: "pedro@clama.me", nomeCompleto: "Pedro", nomeFormatoBlog: "compacto", papel: "SUPERUSUARIO" }
 
-const CLIENTE = {
-  id: 7, email: "ana@exemplo.com", nome_completo: "Ana", date_joined: "2026-10-01T10:00:00Z",
-  freemium_used_at: null, is_clama_admin: false, total_pedidos: 3, pedidos_pagos: 2, pedidos_gratuitos: 1,
-  total_comentarios: 2, is_banned: false, motivo_ban: null, banido_em: null,
-}
-const DETALHE = {
-  ...CLIENTE, last_login: null, is_active: true, cpf_cnpj: null, telefone: null, nome_format_blog: "compacto",
-  is_banned: false, banimentos: [],
+const USUARIO = {
+  id: 7, email: "ana@exemplo.com", nomeCompleto: "Ana", criadoEm: "2026-10-01T10:00:00Z",
+  ultimoLoginEm: null, papel: "CLIENTE", ativo: true, temSenha: true,
 }
 const PEDIDO_ID = "12345678-aaaa-bbbb-cccc-1234567890ab"
 const PEDIDO = {
@@ -57,12 +58,6 @@ test.afterEach(() => {
 
 async function preparar(page: Page) {
   const chamadas: Chamada[] = []
-  await page.addInitScript(() => {
-    localStorage.setItem(
-      "clama:admin-auth",
-      JSON.stringify({ user: { id: 1, email: "pedro@clama.me", nome_completo: "Pedro" } }),
-    )
-  })
   await page.route("**/api/**", async (route) => {
     const req = route.request()
     // o Vite em dev serve módulos com "/api/" no caminho (ex.: src/lib/api...); só fetch/xhr é API
@@ -76,22 +71,23 @@ async function preparar(page: Page) {
     } catch {
       /* sem corpo */
     }
-    if (path !== "/api/csrf/") chamadas.push({ method, path, query: url.searchParams, body })
+    chamadas.push({ method, path, query: url.searchParams, body })
     const json = (data: unknown, status = 200) =>
       route.fulfill({ status, contentType: "application/json", body: JSON.stringify(data) })
 
-    if (path === "/api/csrf/") return json({ csrf_token: "t" })
+    // a sessão do boot: o painel só abre para ADMIN/SUPERUSUARIO
+    if (path === "/api/auth/eu") return json(SUPERUSUARIO)
     const conhecidas: Record<string, string> = {
       "DELETE /api/blog/admin/banned-customers/42/": "",
-      "DELETE /api/admin/customers/7/": "",
+      "DELETE /api/admin/usuarios/7": "",
     }
     if (method !== "GET") {
       if (`${method} ${path}` in conhecidas) return route.fulfill({ status: 204 })
       desconhecidas.push(`escrita ${method} ${path}`)
       return json({ detail: "sem mock" }, 500)
     }
-    if (path === "/api/admin/customers/") return json(pagina([CLIENTE]))
-    if (path === "/api/admin/customers/7/") return json(DETALHE)
+    if (path === "/api/admin/usuarios") return json(paginaUsuarios([USUARIO]))
+    if (path === "/api/admin/usuarios/7") return json(USUARIO)
     if (path === "/api/admin/pedidos/") return json(pagina([PEDIDO]))
     if (path === "/api/blog/admin/comments/") return json(pagina([COMENTARIO]))
     if (path === "/api/blog/admin/banned-customers/") return json(pagina([BANIDO]))
@@ -120,12 +116,13 @@ test.describe("Admin, etapa 7 (API mockada)", () => {
     ])
   })
 
-  test("Customers tem o botao Banir, que pede confirmacao antes de banir", async ({ page }) => {
-    const { escritas } = await preparar(page)
+  // onda 6: o ban do blog sai da lista de usuários e volta com o módulo do blog
+  test.skip("Customers tem o botao Banir, que pede confirmacao antes de banir", async () => {})
+
+  test("/admin/customers redireciona para /admin/usuarios", async ({ page }) => {
+    await preparar(page)
     await page.goto("/admin/customers")
-    await page.getByRole("button", { name: "Banir" }).click()
-    await expect(page.getByRole("heading", { name: "Banir do blog" })).toBeVisible()
-    expect(escritas()).toHaveLength(0)
+    await expect(page).toHaveURL(/\/admin\/usuarios$/)
   })
 
   test("filtro de comentarios por post envia post_espelho", async ({ page }) => {
@@ -178,19 +175,19 @@ test.describe("Admin, etapa 7 (API mockada)", () => {
     expect(escritas()).toHaveLength(0)
   })
 
-  test("Customers: filtro Tipo envia admin= e a lista aparece", async ({ page }) => {
+  test("Usuarios: filtro Papel envia papel= e a lista aparece", async ({ page }) => {
     const { ultima } = await preparar(page)
-    await page.goto("/admin/customers")
+    await page.goto("/admin/usuarios")
     await expect(page.getByText("ana@exemplo.com")).toBeVisible()
-    await page.getByLabel("Tipo").selectOption("true")
-    await expect.poll(() => ultima("/api/admin/customers/")?.query.get("admin")).toBe("true")
+    await page.getByLabel("Papel").selectOption("ADMIN")
+    await expect.poll(() => ultima("/api/admin/usuarios")?.query.get("papel")).toBe("ADMIN")
   })
 
   test("acoes de usuario: toda destrutiva pede confirmacao e excluir exige o e-mail", async ({ page }) => {
     const { escritas } = await preparar(page)
-    await page.goto("/admin/customers")
+    await page.goto("/admin/usuarios")
     await page.getByRole("button", { name: "Detalhes" }).click()
-    const drawer = page.getByRole("dialog", { name: "Detalhes do customer" })
+    const drawer = page.getByRole("dialog", { name: "Detalhes do usuário" })
 
     for (const [botao, titulo] of [
       ["Tornar admin", "Tornar admin?"],
@@ -211,7 +208,7 @@ test.describe("Admin, etapa 7 (API mockada)", () => {
     expect(escritas()).toHaveLength(0)
     await confirmar.click()
     await expect.poll(() => escritas().map((c) => `${c.method} ${c.path}`)).toEqual([
-      "DELETE /api/admin/customers/7/",
+      "DELETE /api/admin/usuarios/7",
     ])
   })
 

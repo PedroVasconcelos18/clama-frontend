@@ -1,6 +1,6 @@
 import { toast } from "sonner"
 import { getNetworkError, getLocale } from "@/i18n"
-import { csrfHeaders } from "@/lib/csrf"
+import { csrfHeaders, exigeCsrf, lerCookieXsrf } from "@/lib/csrf"
 import { extractErrorMessage, extrairCodigo, extrairExtra } from "@/lib/erros"
 
 export class PastoralApiError extends Error {
@@ -55,6 +55,15 @@ export async function apiFetch<T>(
   init?: ApiFetchOptions
 ): Promise<T> {
   const { showToast = true, ...fetchInit } = init ?? {}
+
+  // Escrita antes de o boot (GET /api/auth/eu) ter emitido o XSRF-TOKEN: pede o cookie agora.
+  if (exigeCsrf(fetchInit.method) && !lerCookieXsrf()) {
+    try {
+      await fetch(`${BASE_URL}/api/auth/eu`, { credentials: "include", headers: { Accept: "application/json" } })
+    } catch {
+      /* sem rede: o POST abaixo falha com o erro de rede de sempre */
+    }
+  }
 
   // FormData: o browser define o Content-Type com o boundary.
   const isFormData = fetchInit.body instanceof FormData

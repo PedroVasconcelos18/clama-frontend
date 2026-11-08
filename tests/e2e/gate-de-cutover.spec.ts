@@ -155,7 +155,7 @@ test.describe("Gate — segurança", () => {
     ])
 
     const paraBlog = await contexto.request.get("/blog")
-    const paraApi = await contexto.request.get("/api/csrf/")
+    const paraApi = await contexto.request.get("/api/auth/eu")
 
     // O navegador decide pelo `Path`; o que se verifica é que ele existe com
     // o escopo certo e que o blog responde sem ele.

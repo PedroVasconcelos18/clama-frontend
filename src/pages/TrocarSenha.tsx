@@ -4,7 +4,7 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { toast } from "sonner"
 
-import { useCustomerAuth } from "@/contexts/CustomerAuthContext"
+import { useSessao } from "@/contexts/SessaoContext"
 import { useApi } from "@/hooks/useApi"
 import { PastoralApiError } from "@/lib/api"
 import { goToNext, validateNextPath } from "@/lib/redirects"
@@ -12,7 +12,6 @@ import {
   changePasswordSchema,
   type ChangePasswordFormData,
 } from "@/lib/schemas/customer"
-import type { CustomerUser } from "@/contexts/CustomerAuthContext"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -23,7 +22,7 @@ import { LoadingSpinner } from "@/components/utility/LoadingSpinner"
 export default function TrocarSenha() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  const { isAuthenticated, isLoading, setUser } = useCustomerAuth()
+  const { usuario, carregando } = useSessao()
   const { fetchApi } = useApi()
 
   const [error, setError] = useState<string | null>(null)
@@ -41,39 +40,28 @@ export default function TrocarSenha() {
 
   // Redireciona anônimos pra login com next=/trocar-senha
   useEffect(() => {
-    if (isLoading) return
-    if (!isAuthenticated) {
+    if (carregando) return
+    if (!usuario) {
       const fullPath = `/trocar-senha${
         searchParams.toString() ? `?${searchParams.toString()}` : ""
       }`
       navigate(`/login?next=${encodeURIComponent(fullPath)}`, { replace: true })
     }
-  }, [isAuthenticated, isLoading, navigate, searchParams])
+  }, [usuario, carregando, navigate, searchParams])
 
   async function onSubmit(data: ChangePasswordFormData) {
     setError(null)
     setIsSubmitting(true)
 
     try {
-      await fetchApi("/api/customer/auth/change-password/", {
+      await fetchApi("/api/conta/senha", {
         method: "POST",
         body: JSON.stringify({
-          senha_atual: data.senha_atual,
-          nova_senha: data.nova_senha,
+          senhaAtual: data.senha_atual,
+          novaSenha: data.nova_senha,
         }),
         showToast: false,
       })
-
-      // Refaz o /me/ pra refletir flag zerada
-      try {
-        const refreshedUser = await fetchApi<CustomerUser>(
-          "/api/customer/me/",
-          { method: "GET", showToast: false },
-        )
-        setUser(refreshedUser)
-      } catch {
-        /* noop — fluxo segue mesmo se /me/ falhar */
-      }
 
       toast.success("Senha trocada. Que sua oração siga em paz.")
       goToNext(navigate, next, { replace: true })
@@ -105,8 +93,8 @@ export default function TrocarSenha() {
         {/* Card */}
         <div className="bg-clama-night-deep border border-clama-gold/20 rounded-clama-card p-6">
           <p className="text-clama-cream/70 text-sm mb-4 leading-relaxed">
-            Bem-vindo. No primeiro acesso, é preciso trocar a senha temporária
-            que enviamos por e-mail por uma sua, só sua.
+            Escolha uma senha nova, só sua. As outras sessões abertas com a senha
+            antiga serão encerradas.
           </p>
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -124,7 +112,7 @@ export default function TrocarSenha() {
                 id="senha_atual"
                 type="password"
                 autoComplete="current-password"
-                placeholder="A senha que recebeu por e-mail"
+                placeholder="Sua senha de hoje"
                 className="bg-clama-night border-clama-gold/30 text-clama-cream placeholder:text-clama-cream/40 focus:border-clama-gold"
                 {...register("senha_atual")}
               />

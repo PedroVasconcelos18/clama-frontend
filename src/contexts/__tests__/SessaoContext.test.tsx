@@ -29,10 +29,13 @@ describe("SessaoContext", () => {
 
   beforeEach(() => {
     fetchMock = vi.fn()
+    // o cookie que o boot (GET /api/auth/eu) emitiria; sem ele o apiFetch faria um GET extra antes do POST
+    document.cookie = "XSRF-TOKEN=tok; path=/"
     globalThis.fetch = fetchMock as unknown as typeof fetch
   })
   afterEach(() => {
     globalThis.fetch = originalFetch
+    document.cookie = "XSRF-TOKEN=; path=/; max-age=0"
     localStorage.clear()
   })
 

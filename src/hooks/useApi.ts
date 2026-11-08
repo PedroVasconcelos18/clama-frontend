@@ -1,6 +1,6 @@
 /**
- * Hook único para chamadas autenticadas por cookie de sessão (substitui
- * `useApi` e `useApi`). Sem refresh: 401 = sessão perdida.
+ * Hook único para chamadas autenticadas por cookie de sessão (`fetchApi`).
+ * Sem refresh: 401 = sessão perdida.
  * Num 401, limpa a sessão e leva ao login (`/admin/login` em rota `/admin`,
  * `/login` no resto) com o toast de sessão expirada — uma vez só por sessão,
  * mesmo com vários 401 simultâneos.

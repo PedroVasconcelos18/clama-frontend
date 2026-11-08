@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react"
 import { toast } from "sonner"
-import { useCustomerAuth } from "@/contexts/CustomerAuthContext"
+import { useSessao } from "@/contexts/SessaoContext"
 
 export type SiteHeaderProps = {
   active: "blog" | "conta"
@@ -12,7 +12,8 @@ export type SiteHeaderProps = {
 }
 
 export function SiteHeader({ active, onAfterLogout }: SiteHeaderProps) {
-  const { user, isAuthenticated, isLoading, logout } = useCustomerAuth()
+  const { usuario, carregando: isLoading, logout } = useSessao()
+  const isAuthenticated = !!usuario
 
   // Mount-flag: server e primeira render cliente mostram chrome neutro
   // (sem nome / sem botão Sair) pra evitar hydration mismatch — auth state
@@ -23,8 +24,8 @@ export function SiteHeader({ active, onAfterLogout }: SiteHeaderProps) {
   }, [])
 
   const primeiroNome =
-    mounted && user?.nome_completo
-      ? user.nome_completo.split(" ")[0]
+    mounted && usuario?.nomeCompleto
+      ? usuario.nomeCompleto.split(" ")[0]
       : null
 
   const handleLogout = useCallback(async () => {

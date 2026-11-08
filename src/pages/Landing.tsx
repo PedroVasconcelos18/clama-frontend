@@ -10,14 +10,14 @@ import { PedidoSection } from "@/components/clama/PedidoSection";
 import { Footer } from "@/components/clama/Footer";
 import { useScrollToPedido } from "@/hooks/useScrollToPedido";
 import { useIsInView } from "@/hooks/useIsInView";
-import { useCustomerAuth } from "@/contexts/CustomerAuthContext";
+import { useSessao } from "@/contexts/SessaoContext";
 
 export default function Landing() {
   const navigate = useNavigate();
   const pedidoRef = useRef<HTMLElement>(null);
   const scrollToPedido = useScrollToPedido(pedidoRef);
   const isPedidoInView = useIsInView(pedidoRef);
-  const { isAuthenticated } = useCustomerAuth();
+  const isAuthenticated = !!useSessao().usuario;
 
   // Customer autenticado não tem form na LP — todos os CTAs ("Levar meu
   // clamor" no Hero, "Fazer pedido" no StickyNav) levam pra área logada

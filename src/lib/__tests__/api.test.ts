@@ -90,6 +90,32 @@ describe("apiFetch", () => {
     document.cookie = "XSRF-TOKEN=; path=/; max-age=0"
   })
 
+  it("POST sem cookie XSRF faz antes um GET /api/auth/eu (ignorando o 401) e depois envia o header", async () => {
+    document.cookie = "XSRF-TOKEN=; path=/; max-age=0"
+    globalThis.fetch = vi
+      .fn()
+      .mockImplementationOnce(async () => {
+        document.cookie = "XSRF-TOKEN=emitido; path=/"
+        return { ok: false, status: 401 }
+      })
+      .mockResolvedValueOnce({ ok: true, status: 204 })
+
+    await apiFetch("/api/auth/login", { method: "POST", body: "{}" })
+
+    const chamadas = (fetch as ReturnType<typeof vi.fn>).mock.calls
+    expect(chamadas[0]?.[0]).toBe("/api/auth/eu")
+    expect(chamadas[1]?.[0]).toBe("/api/auth/login")
+    expect(chamadas[1]?.[1].headers["X-XSRF-TOKEN"]).toBe("emitido")
+    document.cookie = "XSRF-TOKEN=; path=/; max-age=0"
+  })
+
+  it("GET nunca dispara o GET de preparo do cookie", async () => {
+    document.cookie = "XSRF-TOKEN=; path=/; max-age=0"
+    globalThis.fetch = vi.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve({}) })
+    await apiFetch("/api/qualquer")
+    expect((fetch as ReturnType<typeof vi.fn>).mock.calls).toHaveLength(1)
+  })
+
   it("throws PastoralApiError on network error", async () => {
     globalThis.fetch = vi.fn().mockRejectedValue(new Error("Network error"))
 

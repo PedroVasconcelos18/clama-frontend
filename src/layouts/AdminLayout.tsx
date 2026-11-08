@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { Outlet, NavLink, useNavigate } from "react-router-dom"
-import { useAuth } from "@/contexts/AuthContext"
+import { useSessao } from "@/contexts/SessaoContext"
 import {
   LayoutDashboard,
   FileText,
@@ -23,7 +23,7 @@ import { cn } from "@/lib/utils"
 
 const navItems = [
   { to: "/admin", icon: LayoutDashboard, label: "Dashboard", end: true },
-  { to: "/admin/customers", icon: Users, label: "Customers" },
+  { to: "/admin/usuarios", icon: Users, label: "Usuários" },
   { to: "/admin/pedidos", icon: FileText, label: "Pedidos" },
   { to: "/admin/planos", icon: CreditCard, label: "Planos" },
   { to: "/admin/instituicoes", icon: HandHeart, label: "Instituições" },
@@ -41,12 +41,12 @@ const navItems = [
 ]
 
 export default function AdminLayout() {
-  const { user, logout } = useAuth()
+  const { usuario: user, logout } = useSessao()
   const navigate = useNavigate()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
-  function handleLogout() {
-    logout()
+  async function handleLogout() {
+    await logout() // encerra a sessão no servidor
     navigate("/admin/login", { replace: true })
   }
 
@@ -119,7 +119,7 @@ export default function AdminLayout() {
           <div className="flex items-center justify-between">
             <div className="text-sm">
               <p className="text-clama-cream/80 truncate">
-                {user?.nome_completo || user?.email}
+                {user?.nomeCompleto || user?.email}
               </p>
             </div>
             <Button
@@ -142,7 +142,7 @@ export default function AdminLayout() {
           <div />
           <div className="flex items-center gap-4">
             <span className="text-clama-cream/60 text-sm">
-              {user?.nome_completo || user?.email}
+              {user?.nomeCompleto || user?.email}
             </span>
             <Button
               variant="ghost"

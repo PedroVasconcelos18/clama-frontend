@@ -1,18 +1,21 @@
 import { test, expect } from "@playwright/test"
 
-const BASE = "http://localhost:5173"
+// BASE_URL/credenciais vêm do ambiente; o padrão é o cliente semeado por tests/e2e/suporte/rodar-conta.sh
+const BASE = process.env.BASE_URL ?? "http://localhost:5173"
+const EMAIL = process.env.VERIFICA_EMAIL ?? "cliente@clama.test"
+const SENHA = process.env.VERIFICA_SENHA ?? "Senha-de-teste-123"
 
 test("fluxo real de login: nenhuma chamada de API sai para origem absoluta", async ({ page }) => {
   const requisicoes: { url: string; method: string }[] = []
   page.on("request", (r) => requisicoes.push({ url: r.url(), method: r.method() }))
 
   await page.goto(`${BASE}/login`)
-  await page.getByLabel(/e-?mail/i).fill("verifica@clama.test")
-  await page.getByLabel(/senha/i).first().fill("Senha-Verifica-123!")
+  await page.getByLabel(/e-?mail/i).fill(EMAIL)
+  await page.getByLabel(/senha/i).first().fill(SENHA)
   await page.getByRole("button", { name: /entrar|login/i }).first().click()
 
   // Espera a chamada de login concluir
-  await page.waitForResponse((r) => r.url().includes("/api/customer/auth/login/"), {
+  await page.waitForResponse((r) => r.url().includes("/api/auth/login"), {
     timeout: 15000,
   })
   await page.waitForTimeout(1500)
@@ -48,10 +51,9 @@ test("fluxo real de login: nenhuma chamada de API sai para origem absoluta", asy
   expect(absolutas, "chamada de API para origem absoluta").toHaveLength(0)
   expect(JSON.stringify(storage)).not.toContain("accessToken")
   expect(JSON.stringify(storage)).not.toContain("refreshToken")
-  const auth = cookies.filter((c) => c.name.startsWith("clama_"))
-  expect(auth.length).toBeGreaterThan(0)
-  for (const c of auth) {
-    expect(c.path, `${c.name} precisa ter Path=/api`).toBe("/api")
-    expect(c.httpOnly, `${c.name} precisa ser HttpOnly`).toBe(true)
-  }
+  // sessão por cookie: SESSION é HttpOnly; XSRF-TOKEN é legível por JS (o front o devolve no header)
+  const sessao = cookies.find((c) => c.name === "SESSION")
+  expect(sessao, "cookie SESSION").toBeDefined()
+  expect(sessao!.httpOnly, "SESSION precisa ser HttpOnly").toBe(true)
+  expect(cookies.find((c) => c.name === "XSRF-TOKEN")?.httpOnly).toBe(false)
 })
