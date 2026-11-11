@@ -1,0 +1,16 @@
+{
+  "priority": 1,
+  "request": {
+    "method": "POST", "urlPath": "/v1/messages",
+    "bodyPatterns": [{ "matchesJsonPath": { "expression": "$.system[0].text", "contains": "PROMPT-E2E-NOVO" } }]
+  },
+  "response": {
+    "status": 200,
+    "headers": { "Content-Type": "application/json" },
+    "jsonBody": {
+      "id": "msg_e2e_novo", "type": "message", "role": "assistant", "model": "claude-sonnet-4-6",
+      "content": [{ "type": "text", "text": "Oração do prompt novo do E2E. Amém." }],
+      "stop_reason": "end_turn", "stop_sequence": null, "usage": { "input_tokens": 100, "output_tokens": 20 }
+    }
+  }
+}

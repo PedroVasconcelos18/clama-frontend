@@ -128,8 +128,8 @@ test("doação anônima: QR na confirmação, webhook do MP e a tela mostra o pe
   expect(r.status()).toBe(200)
   expect(await r.json()).toEqual({ status: "ok" })
 
-  // polling de 5 s: sai do Pix e mostra que a oração está a caminho
-  await expect(page.getByText("Seu clamor foi recebido")).toBeVisible({ timeout: 15_000 })
+  // polling de 5 s: sai do Pix e mostra que a oração está a caminho (ou já chegou: a Claude simulada responde na hora)
+  await expect(page.getByRole("heading", { name: /Seu clamor foi recebido|Sua oração já está aí!/ })).toBeVisible({ timeout: 15_000 })
   await expect(page.getByText(`00020126-e2e-copia-e-cola-${DOADORA.cpf}`)).toHaveCount(0)
 })
 
@@ -139,7 +139,7 @@ test("admin acha o pedido pelo e-mail exato e marca o repasse como transferido",
   const linha = admin.getByRole("row").filter({ hasText: DOADORA.nome })
   await expect(linha).toHaveCount(1)
   await expect(linha).toContainText(pedidoDaDoadora.slice(0, 8))
-  await expect(linha).toContainText("Pago")
+  await expect(linha).toContainText(/Pago|Enviada/) // a Claude simulada já pode ter entregue a oração
   await expect(admin.getByText("1 no total")).toBeVisible()
 
   await admin.goto("/admin/repasses")

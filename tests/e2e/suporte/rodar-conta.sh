@@ -3,9 +3,10 @@
 # roda o Playwright contra eles e derruba tudo no fim.
 #
 # Uso: tests/e2e/suporte/rodar-conta.sh [spec ou args do playwright]   (padrão: tests/e2e/conta.spec.ts; catálogo: tests/e2e/catalogo.spec.ts)
-#      MERCADOPAGO_SIMULADO=1 tests/e2e/suporte/rodar-conta.sh tests/e2e/pedido.spec.ts
+#      MERCADOPAGO_SIMULADO=1 tests/e2e/suporte/rodar-conta.sh tests/e2e/pedido.spec.ts   (oração: tests/e2e/oracao.spec.ts)
 # Variáveis: CLAMA_API_DIR (padrão ../clama-api), SKIP_BUILD=1 para não recompilar o jar,
-#   MERCADOPAGO_SIMULADO=1 sobe um WireMock (mapeamentos em suporte/mercadopago) no lugar do Mercado Pago e roda a API
+#   MERCADOPAGO_SIMULADO=1 sobe um WireMock (mapeamentos em suporte/mercadopago) no lugar do Mercado Pago e outro (suporte/claude)
+#   no lugar da Claude, e roda a API
 #   com os perfis local,test (o perfil test é o único que aceita mercadopago-url em http; a regra de produção não muda),
 #   API_PERFIS para trocar os perfis à mão.
 set -euo pipefail
@@ -54,11 +55,21 @@ if [ "${MERCADOPAGO_SIMULADO:-}" = "1" ]; then
     --disable-banner >"$TMP/wiremock.log" 2>&1 &
   PIDS+=($!)
   esperar "http://localhost:$WM_PORT/__admin/health" 30
+  # A Claude também é simulada (suporte/claude): sem isso o pipeline da oração falharia por falta de chave. O e-mail
+  # não precisa de stub: em perfil local sem RESEND_API_KEY o EnviadorDeEmail só escreve no log da API.
+  CLAUDE_WM_PORT="$(livre)"
+  echo ">> WireMock (Claude simulada) na porta $CLAUDE_WM_PORT"
+  "$JAVA_HOME/bin/java" -jar "$WIREMOCK_JAR" --port "$CLAUDE_WM_PORT" --root-dir "$FRONT_DIR/tests/e2e/suporte/claude" \
+    --disable-banner >"$TMP/wiremock-claude.log" 2>&1 &
+  PIDS+=($!)
+  esperar "http://localhost:$CLAUDE_WM_PORT/__admin/health" 30
+  export CLAUDE_WIREMOCK_URL="http://localhost:$CLAUDE_WM_PORT"
   API_PERFIS="local,test"
   export WIREMOCK_URL="http://localhost:$WM_PORT"
   export MERCADOPAGO_WEBHOOK_SECRET="segredo-do-webhook-e2e"
   API_ENV=(CLAMA_PAGAMENTO_MERCADOPAGOURL="$WIREMOCK_URL" MERCADOPAGO_ACCESS_TOKEN="TEST-token-e2e"
-    MERCADOPAGO_WEBHOOK_SECRET="$MERCADOPAGO_WEBHOOK_SECRET")
+    MERCADOPAGO_WEBHOOK_SECRET="$MERCADOPAGO_WEBHOOK_SECRET"
+    CLAMA_ORACAO_ANTHROPICURL="$CLAUDE_WIREMOCK_URL" ANTHROPIC_API_KEY="sk-ant-e2e-simulada")
 fi
 
 if [ "${SKIP_BUILD:-}" != "1" ]; then

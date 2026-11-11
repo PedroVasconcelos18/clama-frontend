@@ -1,0 +1,15 @@
+{
+  "priority": 2,
+  "request": {
+    "method": "POST", "urlPath": "/v1/messages",
+    "bodyPatterns": [{ "matchesJsonPath": { "expression": "$.messages[0].content", "contains": "FORCAR-SEM-CREDITO" } }]
+  },
+  "response": {
+    "status": 400,
+    "headers": { "Content-Type": "application/json" },
+    "jsonBody": {
+      "type": "error",
+      "error": { "type": "invalid_request_error", "message": "Your credit balance is too low to access the Anthropic API." }
+    }
+  }
+}

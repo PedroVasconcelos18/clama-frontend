@@ -143,6 +143,15 @@ export default function Confirmacao() {
     }
   }, [pedidoId]);
 
+  // A cobrança vence com a tela aberta: o status público não informa, então comparamos o `expiraEm` do Pix com o relógio.
+  const [agora, setAgora] = useState(() => Date.now())
+  useEffect(() => {
+    if (!pix?.expiraEm) return
+    const t = window.setInterval(() => setAgora(Date.now()), 15_000)
+    return () => window.clearInterval(t)
+  }, [pix?.expiraEm])
+  const pixVencido = !!pix?.expiraEm && new Date(pix.expiraEm).getTime() <= agora
+
   // Pede o Pix uma vez, quando o status chega em AGUARDANDO_PAGAMENTO.
   const pixPedido = useRef(false);
   useEffect(() => {
@@ -291,6 +300,19 @@ export default function Confirmacao() {
                   tela avança sozinha.
                   {pix?.expiraEm && <> Este Pix vale até {formatarDataHora(pix.expiraEm)}.</>}
                 </p>
+                {pixVencido && (
+                  <div className="mt-4">
+                    <p className="font-sans text-[#666] text-[0.8rem] mb-2">Este Pix venceu. Gere um novo para pagar.</p>
+                    <button
+                      type="button"
+                      onClick={() => void pedirPix()}
+                      disabled={gerandoPix}
+                      className="bg-clama-night text-white py-[0.7rem] px-6 text-[0.9rem] font-semibold font-sans rounded-full hover:bg-clama-night/90 transition-colors disabled:opacity-60"
+                    >
+                      Gerar novo Pix
+                    </button>
+                  </div>
+                )}
               </div>
             )}
 

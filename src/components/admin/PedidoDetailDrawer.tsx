@@ -5,6 +5,8 @@ import { LoadingSpinner } from "@/components/utility/LoadingSpinner"
 import { PastoralAlert } from "@/components/utility/PastoralAlert"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
+import { toast } from "sonner"
 import { X, Pencil } from "lucide-react"
 import { PedidoEditForm } from "@/components/admin/PedidoEditForm"
 import { PEDIDO_STATUS_COLORS, rotuloDoStatus } from "@/lib/pedido-status"
@@ -21,14 +23,64 @@ interface PedidoDetailDrawerProps {
 
 /**
  * Detalhe do pedido no admin: dados, cobranças, repasse, eventos do MP e último erro.
- * Só edição de dados (D22). Gratuidade, reenvio e regeneração voltam na 4b (D10).
+ * Edição de dados (D22) e as ações da oração (D10): gratuidade, reenvio e regeneração. Depois de cada ação o detalhe é
+ * lido de novo (a resposta da ação é só o estado enxuto do pedido).
  */
+const ACOES = {
+  gratuidade: {
+    rotulo: "Conceder gratuidade",
+    caminho: "gratuidade",
+    descricao: "O Pix pendente é cancelado e a oração é gerada sem cobrança.",
+    sucesso: "Gratuidade concedida.",
+  },
+  reenvio: {
+    rotulo: "Reenviar oração",
+    caminho: "reenvio",
+    descricao: "A oração já gerada é enviada de novo por e-mail.",
+    sucesso: "Reenvio solicitado.",
+  },
+  regeneracao: {
+    rotulo: "Regenerar oração",
+    caminho: "regeneracao",
+    descricao: "O pedido volta para a fila e uma nova oração é gerada.",
+    sucesso: "Regeneração solicitada.",
+  },
+} as const
+type Acao = keyof typeof ACOES
+
 export function PedidoDetailDrawer({ pedidoId, onClose, onChanged }: PedidoDetailDrawerProps) {
   const { fetchApi } = useApi()
   const [pedido, setPedido] = useState<AdminPedidoDetalhe | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [editing, setEditing] = useState(false)
+  const [acao, setAcao] = useState<Acao | null>(null)
+  const [executando, setExecutando] = useState(false)
+
+  async function executar(a: Acao) {
+    setExecutando(true)
+    try {
+      await fetchApi(`/api/admin/pedidos/${pedidoId}/${ACOES[a].caminho}`, { method: "POST", showToast: false })
+      toast.success(ACOES[a].sucesso)
+      setAcao(null)
+      setPedido(await fetchApi<AdminPedidoDetalhe>(`/api/admin/pedidos/${pedidoId}`))
+      onChanged?.()
+    } catch (err) {
+      setAcao(null)
+      toast.error(err instanceof PastoralApiError ? err.pastoralMessage : "Algo não saiu como o esperado. Tente novamente.")
+    } finally {
+      setExecutando(false)
+    }
+  }
+
+  // D10: gratuidade só aguardando pagamento; reenvio só com oração gerada; regeneração só em ERRO sem oração.
+  const acoes: Acao[] = pedido
+    ? [
+        ...(pedido.status === "AGUARDANDO_PAGAMENTO" ? (["gratuidade"] as const) : []),
+        ...(pedido.oracaoGerada ? (["reenvio"] as const) : []),
+        ...(pedido.status === "ERRO" && !pedido.oracaoGerada ? (["regeneracao"] as const) : []),
+      ]
+    : []
 
   useEffect(() => {
     setEditing(false)
@@ -129,6 +181,11 @@ export function PedidoDetailDrawer({ pedidoId, onClose, onChanged }: PedidoDetai
                 <Pencil className="w-4 h-4 mr-2" />
                 Editar pedido
               </Button>
+              {acoes.map((a) => (
+                <Button key={a} variant="outline" className="w-full" onClick={() => setAcao(a)}>
+                  {ACOES[a].rotulo}
+                </Button>
+              ))}
               {/* Pedido Info */}
               <section>
                 <h3 className="text-sm font-medium text-clama-gold mb-3">Pedido</h3>
@@ -251,6 +308,19 @@ export function PedidoDetailDrawer({ pedidoId, onClose, onChanged }: PedidoDetai
           ) : null}
         </div>
       </div>
+
+      <Dialog open={!!acao} onOpenChange={(o) => !o && !executando && setAcao(null)}>
+        <DialogContent className="bg-clama-night-deep border-clama-gold/20 text-clama-cream">
+          <DialogHeader>
+            <DialogTitle className="text-clama-gold">{acao && ACOES[acao].rotulo}?</DialogTitle>
+            <DialogDescription className="text-clama-cream/60">{acao && ACOES[acao].descricao}</DialogDescription>
+          </DialogHeader>
+          <div className="flex gap-3 mt-4">
+            <Button variant="ghost" className="flex-1" disabled={executando} onClick={() => setAcao(null)}>Cancelar</Button>
+            <Button className="flex-1" disabled={executando} onClick={() => acao && executar(acao)}>Confirmar</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   )
 }

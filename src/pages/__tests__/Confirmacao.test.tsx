@@ -93,6 +93,50 @@ describe("Confirmacao", () => {
     expect(await screen.findByText("Sua oração será enviada em até 24 horas.")).toBeInTheDocument()
   })
 
+  it("polling para em ENVIADA: nao consulta de novo", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    status = { id: ID, status: "ENVIADA", oracaoGerada: "Senhor, ouve." }
+    abrir()
+    expect(await screen.findByText("Senhor, ouve.")).toBeInTheDocument()
+    await act(() => vi.advanceTimersByTimeAsync(30_000))
+    expect(chamadas("GET", `/api/pedidos/${ID}`)).toBe(1)
+  })
+
+  it("polling para em ERRO: nao consulta de novo", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    status = { id: ID, status: "ERRO", mensagemPastoral: "Estamos cuidando." }
+    abrir()
+    expect(await screen.findByText("Estamos cuidando.")).toBeInTheDocument()
+    await act(() => vi.advanceTimersByTimeAsync(30_000))
+    expect(chamadas("GET", `/api/pedidos/${ID}`)).toBe(1)
+  })
+
+  it("polling segue de GERANDO_ORACAO ate ENVIADA e mostra a oracao", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    status.status = "GERANDO_ORACAO"
+    abrir()
+    expect(await screen.findByText("Seu clamor foi recebido")).toBeInTheDocument()
+    status = { id: ID, status: "ENVIADA", oracaoGerada: "Amém, Senhor." }
+    await act(() => vi.advanceTimersByTimeAsync(5000))
+    expect(await screen.findByText("Amém, Senhor.")).toBeInTheDocument()
+  })
+
+  it("Pix vencido com a tela aberta: 'Gerar novo Pix' pede outra cobranca", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    const venceEm = Date.now() + 60_000
+    pix = () => Promise.resolve({ ...PIX, expiraEm: new Date(venceEm).toISOString() })
+    abrir()
+    expect(await screen.findByText(PIX.copiaECola)).toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "Gerar novo Pix" })).toBeNull()
+
+    pix = () => Promise.resolve({ ...PIX, copiaECola: "00020126-novo", expiraEm: new Date(venceEm + 3_600_000).toISOString() })
+    await act(() => vi.advanceTimersByTimeAsync(75_000))
+    await userEvent.click(await screen.findByRole("button", { name: "Gerar novo Pix" }))
+    expect(await screen.findByText("00020126-novo")).toBeInTheDocument()
+    expect(chamadas("POST", `/api/pedidos/${ID}/pix`)).toBe(2)
+    expect(screen.queryByRole("button", { name: "Gerar novo Pix" })).toBeNull()
+  })
+
   it("falha do Pix mostra a mensagem pastoral e o tentar de novo reusa o mesmo pedido", async () => {
     const msg = "Não conseguimos gerar o Pix agora. Tente de novo em alguns minutos."
     pix = () => Promise.reject(new PastoralApiError("Erro", "pagamento_indisponivel", msg, 503))
