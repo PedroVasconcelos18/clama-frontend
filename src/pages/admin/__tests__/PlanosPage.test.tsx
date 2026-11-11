@@ -29,7 +29,7 @@ describe("PlanosPage", () => {
     expect(await screen.findByText("Bênção")).toBeTruthy()
     expect(fetchApi.mock.calls[0]![0]).toBe("/api/admin/planos")
     expect(screen.getAllByText("Do sistema")).toHaveLength(2)
-    expect(screen.getByText("R$ 20,00")).toBeTruthy()
+    expect(screen.getByText(/^R\$\s20,00$/)).toBeTruthy()
   })
 
   it("plano tecnico nao tem Desativar", async () => {

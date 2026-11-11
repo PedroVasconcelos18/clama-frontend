@@ -18,6 +18,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog"
 import { cn } from "@/lib/utils"
+import { formatCurrency } from "@/lib/formatters"
 import { Plus, Edit, Power, Filter } from "lucide-react"
 import { toast } from "sonner"
 import type { AdminPlano } from "@/types/admin.types"
@@ -36,13 +37,10 @@ const COMPLEXIDADE_OPTIONS = [
   { value: "COM_PROFECIA_E_VERSICULOS", label: "Com Profecia e Versículos" },
 ]
 
-const reais = (centavos: number) =>
-  (centavos / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" }).replace(/\u00a0/g, " ")
-
 function rotuloDoValor(p: AdminPlano): string {
   if (p.tipo === "GRATUITO") return "Gratuito"
   if (p.tipo === "VALOR_LIVRE") return "Valor livre"
-  return reais(p.valorCentavos)
+  return formatCurrency(p.valorCentavos)
 }
 
 // `tipo` não é um campo da tela: viaja no formulário para o plano técnico (GRATUITO, VALOR_LIVRE)
