@@ -27,7 +27,7 @@ type Regra = { source: string; destination: string }
 const config = JSON.parse(
   readFileSync(resolve(__dirname, "../../vercel.cutover.json"), "utf-8"),
 ) as {
-  trailingSlash: boolean
+  trailingSlash?: boolean
   redirects: Array<Record<string, unknown>>
   rewrites: Regra[]
 }
@@ -66,7 +66,7 @@ describe("ordem das regras", () => {
   })
 
   it("a regra da API vem antes de tudo", () => {
-    expect(config.rewrites[0]?.source).toBe("/api/:path*")
+    expect(config.rewrites[0]?.source).toBe("/api/:caminho(.*)")
   })
 
   it("a regra dedicada de /blog vem antes da de /blog/:path*", () => {
@@ -157,10 +157,15 @@ describe("redirects", () => {
 })
 
 describe("trailingSlash", () => {
-  it("está alinhado ao permalink do WordPress", () => {
-    // Story 5.2: o WordPress ficou com `/%postname%` sem barra e 301a a forma
-    // com barra. Divergir aqui faria toda URL indexada receber 301.
-    expect(config.trailingSlash).toBe(false)
+  it("não existe: o widget do WordPress chama /api/csrf/ com barra", () => {
+    // trailingSlash:false daria 308 em /api/csrf/ e o widget perderia CSRF e comentários.
+    expect(config.trailingSlash).toBeUndefined()
+  })
+
+  it.each(["/api/csrf/", "/api/blog/posts/x/comments/"])("%s casa a regra da API, com a barra", (caminho) => {
+    const regra = resolver(caminho)
+    expect(regra?.source).toBe("/api/:caminho(.*)")
+    expect(caminho.endsWith("/")).toBe(true)
   })
 })
 

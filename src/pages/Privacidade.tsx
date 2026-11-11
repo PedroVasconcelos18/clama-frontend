@@ -237,7 +237,7 @@ export default function Privacidade() {
 
           <h3 className="font-serif text-clama-night text-lg mt-6 mb-3">13.B.4 Direito ao esquecimento — exclusão de comentários</h3>
           <p className="text-clama-night/80 mb-4">
-            O Usuário pode excluir os próprios comentários a qualquer momento, pela interface do blog. Para solicitar a exclusão definitiva de dados pessoais associados aos comentários (incluindo IPs ainda dentro do prazo de retenção), envie um e-mail para{" "}
+            O Usuário pode excluir os próprios comentários a qualquer momento, em <Link to="/conta" className="text-clama-accent hover:underline">Minha conta</Link>, na seção “Seus comentários no blog”. Para solicitar a exclusão definitiva de dados pessoais associados aos comentários (incluindo IPs ainda dentro do prazo de retenção), envie um e-mail para{" "}
             <a href="mailto:privacidade@clama.me" className="text-clama-accent hover:underline">privacidade@clama.me</a>{" "}
             informando o e-mail cadastrado e o assunto "exclusão LGPD blog". O atendimento acontece em até 30 (trinta) dias, conforme o art. 18, § 3º da LGPD.
           </p>

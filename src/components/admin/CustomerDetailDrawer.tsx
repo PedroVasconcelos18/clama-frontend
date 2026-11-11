@@ -110,7 +110,7 @@ export function CustomerDetailDrawer({ usuarioId, onClose, onChanged }: Props) {
                 />
               )}
 
-              <CustomerBlog usuarioId={data.id} />
+              <CustomerBlog usuarioId={data.id} papel={data.papel} />
 
               <Section title="Linha do tempo">
                 <Field label="Cadastro" value={formatarDataHora(data.criadoEm)} />

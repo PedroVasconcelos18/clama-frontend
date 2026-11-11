@@ -5,8 +5,6 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist/client",
 
-  "trailingSlash": false,
-
   "redirects": [
     {
       "_comentario": "Story 5.6. Em redirects e não em rewrites: a URL antiga precisa de 301 real, senão duas URLs servem o mesmo conteúdo. Modo de falha sem esta regra: /blog?page=2 serve a página 1, com status 200 e sem erro.",
@@ -19,9 +17,9 @@
 
   "rewrites": [
     {
-      "_comentario": "Story 1.2. Primeira porque é a mais quente e a que torna a API same-origin — é dela que vem a ausência de preflight, não do rewrite do blog.",
-      "source": "/api/:path*",
-      "destination": "https://api.clama.me/api/:path*"
+      "_comentario": "Story 1.2. Primeira porque é a mais quente e a que torna a API same-origin — é dela que vem a ausência de preflight, não do rewrite do blog. Sem trailingSlash e com (.*): o widget do WordPress chama /api/csrf/ com barra; trailingSlash:false daria 308 e :path* deixaria cair no SPA (medido em produção).",
+      "source": "/api/:caminho(.*)",
+      "destination": "https://api.clama.me/api/:caminho"
     },
 
     {
