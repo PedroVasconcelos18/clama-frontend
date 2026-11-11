@@ -105,6 +105,13 @@ describe("apiFetch", () => {
     document.cookie = "XSRF-TOKEN=; path=/; max-age=0"
   })
 
+  it("202 sem corpo (tarefa enfileirada) vira {} em vez de quebrar no json()", async () => {
+    document.cookie = "XSRF-TOKEN=tok1; path=/"
+    globalThis.fetch = vi.fn().mockResolvedValue({ ok: true, status: 202, json: () => Promise.reject(new Error("sem corpo")) })
+    await expect(apiFetch("/api/admin/tarefas/x/execucoes", { method: "POST" })).resolves.toEqual({})
+    document.cookie = "XSRF-TOKEN=; path=/; max-age=0"
+  })
+
   it("POST sem cookie XSRF faz antes um GET /api/auth/eu (ignorando o 401) e depois envia o header", async () => {
     document.cookie = "XSRF-TOKEN=; path=/; max-age=0"
     globalThis.fetch = vi

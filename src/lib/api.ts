@@ -119,6 +119,7 @@ export async function apiFetch<T>(
     throw error
   }
 
-  if (response.status === 204 || response.status === 205) return {} as T
+  // 202 (tarefa enfileirada) também vem sem corpo
+  if ([202, 204, 205].includes(response.status)) return {} as T
   return response.json() as Promise<T>
 }

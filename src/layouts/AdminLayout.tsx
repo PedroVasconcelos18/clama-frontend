@@ -13,6 +13,8 @@ import {
   UserX,
   Banknote,
   Webhook,
+  FileSpreadsheet,
+  ListChecks,
   ShieldBan,
   Menu,
   X,
@@ -36,6 +38,8 @@ const navItems = [
   },
   { to: "/admin/blog/banidos", icon: UserX, label: "Banidos" },
   { to: "/admin/repasses", icon: Banknote, label: "Repasses" },
+  { to: "/admin/relatorios", icon: FileSpreadsheet, label: "Relatórios" },
+  { to: "/admin/tarefas", icon: ListChecks, label: "Tarefas" },
   { to: "/admin/webhooks", icon: Webhook, label: "Eventos do MP" },
   { to: "/admin/freemium", icon: ShieldBan, label: "Freemium" },
 ]

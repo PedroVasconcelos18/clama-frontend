@@ -26,6 +26,8 @@ import InstituicoesPage from "@/pages/admin/InstituicoesPage"
 import PromptEditorPage from "@/pages/admin/PromptEditorPage"
 import DocumentosPage from "@/pages/admin/DocumentosPage"
 import RepassesPage from "@/pages/admin/RepassesPage"
+import RelatoriosRepassePage from "@/pages/admin/RelatoriosRepassePage"
+import TarefasPage from "@/pages/admin/TarefasPage"
 import WebhooksPage from "@/pages/admin/WebhooksPage"
 import FreemiumBloqueiosPage from "@/pages/admin/FreemiumBloqueiosPage"
 
@@ -78,6 +80,8 @@ export default function App() {
           <Route path="prompts" element={<PromptEditorPage />} />
           <Route path="documentos" element={<DocumentosPage />} />
           <Route path="repasses" element={<RepassesPage />} />
+          <Route path="relatorios" element={<RelatoriosRepassePage />} />
+          <Route path="tarefas" element={<TarefasPage />} />
           <Route path="webhooks" element={<WebhooksPage />} />
           <Route path="freemium" element={<FreemiumBloqueiosPage />} />
           <Route

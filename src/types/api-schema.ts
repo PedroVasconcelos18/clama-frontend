@@ -452,6 +452,102 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/repasses/auditoria": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["auditarLedger"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/repasses/relatorio": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["previaDoRelatorio"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/repasses/relatorio-interno.csv": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["csvInterno"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/repasses/relatorio.csv": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["csvDaInstituicao"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/repasses/relatorios-mensais": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["relatoriosMensais"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/repasses/transferencias": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["quitarEmLote"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/repasses/{id}/transferencia": {
         parameters: {
             query?: never;
@@ -462,6 +558,38 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["transferir"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/tarefas": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listarTarefas"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/tarefas/{nome}/execucoes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listarExecucoes"];
+        put?: never;
+        post: operations["rodarTarefa"];
         delete?: never;
         options?: never;
         head?: never;
@@ -872,10 +1000,27 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        AchadoDoLedger: {
+            detalhe?: string;
+            gravidade?: string;
+            instituicao?: string;
+            /** Format: uuid */
+            pedidoId?: string;
+            tipo?: string;
+            /** Format: int64 */
+            valorEmJogoCentavos?: number;
+        };
         AlteracaoDeUsuario: {
             ativo?: boolean;
             /** @enum {string} */
             papel?: "CLIENTE" | "ADMIN" | "SUPERUSUARIO";
+        };
+        AuditoriaDoLedgerAdmin: {
+            achados?: components["schemas"]["AchadoDoLedger"][];
+            /** Format: int32 */
+            criticos?: number;
+            /** Format: int64 */
+            emJogoCentavos?: number;
         };
         Banir: {
             motivo: string;
@@ -1009,6 +1154,21 @@ export interface components {
             evento?: components["schemas"]["EventoMpAdmin"];
             resultado?: string;
         };
+        ExecucaoAdmin: {
+            /** Format: int64 */
+            autorId?: number;
+            erro?: string;
+            /** Format: date-time */
+            fim?: string;
+            /** Format: int64 */
+            id?: number;
+            /** Format: date-time */
+            inicio?: string;
+            manual?: boolean;
+            ok?: boolean;
+            resumo?: string;
+            simulacao?: boolean;
+        };
         Instituicao: {
             /** Format: int64 */
             id?: number;
@@ -1039,6 +1199,19 @@ export interface components {
             /** Format: int64 */
             usuarioId?: number;
             usuarioNome?: string;
+        };
+        LinhaDoRelatorio: {
+            /** Format: date */
+            data?: string;
+            doador?: string;
+            /** Format: int32 */
+            percentual?: number;
+            referencia?: string;
+            status?: string;
+            /** Format: int64 */
+            valorDoadoCentavos?: number;
+            /** Format: int64 */
+            valorRepasseCentavos?: number;
         };
         MensagemPastoral: {
             mensagemPastoral?: string;
@@ -1126,6 +1299,10 @@ export interface components {
             content: components["schemas"]["EventoMpAdmin"][];
             page: components["schemas"]["PageMetadata"];
         };
+        PagedModelExecucaoAdmin: {
+            content: components["schemas"]["ExecucaoAdmin"][];
+            page: components["schemas"]["PageMetadata"];
+        };
         PagedModelItem: {
             content: components["schemas"]["Item"][];
             page: components["schemas"]["PageMetadata"];
@@ -1140,6 +1317,10 @@ export interface components {
         };
         PagedModelRepasseAdmin: {
             content: components["schemas"]["RepasseAdmin"][];
+            page: components["schemas"]["PageMetadata"];
+        };
+        PagedModelResumo: {
+            content: components["schemas"]["Resumo"][];
             page: components["schemas"]["PageMetadata"];
         };
         PagedModelUsuarioAdminItem: {
@@ -1160,6 +1341,9 @@ export interface components {
             /** Format: int64 */
             usuarioId?: number;
             usuarioNome?: string;
+        };
+        Pedido: {
+            simulacao?: boolean;
         };
         PedidoAdminDetalhe: {
             /** Format: date-time */
@@ -1307,6 +1491,24 @@ export interface components {
             /** Format: int64 */
             versaoId?: number | null;
         };
+        PreviaDoRelatorio: {
+            /** Format: date */
+            ate?: string;
+            /** Format: date */
+            de?: string;
+            instituicao?: string;
+            linhas?: components["schemas"]["LinhaDoRelatorio"][];
+            /** Format: int32 */
+            pendentes?: number;
+            /** Format: int32 */
+            quantidade?: number;
+            /** Format: int64 */
+            totalDoadoCentavos?: number;
+            /** Format: int64 */
+            totalPendenteCentavos?: number;
+            /** Format: int64 */
+            totalRepasseCentavos?: number;
+        };
         ProblemDetail: {
             /** @description identificador estavel do erro */
             codigo?: string;
@@ -1329,6 +1531,21 @@ export interface components {
             gratuito: string;
             simples: string;
             sistema: string;
+        };
+        QuitacaoEmLote: {
+            ate: string;
+            comprovante: string;
+            de: string;
+            /** Format: int64 */
+            instituicaoId: number;
+            /** Format: int32 */
+            quantidade: number;
+        };
+        Quitados: {
+            /** Format: int32 */
+            quantidade?: number;
+            /** Format: int64 */
+            totalCentavos?: number;
         };
         RedefinicaoDeSenhaPedido: {
             novaSenha: string;
@@ -1379,6 +1596,29 @@ export interface components {
         RespostaDoWebhook: {
             status?: string;
         };
+        Resumo: {
+            /** Format: date */
+            ate?: string;
+            /** Format: date */
+            de?: string;
+            /** Format: date-time */
+            geradoEm?: string;
+            /** Format: int64 */
+            id?: number;
+            instituicao?: string;
+            /** Format: int64 */
+            instituicaoId?: number;
+            /** Format: int64 */
+            pendenteCentavos?: number;
+            /** Format: int32 */
+            quantidade?: number;
+            /** Format: int64 */
+            totalAgoraCentavos?: number;
+            /** Format: int64 */
+            totalDoadoCentavos?: number;
+            /** Format: int64 */
+            totalRepasseCentavos?: number;
+        };
         StatusPublico: {
             /** Format: date-time */
             criadoEm?: string;
@@ -1394,12 +1634,35 @@ export interface components {
             /** Format: int64 */
             valorCentavos?: number;
         };
+        Tarefa: {
+            cron?: string;
+            /** Format: int32 */
+            falhasSeguidas?: number;
+            nome?: string;
+            /** Format: date-time */
+            proximaExecucao?: string;
+            rodandoAgora?: boolean;
+            simulacaoConfigurada?: boolean;
+            situacao?: string;
+            ultima?: components["schemas"]["UltimaExecucao"];
+        };
         Transferencia: {
             comprovante: string;
         };
         TrocaDeSenha: {
             novaSenha: string;
             senhaAtual: string;
+        };
+        UltimaExecucao: {
+            erro?: string;
+            /** Format: date-time */
+            fim?: string;
+            /** Format: date-time */
+            inicio?: string;
+            manual?: boolean;
+            ok?: boolean;
+            resumo?: string;
+            simulacao?: boolean;
         };
         UsuarioAdminItem: {
             ativo?: boolean;
@@ -2305,6 +2568,152 @@ export interface operations {
             };
         };
     };
+    auditarLedger: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["AuditoriaDoLedgerAdmin"];
+                };
+            };
+        };
+    };
+    previaDoRelatorio: {
+        parameters: {
+            query?: {
+                instituicaoId?: string;
+                mes?: string;
+                de?: string;
+                ate?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PreviaDoRelatorio"];
+                };
+            };
+        };
+    };
+    csvInterno: {
+        parameters: {
+            query?: {
+                instituicaoId?: string;
+                mes?: string;
+                de?: string;
+                ate?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": string;
+                };
+            };
+        };
+    };
+    csvDaInstituicao: {
+        parameters: {
+            query?: {
+                instituicaoId?: string;
+                mes?: string;
+                de?: string;
+                ate?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": string;
+                };
+            };
+        };
+    };
+    relatoriosMensais: {
+        parameters: {
+            query?: {
+                /** @description Zero-based page index (0..N) */
+                page?: number;
+                /** @description The size of the page to be returned */
+                size?: number;
+                /** @description Sorting criteria in the format: property,(asc|desc). Default sort order is ascending. Multiple sort criteria are supported. */
+                sort?: string[];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PagedModelResumo"];
+                };
+            };
+        };
+    };
+    quitarEmLote: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["QuitacaoEmLote"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["Quitados"];
+                };
+            };
+        };
+    };
     transferir: {
         parameters: {
             query?: never;
@@ -2328,6 +2737,79 @@ export interface operations {
                 content: {
                     "*/*": components["schemas"]["RepasseAdmin"];
                 };
+            };
+        };
+    };
+    listarTarefas: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["Tarefa"][];
+                };
+            };
+        };
+    };
+    listarExecucoes: {
+        parameters: {
+            query?: {
+                /** @description Zero-based page index (0..N) */
+                page?: number;
+                /** @description The size of the page to be returned */
+                size?: number;
+                /** @description Sorting criteria in the format: property,(asc|desc). Default sort order is ascending. Multiple sort criteria are supported. */
+                sort?: string[];
+            };
+            header?: never;
+            path: {
+                nome: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PagedModelExecucaoAdmin"];
+                };
+            };
+        };
+    };
+    rodarTarefa: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                nome: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["Pedido"];
+            };
+        };
+        responses: {
+            /** @description Accepted */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

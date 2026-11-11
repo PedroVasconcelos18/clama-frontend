@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react"
 import { toast } from "sonner"
+import { Link } from "react-router-dom"
 
 import { useApi } from "@/hooks/useApi"
 import { usePaginaAdmin } from "@/hooks/useAdminList"
@@ -90,7 +91,10 @@ export default function RepassesPage() {
           <h1 className="font-serif text-2xl text-clama-gold">Repasses</h1>
           <p className="text-sm text-clama-cream/60">Parte de cada pedido pago destinada às instituições.</p>
         </div>
-        <span className="text-sm text-clama-cream/60">{total} no total</span>
+        <div className="text-right text-sm text-clama-cream/60">
+          <span>{total} no total</span>
+          <Link to="/admin/relatorios" className="block text-clama-gold underline">Relatórios e quitação do ciclo</Link>
+        </div>
       </header>
 
       <div className="flex flex-wrap items-end gap-3 rounded-md border border-clama-gold/15 bg-clama-night-deep p-3">

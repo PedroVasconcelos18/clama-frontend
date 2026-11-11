@@ -2,6 +2,7 @@ import { render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { toast } from "sonner"
+import { MemoryRouter } from "react-router-dom"
 import RepassesPage from "../RepassesPage"
 import { PastoralApiError } from "@/lib/api"
 import { formatCurrency } from "@/lib/formatters"
@@ -32,8 +33,14 @@ describe("RepassesPage", () => {
     })
   })
 
+  it("tem o link para os relatórios do ciclo", async () => {
+    render(<MemoryRouter><RepassesPage /></MemoryRouter>)
+    const link = await screen.findByRole("link", { name: "Relatórios e quitação do ciclo" })
+    expect(link.getAttribute("href")).toBe("/admin/relatorios")
+  })
+
   it("lista sem PII, com valores formatados", async () => {
-    render(<RepassesPage />)
+    render(<MemoryRouter><RepassesPage /></MemoryRouter>)
     expect(await screen.findByText(moeda(600))).toBeTruthy()
     expect(screen.getAllByText("Mar de Espanha").length).toBeGreaterThan(0)
     expect(screen.getByText(moeda(3001))).toBeTruthy()
@@ -43,7 +50,7 @@ describe("RepassesPage", () => {
   })
 
   it("filtros de instituição, status e datas voltam à página 0", async () => {
-    render(<RepassesPage />)
+    render(<MemoryRouter><RepassesPage /></MemoryRouter>)
     await userEvent.click(await screen.findByRole("button", { name: /Próxima/ }))
     await waitFor(() => expect(fetchApi).toHaveBeenLastCalledWith("/api/admin/repasses?page=1&size=20"))
     await userEvent.selectOptions(screen.getByLabelText("Instituição"), "7")
@@ -58,7 +65,7 @@ describe("RepassesPage", () => {
   })
 
   it("Marcar transferido pede confirmação, chama a rota e recarrega", async () => {
-    render(<RepassesPage />)
+    render(<MemoryRouter><RepassesPage /></MemoryRouter>)
     await userEvent.click(await screen.findByRole("button", { name: "Marcar transferido" }))
     expect(fetchApi.mock.calls.some(([, i]) => i?.method === "POST")).toBe(false)
     const antes = fetchApi.mock.calls.length
@@ -81,14 +88,14 @@ describe("RepassesPage", () => {
 
   it("só REGISTRADO tem o botão", async () => {
     lista = [{ ...repasse, status: "CANCELADO", canceladoEm: "2026-11-02T13:00:00Z", motivo: "refunded" }]
-    render(<RepassesPage />)
+    render(<MemoryRouter><RepassesPage /></MemoryRouter>)
     expect(await screen.findByText("refunded")).toBeTruthy()
     expect(screen.queryByRole("button", { name: "Marcar transferido" })).toBeNull()
   })
 
   it("409 mostra a mensagem pastoral", async () => {
     post = () => Promise.reject(new PastoralApiError("Erro", "repasse_cancelado", "Repasse cancelado não se transfere.", 409))
-    render(<RepassesPage />)
+    render(<MemoryRouter><RepassesPage /></MemoryRouter>)
     await userEvent.click(await screen.findByRole("button", { name: "Marcar transferido" }))
     await userEvent.type(screen.getByLabelText("Comprovante"), "PIX-1")
     await userEvent.click(screen.getByRole("button", { name: "Confirmar transferência" }))
