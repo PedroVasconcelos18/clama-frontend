@@ -1,22 +1,24 @@
-/** Valores do model (StatusPedido). O de "enviada" é `enviada`, não `oracao_enviada`. */
-export const PEDIDO_STATUS = [
-  { value: "aguardando_pagamento", label: "Aguardando pagamento" },
-  { value: "aguardando_confirmacao_email", label: "Aguardando confirmação de e-mail" },
-  { value: "pago", label: "Pago" },
-  { value: "gerando_oracao", label: "Gerando oração" },
-  { value: "oracao_gerada", label: "Oração gerada" },
-  { value: "enviada", label: "Enviada" },
-  { value: "aguardando_reenvio", label: "Aguardando reenvio" },
-  { value: "erro", label: "Erro" },
-] as const
+import type { StatusPedido } from "@/types/pedido-status.types"
+
+/** Valores do `StatusPedido` da API, na ordem do fluxo. */
+export const PEDIDO_STATUS: { value: StatusPedido; label: string }[] = [
+  { value: "AGUARDANDO_PAGAMENTO", label: "Aguardando pagamento" },
+  { value: "PAGO", label: "Pago" },
+  { value: "GERANDO_ORACAO", label: "Gerando oração" },
+  { value: "ORACAO_GERADA", label: "Oração gerada" },
+  { value: "ENVIADA", label: "Enviada" },
+  { value: "AGUARDANDO_NOVA_TENTATIVA", label: "Aguardando nova tentativa" },
+  { value: "ERRO", label: "Erro" },
+]
+
+export const rotuloDoStatus = (s?: string) => PEDIDO_STATUS.find((o) => o.value === s)?.label ?? s ?? "—"
 
 export const PEDIDO_STATUS_COLORS: Record<string, string> = {
-  aguardando_pagamento: "bg-yellow-500/20 text-yellow-400",
-  aguardando_confirmacao_email: "bg-yellow-500/20 text-yellow-400",
-  pago: "bg-green-500/20 text-green-400",
-  gerando_oracao: "bg-blue-500/20 text-blue-400",
-  oracao_gerada: "bg-blue-500/20 text-blue-400",
-  enviada: "bg-green-500/20 text-green-400",
-  erro: "bg-red-500/20 text-red-400",
-  aguardando_reenvio: "bg-yellow-500/20 text-yellow-400",
+  AGUARDANDO_PAGAMENTO: "bg-yellow-500/20 text-yellow-400",
+  PAGO: "bg-green-500/20 text-green-400",
+  GERANDO_ORACAO: "bg-blue-500/20 text-blue-400",
+  ORACAO_GERADA: "bg-blue-500/20 text-blue-400",
+  ENVIADA: "bg-green-500/20 text-green-400",
+  AGUARDANDO_NOVA_TENTATIVA: "bg-yellow-500/20 text-yellow-400",
+  ERRO: "bg-red-500/20 text-red-400",
 }

@@ -24,11 +24,6 @@ import { maskCpfCnpj, maskTelefoneBR } from "@/lib/formatters";
 interface PrayerFormProps {
   planos: Plan[];
   onSubmit: (data: PedidoFormData) => void;
-  /**
-   * @deprecated Telefone agora é sempre obrigatório (paridade com form
-   * gratuito). Prop mantida pra retrocompat — ignorada.
-   */
-  requireTelefone?: boolean;
   onValidityChange?: (isValid: boolean) => void;
   /** "light" (default) = LP; "dark" = variante /conta. */
   theme?: "light" | "dark";
@@ -151,8 +146,8 @@ export function PrayerForm({
       ...data,
       pedido_oracao: data.pedido_oracao || undefined,
       sexo: data.sexo || undefined,
-      // Backend espera só dígitos — remove a máscara visual do telefone.
-      telefone: data.telefone.replace(/\D/g, ""),
+      // Só dígitos (sem a máscara visual); vazio fica de fora.
+      telefone: data.telefone?.replace(/\D/g, "") || undefined,
     };
     onSubmit(cleanedData);
   });
@@ -287,13 +282,13 @@ export function PrayerForm({
           )}
         />
 
-        {/* Telefone — sempre obrigatório (paridade com form gratuito). */}
+        {/* Telefone — opcional (D5). */}
         <FormField
           control={form.control}
           name="telefone"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className={labelClass}>WhatsApp</FormLabel>
+              <FormLabel className={labelClass}>Telefone (opcional)</FormLabel>
               <FormControl>
                 <Input
                   type="tel"

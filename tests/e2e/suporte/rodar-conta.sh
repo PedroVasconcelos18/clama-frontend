@@ -3,7 +3,11 @@
 # roda o Playwright contra eles e derruba tudo no fim.
 #
 # Uso: tests/e2e/suporte/rodar-conta.sh [spec ou args do playwright]   (padrão: tests/e2e/conta.spec.ts; catálogo: tests/e2e/catalogo.spec.ts)
-# Variáveis: CLAMA_API_DIR (padrão ../clama-api), SKIP_BUILD=1 para não recompilar o jar.
+#      MERCADOPAGO_SIMULADO=1 tests/e2e/suporte/rodar-conta.sh tests/e2e/pedido.spec.ts
+# Variáveis: CLAMA_API_DIR (padrão ../clama-api), SKIP_BUILD=1 para não recompilar o jar,
+#   MERCADOPAGO_SIMULADO=1 sobe um WireMock (mapeamentos em suporte/mercadopago) no lugar do Mercado Pago e roda a API
+#   com os perfis local,test (o perfil test é o único que aceita mercadopago-url em http; a regra de produção não muda),
+#   API_PERFIS para trocar os perfis à mão.
 set -euo pipefail
 
 FRONT_DIR="$(cd "$(dirname "$0")/../../.." && pwd)"
@@ -17,6 +21,8 @@ PIDS=()
 
 livre() { python3 -c 'import socket; s=socket.socket(); s.bind(("127.0.0.1",0)); print(s.getsockname()[1])'; }
 PG_PORT="$(livre)"; API_PORT="$(livre)"; FRONT_PORT="$(livre)"
+API_PERFIS="${API_PERFIS:-local}"
+API_ENV=()
 
 limpar() {
   status=$?
@@ -40,17 +46,32 @@ docker run -d --rm --name "$CONTAINER" -e POSTGRES_PASSWORD=postgres -e POSTGRES
   -p "127.0.0.1:$PG_PORT:5432" postgres:18-alpine >/dev/null
 for _ in $(seq 1 30); do docker exec "$CONTAINER" pg_isready -U postgres -d clama >/dev/null 2>&1 && break; sleep 1; done
 
+if [ "${MERCADOPAGO_SIMULADO:-}" = "1" ]; then
+  WIREMOCK_JAR="$(ls "$HOME"/.m2/repository/org/wiremock/wiremock-standalone/*/wiremock-standalone-*.jar | tail -n 1)"
+  WM_PORT="$(livre)"
+  echo ">> WireMock (Mercado Pago simulado) na porta $WM_PORT"
+  "$JAVA_HOME/bin/java" -jar "$WIREMOCK_JAR" --port "$WM_PORT" --root-dir "$FRONT_DIR/tests/e2e/suporte/mercadopago" \
+    --disable-banner >"$TMP/wiremock.log" 2>&1 &
+  PIDS+=($!)
+  esperar "http://localhost:$WM_PORT/__admin/health" 30
+  API_PERFIS="local,test"
+  export WIREMOCK_URL="http://localhost:$WM_PORT"
+  export MERCADOPAGO_WEBHOOK_SECRET="segredo-do-webhook-e2e"
+  API_ENV=(CLAMA_PAGAMENTO_MERCADOPAGOURL="$WIREMOCK_URL" MERCADOPAGO_ACCESS_TOKEN="TEST-token-e2e"
+    MERCADOPAGO_WEBHOOK_SECRET="$MERCADOPAGO_WEBHOOK_SECRET")
+fi
+
 if [ "${SKIP_BUILD:-}" != "1" ]; then
   echo ">> compilando o clama-api"
   (cd "$API_DIR" && ./mvnw -q package -DskipTests)
 fi
 
-echo ">> clama-api na porta $API_PORT (log em $API_LOG)"
+echo ">> clama-api na porta $API_PORT, perfis $API_PERFIS (log em $API_LOG)"
 # SPRING_DATASOURCE_*: o application-local.yml tem datasource explícito, que vence o DATABASE_URL; a variável de ambiente vence o yml.
-(cd "$API_DIR" && SPRING_PROFILES_ACTIVE=local SERVER_PORT="$API_PORT" \
+(cd "$API_DIR" && exec env ${API_ENV[@]+"${API_ENV[@]}"} SPRING_PROFILES_ACTIVE="$API_PERFIS" SERVER_PORT="$API_PORT" \
   SPRING_DATASOURCE_URL="jdbc:postgresql://localhost:$PG_PORT/clama" SPRING_DATASOURCE_USERNAME=postgres SPRING_DATASOURCE_PASSWORD=postgres \
   FRONTEND_URL="http://localhost:$FRONT_PORT" \
-  exec "$JAVA_HOME/bin/java" -jar target/clama-api.jar >"$API_LOG" 2>&1) &
+  "$JAVA_HOME/bin/java" -jar target/clama-api.jar >"$API_LOG" 2>&1) &
 PIDS+=($!)
 esperar "http://localhost:$API_PORT/api/auth/eu" 90
 

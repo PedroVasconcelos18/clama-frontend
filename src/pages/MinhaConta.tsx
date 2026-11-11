@@ -1,10 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react"
-import { useNavigate, useSearchParams } from "react-router-dom"
+import { Link, useNavigate, useSearchParams } from "react-router-dom"
 import {
   Calendar,
   Check,
   Hourglass,
-  Mail,
   CircleDollarSign,
   RefreshCw,
   TriangleAlert,
@@ -20,7 +19,8 @@ import { PedidoSection } from "@/components/clama/PedidoSection"
 import { SiteHeader } from "@/components/clama/SiteHeader"
 import { buildWhatsAppShareUrl } from "@/components/clama/WhatsAppShareButton"
 import { cn } from "@/lib/utils"
-import type { CustomerPedido } from "@/types/pedido-customer.types"
+import type { PedidoDaConta } from "@/types/pedido-customer.types"
+import { formatCurrency } from "@/lib/formatters"
 
 /**
  * Área logada do customer — redesign conta-design.
@@ -206,7 +206,7 @@ function HistoricoTab({
   primeiroNome: string
 }) {
   const { fetchApi } = useApi()
-  const [pedidos, setPedidos] = useState<CustomerPedido[] | null>(null)
+  const [pedidos, setPedidos] = useState<PedidoDaConta[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [expandedId, setExpandedId] = useState<string | null>(null)
 
@@ -220,8 +220,8 @@ function HistoricoTab({
       if (from) params.set("from", from)
       if (to) params.set("to", to)
       const qs = params.toString()
-      const url = `/api/customer/pedidos/${qs ? `?${qs}` : ""}`
-      const data = await fetchApi<CustomerPedido[]>(url, {
+      const url = `/api/conta/pedidos${qs ? `?${qs}` : ""}`
+      const data = await fetchApi<PedidoDaConta[]>(url, {
         method: "GET",
         showToast: false,
       })
@@ -347,7 +347,7 @@ function HistoricoTab({
               primeiroNome={primeiroNome}
               expanded={expandedId === p.id}
               onToggle={() =>
-                setExpandedId((cur) => (cur === p.id ? null : p.id))
+                setExpandedId((cur) => (cur === p.id ? null : (p.id ?? null)))
               }
             />
           ))}
@@ -467,32 +467,25 @@ interface StatusInfo {
   nota?: string
 }
 
-function statusToInfo(status: CustomerPedido["status"]): StatusInfo {
+function statusToInfo(status: PedidoDaConta["status"]): StatusInfo {
   switch (status) {
-    case "enviada":
+    case "ENVIADA":
       return { label: "Entregue", tone: "success", Icon: Check }
-    case "gerando_oracao":
-    case "oracao_gerada":
+    case "GERANDO_ORACAO":
+    case "ORACAO_GERADA":
       return { label: "Preparando", tone: "gold", Icon: Hourglass, ping: true }
-    case "aguardando_confirmacao_email":
-      return {
-        label: "Aguardando e-mail",
-        tone: "gold",
-        Icon: Mail,
-        nota: "Mandamos um link de confirmação. Abra o e-mail pra liberar seu pedido.",
-      }
-    case "aguardando_pagamento":
+    case "AGUARDANDO_PAGAMENTO":
       return {
         label: "Aguardando pagamento",
         tone: "amber",
         Icon: CircleDollarSign,
         nota: "Sua oração começa assim que o pagamento for confirmado.",
       }
-    case "pago":
+    case "PAGO":
       return { label: "Pago", tone: "success", Icon: Check }
-    case "aguardando_reenvio":
+    case "AGUARDANDO_NOVA_TENTATIVA":
       return { label: "Reenviando", tone: "gold", Icon: RefreshCw, ping: true }
-    case "erro":
+    case "ERRO":
       return {
         label: "Tivemos um soluço",
         tone: "error",
@@ -500,7 +493,7 @@ function statusToInfo(status: CustomerPedido["status"]): StatusInfo {
         nota: "Tivemos um soluço aqui. Estamos refazendo — em breve ela chega até você.",
       }
     default:
-      return { label: status, tone: "gold", Icon: Hourglass }
+      return { label: status ?? "—", tone: "gold", Icon: Hourglass }
   }
 }
 
@@ -557,12 +550,12 @@ function PedidoCard({
   expanded,
   onToggle,
 }: {
-  pedido: CustomerPedido
+  pedido: PedidoDaConta
   primeiroNome: string
   expanded: boolean
   onToggle: () => void
 }) {
-  const dt = useMemo(() => new Date(pedido.created_at), [pedido.created_at])
+  const dt = useMemo(() => new Date(pedido.criadoEm ?? ""), [pedido.criadoEm])
   const dia = dt.toLocaleDateString("pt-BR", { day: "2-digit" })
   const mes = dt
     .toLocaleDateString("pt-BR", { month: "short" })
@@ -576,11 +569,10 @@ function PedidoCard({
   })
 
   const info = useMemo(() => statusToInfo(pedido.status), [pedido.status])
-  const canalLabel = pedido.canal_entrega === "whatsapp" ? "WhatsApp" : "E-mail"
-  const titulo = pedido.eh_gratuito
+  const titulo = pedido.gratuito
     ? "Oração gratuita"
     : pedido.plano || "Oração"
-  const podeExpandir = pedido.status === "enviada" && !!pedido.oracao_gerada
+  const podeExpandir = pedido.status === "ENVIADA" && !!pedido.oracaoGerada
 
   return (
     <article className="overflow-hidden rounded-2xl border border-clama-gold/15 bg-clama-night-deep transition-colors hover:border-clama-gold/25">
@@ -613,12 +605,11 @@ function PedidoCard({
               <h3 className="font-serif text-[1.1rem] leading-tight text-clama-cream">
                 {titulo}
               </h3>
-              <p className="mt-1 font-sans text-[0.78rem] text-clama-cream/50">
-                {!pedido.eh_gratuito && pedido.valor_reais_str
-                  ? `${pedido.valor_reais_str} · `
-                  : ""}
-                {canalLabel}
-              </p>
+              {!pedido.gratuito && pedido.valorCentavos != null && (
+                <p className="mt-1 font-sans text-[0.78rem] text-clama-cream/50">
+                  {formatCurrency(pedido.valorCentavos)}
+                </p>
+              )}
             </div>
             <div className="flex shrink-0 flex-col items-end gap-2">
               <StatusBadge info={info} />
@@ -638,11 +629,21 @@ function PedidoCard({
         </div>
       </button>
 
-      {podeExpandir && expanded && pedido.oracao_gerada && (
+      {pedido.status === "AGUARDANDO_PAGAMENTO" && (
+        <div className="border-t border-clama-gold/10 px-5 py-3 text-right">
+          <Link
+            to={`/confirmacao?pedido_id=${pedido.id}`}
+            className="inline-flex items-center gap-1.5 rounded-full border border-clama-gold/40 px-4 py-1.5 font-sans text-[0.75rem] font-semibold uppercase tracking-[0.1em] text-clama-gold transition-colors hover:bg-clama-gold/10"
+          >
+            Ver Pix
+          </Link>
+        </div>
+      )}
+
+      {podeExpandir && expanded && pedido.oracaoGerada && (
         <OracaoExpandida
-          texto={pedido.oracao_gerada}
+          texto={pedido.oracaoGerada}
           dataExtenso={dataExtenso}
-          canalLabel={canalLabel}
           primeiroNome={primeiroNome}
         />
       )}
@@ -653,12 +654,10 @@ function PedidoCard({
 function OracaoExpandida({
   texto,
   dataExtenso,
-  canalLabel,
   primeiroNome,
 }: {
   texto: string
   dataExtenso: string
-  canalLabel: string
   primeiroNome: string
 }) {
   return (
@@ -692,7 +691,7 @@ function OracaoExpandida({
           <span className="h-px w-12 bg-gradient-to-l from-transparent to-clama-gold/30" />
         </div>
         <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 font-sans text-[0.76rem] text-clama-cream/45">
-          <span>Entregue por {canalLabel}</span>
+          <span>Entregue por e-mail</span>
           <a
             href={buildWhatsAppShareUrl(texto)}
             target="_blank"

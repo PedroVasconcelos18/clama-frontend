@@ -3,10 +3,9 @@ import { toast } from "sonner"
 import { RotateCw, X } from "lucide-react"
 
 import { useApi } from "@/hooks/useApi"
-import { useAdminList } from "@/hooks/useAdminList"
+import { usePaginaAdmin } from "@/hooks/useAdminList"
 import { AdminPager } from "@/components/admin/AdminPager"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
   Dialog,
@@ -19,75 +18,52 @@ import {
 import { PedidoDetailDrawer } from "@/components/admin/PedidoDetailDrawer"
 import { LoadingSpinner } from "@/components/utility/LoadingSpinner"
 import { PastoralAlert } from "@/components/utility/PastoralAlert"
-import type { AdminWebhook } from "@/types/admin.types"
+import { formatarDataHora as fmt } from "@/lib/datetime"
+import type { AdminEventoMp } from "@/types/admin.types"
 
-const fmt = (iso: string) => new Date(iso).toLocaleString("pt-BR")
 const selectCls =
   "mt-1 block bg-clama-night border border-clama-gold/30 text-clama-cream rounded-md h-9 px-2 text-sm"
 
-/** Só RECEBIDO/ERRO de MERCADO_PAGO ou WORDPRESS reprocessam (D9). */
-const podeReprocessar = (w: AdminWebhook) =>
-  (w.status === "RECEBIDO" || w.status === "ERRO") &&
-  (w.provider === "MERCADO_PAGO" || w.provider === "WORDPRESS")
+/** Só RECEBIDO e ERRO reprocessam; os demais são finais (409 evento_encerrado). */
+const podeReprocessar = (e: AdminEventoMp) => e.status === "RECEBIDO" || e.status === "ERRO"
 
-const EVENT_TYPES = ["payment", "post_publicado", "post_atualizado", "post_removido"]
-const curto = (t: string, n: number) => (t.length > n ? `${t.slice(0, n)}…` : t)
-
+/** `resultado` do reprocessamento = o `status` que o webhook responderia. */
 const RESULTADO: Record<string, string> = {
-  enfileirado: "Reprocesso enfileirado.",
-  ja_na_fila: "Esse evento já estava na fila.",
   ok: "Pagamento confirmado: pedido pago e oração na fila.",
   already_paid: "Esse pedido já estava pago; o evento foi marcado como ignorado.",
   already_processed: "Esse evento já tinha sido processado por outra chamada.",
   ignored: "Evento ignorado: não havia pagamento aprovado para processar.",
+  error: "O reprocesso falhou de novo; o evento continua em erro.",
 }
 
+/** Eventos do Mercado Pago (`/api/admin/eventos-mp`, D21). O payload só aparece nos detalhes. */
 export default function WebhooksPage() {
   const { fetchApi } = useApi()
-  const [provider, setProvider] = useState("")
   const [status, setStatus] = useState("")
-  const [eventType, setEventType] = useState("")
   const [pedidoId, setPedidoId] = useState<string | null>(null)
-  const [q, setQ] = useState("")
   const [offset, setOffset] = useState(0)
   const [reloadToken, setReloadToken] = useState(0)
-  const [detailId, setDetailId] = useState<string | null>(null)
-  const [target, setTarget] = useState<AdminWebhook | null>(null)
+  const [detailId, setDetailId] = useState<number | null>(null)
+  const [target, setTarget] = useState<AdminEventoMp | null>(null)
   const [busy, setBusy] = useState(false)
 
-  const { data, loading, error } = useAdminList<AdminWebhook>(
-    "/api/admin/webhooks/",
-    { provider, status, event_type: eventType, q },
-    offset,
-    reloadToken,
-  )
-  const rows = data?.results ?? []
-  const total = data?.count ?? 0
-
-  function filtro(set: (v: string) => void) {
-    return (v: string) => {
-      set(v)
-      setOffset(0)
-    }
-  }
+  const { data, loading, error } = usePaginaAdmin<AdminEventoMp>("/api/admin/eventos-mp", { status }, offset, reloadToken)
+  const rows = data?.content ?? []
+  const total = data?.page.totalElements ?? 0
 
   async function reprocessar() {
     if (!target) return
     setBusy(true)
     try {
-      const res = await fetchApi<{ status: string }>(
-        `/api/admin/webhooks/${target.id}/reprocessar/`,
-        { method: "POST", showToast: false },
-      )
-      toast.success(RESULTADO[res.status] ?? "Reprocessado.")
+      const res = await fetchApi<{ resultado?: string }>(`/api/admin/eventos-mp/${target.id}/reprocessamento`, {
+        method: "POST",
+        showToast: false,
+      })
+      toast.success(RESULTADO[res.resultado ?? ""] ?? "Reprocessado.")
       setTarget(null)
-      setDetailId(null)
       setReloadToken((n) => n + 1)
     } catch (err) {
-      toast.error(
-        (err as { pastoralMessage?: string })?.pastoralMessage ??
-          "Falha ao reprocessar.",
-      )
+      toast.error((err as { pastoralMessage?: string })?.pastoralMessage ?? "Falha ao reprocessar.")
     } finally {
       setBusy(false)
     }
@@ -97,55 +73,28 @@ export default function WebhooksPage() {
     <div className="space-y-4">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="font-serif text-2xl text-clama-gold">Webhooks recebidos</h1>
+          <h1 className="font-serif text-2xl text-clama-gold">Eventos do Mercado Pago</h1>
           <p className="text-sm text-clama-cream/60">
-            Eventos dos provedores de pagamento e do blog. O payload só aparece nos detalhes.
+            Notificações de pagamento recebidas. O payload só aparece nos detalhes.
           </p>
         </div>
         <span className="text-sm text-clama-cream/60">{total} no total</span>
       </header>
 
       <div className="flex flex-wrap items-end gap-3 rounded-md border border-clama-gold/15 bg-clama-night-deep p-3">
-        <div className="flex-1 min-w-[220px]">
-          <Label htmlFor="wh-q" className="text-xs uppercase tracking-wider text-clama-gold/80">
-            Buscar
-          </Label>
-          <Input
-            id="wh-q"
-            value={q}
-            onChange={(e) => filtro(setQ)(e.target.value)}
-            placeholder="id do evento ou do pedido"
-            className="mt-1 bg-clama-night border-clama-gold/30 text-clama-cream"
-          />
-        </div>
         <div>
-          <Label htmlFor="wh-provider" className="text-xs uppercase tracking-wider text-clama-gold/80">
-            Provedor
-          </Label>
-          <select id="wh-provider" value={provider} onChange={(e) => filtro(setProvider)(e.target.value)} className={selectCls}>
-            <option value="">Todos</option>
-            <option value="MERCADO_PAGO">Mercado Pago</option>
-            <option value="WORDPRESS">WordPress</option>
-            <option value="ASAAS">Asaas</option>
-            <option value="ZAPI">Z-API</option>
-          </select>
-        </div>
-        <div>
-          <Label htmlFor="wh-event" className="text-xs uppercase tracking-wider text-clama-gold/80">
-            Tipo
-          </Label>
-          <select id="wh-event" value={eventType} onChange={(e) => filtro(setEventType)(e.target.value)} className={selectCls}>
-            <option value="">Todos</option>
-            {EVENT_TYPES.map((t) => (
-              <option key={t} value={t}>{t}</option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <Label htmlFor="wh-status" className="text-xs uppercase tracking-wider text-clama-gold/80">
+          <Label htmlFor="ev-status" className="text-xs uppercase tracking-wider text-clama-gold/80">
             Status
           </Label>
-          <select id="wh-status" value={status} onChange={(e) => filtro(setStatus)(e.target.value)} className={selectCls}>
+          <select
+            id="ev-status"
+            value={status}
+            onChange={(e) => {
+              setStatus(e.target.value)
+              setOffset(0)
+            }}
+            className={selectCls}
+          >
             <option value="">Todos</option>
             <option value="RECEBIDO">Recebido</option>
             <option value="PROCESSADO">Processado</option>
@@ -162,12 +111,12 @@ export default function WebhooksPage() {
           <thead className="bg-clama-night-deep text-clama-cream/70">
             <tr>
               <th className="p-3">Recebido em</th>
-              <th className="p-3">Provedor</th>
               <th className="p-3">Tipo</th>
               <th className="p-3">Evento</th>
+              <th className="p-3">Pagamento MP</th>
               <th className="p-3">Status</th>
+              <th className="p-3">Motivo</th>
               <th className="p-3">Pedido</th>
-              <th className="p-3">Erro</th>
               <th className="p-3 text-right">Ações</th>
             </tr>
           </thead>
@@ -182,38 +131,34 @@ export default function WebhooksPage() {
             {!loading && !error && rows.length === 0 && (
               <tr>
                 <td colSpan={8} className="p-6 text-center text-clama-cream/60">
-                  Nenhum webhook encontrado.
+                  Nenhum evento encontrado.
                 </td>
               </tr>
             )}
             {!loading &&
-              rows.map((w) => (
-                <tr key={w.id} className="border-t border-clama-gold/10">
-                  <td className="p-3 text-clama-cream/60">{fmt(w.created_at)}</td>
-                  <td className="p-3 text-clama-cream">{w.provider}</td>
-                  <td className="p-3 text-clama-cream/80">{w.event_type}</td>
-                  <td className="p-3 font-mono text-xs text-clama-cream/60">{w.external_event_id}</td>
-                  <td className="p-3 text-clama-cream/80">{w.status}</td>
+              rows.map((ev) => (
+                <tr key={ev.id} className="border-t border-clama-gold/10">
+                  <td className="p-3 text-clama-cream/60">{fmt(ev.recebidoEm)}</td>
+                  <td className="p-3 text-clama-cream/80">{ev.tipo ?? "—"}</td>
+                  <td className="p-3 font-mono text-xs text-clama-cream/60">{ev.idExterno}</td>
+                  <td className="p-3 font-mono text-xs text-clama-cream/60">{ev.mpPagamentoId ?? "—"}</td>
+                  <td className="p-3 text-clama-cream/80">{ev.status}</td>
+                  <td className="p-3 text-xs text-clama-cream/70">{ev.motivo ?? "—"}</td>
                   <td className="p-3 font-mono text-xs">
-                    {w.pedido_id ? (
-                      <button type="button" onClick={() => setPedidoId(w.pedido_id)}
+                    {ev.pedidoId ? (
+                      <button type="button" onClick={() => setPedidoId(ev.pedidoId!)}
                         className="text-clama-gold hover:underline">
-                        {w.pedido_id.slice(0, 8)}
+                        {ev.pedidoId.slice(0, 8)}
                       </button>
                     ) : (
                       "—"
                     )}
                   </td>
-                  <td className="p-3 text-xs text-red-300" title={w.error_message || undefined}>
-                    {w.error_message ? curto(w.error_message, 60) : "—"}
-                  </td>
                   <td className="p-3 text-right">
-                    <div className="inline-flex gap-2">
-                      <Button variant="outline" size="sm" onClick={() => setDetailId(w.id)}
-                        className="border-clama-gold/40 text-clama-gold hover:bg-clama-gold/10">
-                        Detalhes
-                      </Button>
-                    </div>
+                    <Button variant="outline" size="sm" onClick={() => setDetailId(ev.id ?? null)}
+                      className="border-clama-gold/40 text-clama-gold hover:bg-clama-gold/10">
+                      Detalhes
+                    </Button>
                   </td>
                 </tr>
               ))}
@@ -226,10 +171,10 @@ export default function WebhooksPage() {
       <Dialog open={!!target} onOpenChange={(open) => !open && !busy && setTarget(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Reprocessar webhook?</DialogTitle>
+            <DialogTitle>Reprocessar evento?</DialogTitle>
             <DialogDescription>
-              O evento {target?.external_event_id} será processado de novo. Se for um pagamento
-              aprovado, o pedido pode ser marcado como pago e a oração será disparada.
+              O evento {target?.idExterno} será processado de novo, com o status atual do pagamento no Mercado Pago.
+              Se o pagamento estiver aprovado, o pedido pode ser marcado como pago e a oração entra na fila.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -243,7 +188,7 @@ export default function WebhooksPage() {
         </DialogContent>
       </Dialog>
 
-      <WebhookDrawer
+      <EventoDrawer
         id={detailId}
         onClose={() => setDetailId(null)}
         onReprocessar={setTarget}
@@ -255,31 +200,30 @@ export default function WebhooksPage() {
   )
 }
 
-function WebhookDrawer({
+function EventoDrawer({
   id,
   onClose,
   onReprocessar,
   confirmando,
   reloadToken,
 }: {
-  id: string | null
+  id: number | null
   onClose: () => void
-  onReprocessar: (w: AdminWebhook) => void
+  onReprocessar: (e: AdminEventoMp) => void
   /** Dialog de confirmação aberto: Escape é dele, não do drawer. */
   confirmando: boolean
   reloadToken: number
 }) {
   const { fetchApi } = useApi()
-  const [res, setRes] = useState<{ id: string; data?: AdminWebhook; error?: string } | null>(null)
+  const [res, setRes] = useState<{ id: number; data?: AdminEventoMp; error?: string } | null>(null)
 
   useEffect(() => {
-    if (!id) return
+    if (id == null) return
     let cancelled = false
-    fetchApi<AdminWebhook>(`/api/admin/webhooks/${id}/`)
+    fetchApi<AdminEventoMp>(`/api/admin/eventos-mp/${id}`)
       .then((data) => !cancelled && setRes({ id, data }))
       .catch((err: { pastoralMessage?: string }) => {
-        if (!cancelled)
-          setRes({ id, error: err?.pastoralMessage ?? "Erro ao carregar o webhook." })
+        if (!cancelled) setRes({ id, error: err?.pastoralMessage ?? "Erro ao carregar o evento." })
       })
     return () => {
       cancelled = true
@@ -287,7 +231,7 @@ function WebhookDrawer({
   }, [fetchApi, id, reloadToken])
 
   useEffect(() => {
-    if (!id || confirmando) return
+    if (id == null || confirmando) return
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose()
     document.addEventListener("keydown", onKey)
     return () => document.removeEventListener("keydown", onKey)
@@ -297,7 +241,7 @@ function WebhookDrawer({
   const data = atual?.data
   const error = atual?.error
 
-  if (!id) return null
+  if (id == null) return null
   return (
     <>
       <div className="fixed inset-0 z-40 bg-black/50" onClick={onClose} aria-hidden />
@@ -305,10 +249,10 @@ function WebhookDrawer({
         className="fixed right-0 top-0 z-50 h-full w-full max-w-[560px] overflow-y-auto bg-clama-night-deep border-l border-clama-gold/20 shadow-xl"
         role="dialog"
         aria-modal="true"
-        aria-label="Detalhes do webhook"
+        aria-label="Detalhes do evento"
       >
         <header className="sticky top-0 flex items-center justify-between border-b border-clama-gold/20 bg-clama-night-deep px-5 py-4">
-          <h2 className="font-serif text-lg text-clama-gold">Detalhes do webhook</h2>
+          <h2 className="font-serif text-lg text-clama-gold">Detalhes do evento</h2>
           <Button autoFocus variant="ghost" size="icon-sm" onClick={onClose} aria-label="Fechar"
             className="text-clama-cream/60 hover:text-clama-cream hover:bg-clama-gold/10">
             <X className="h-4 w-4" />
@@ -323,15 +267,13 @@ function WebhookDrawer({
           {error && <PastoralAlert variant="error">{error}</PastoralAlert>}
           {data && (
             <>
-              <p>{data.provider} · {data.event_type} · {data.status}</p>
-              <p className="font-mono text-xs text-clama-cream/60">{data.external_event_id}</p>
-              {data.pedido_id && <p className="text-xs">Pedido: {data.pedido_id}</p>}
+              <p>{data.tipo ?? "—"} · {data.status}{data.motivo ? ` · ${data.motivo}` : ""}</p>
+              <p className="font-mono text-xs text-clama-cream/60">{data.idExterno}</p>
+              {data.mpPagamentoId && <p className="text-xs">Pagamento MP: {data.mpPagamentoId}</p>}
+              {data.pedidoId && <p className="text-xs">Pedido: {data.pedidoId}</p>}
               <p className="text-xs text-clama-cream/60">
-                Recebido em {fmt(data.created_at)}; atualizado em {fmt(data.updated_at)}
+                Recebido em {fmt(data.recebidoEm)}; atualizado em {fmt(data.atualizadoEm)}
               </p>
-              {data.error_message && (
-                <PastoralAlert variant="error">{data.error_message}</PastoralAlert>
-              )}
               {podeReprocessar(data) && (
                 <Button variant="outline" size="sm" onClick={() => onReprocessar(data)}
                   className="border-clama-gold/40 text-clama-gold hover:bg-clama-gold/10">

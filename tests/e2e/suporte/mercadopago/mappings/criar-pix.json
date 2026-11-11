@@ -1,0 +1,10 @@
+{
+  "priority": 5,
+  "request": { "method": "POST", "urlPath": "/v1/payments" },
+  "response": {
+    "status": 201,
+    "headers": { "Content-Type": "application/json" },
+    "transformers": ["response-template"],
+    "body": "{\"id\": {{jsonPath request.body '$.payer.identification.number'}}, \"status\": \"pending\", \"status_detail\": \"pending_waiting_transfer\", \"external_reference\": \"{{jsonPath request.body '$.external_reference'}}\", \"transaction_amount\": {{jsonPath request.body '$.transaction_amount'}}, \"currency_id\": \"BRL\", \"payment_method_id\": \"pix\", \"point_of_interaction\": {\"type\": \"PIX\", \"transaction_data\": {\"qr_code\": \"00020126-e2e-copia-e-cola-{{jsonPath request.body '$.payer.identification.number'}}\", \"qr_code_base64\": \"iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==\"}}}"
+  }
+}

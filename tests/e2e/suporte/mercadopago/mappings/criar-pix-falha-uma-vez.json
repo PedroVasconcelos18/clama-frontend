@@ -1,0 +1,16 @@
+{
+  "priority": 1,
+  "scenarioName": "pix-falha-uma-vez",
+  "requiredScenarioState": "Started",
+  "newScenarioState": "ja-falhou",
+  "request": {
+    "method": "POST",
+    "urlPath": "/v1/payments",
+    "bodyPatterns": [{ "matchesJsonPath": "$.payer[?(@.email == 'retry@clama.test')]" }]
+  },
+  "response": {
+    "status": 501,
+    "headers": { "Content-Type": "application/json" },
+    "jsonBody": { "message": "simulado: indisponivel uma vez", "status": 501 }
+  }
+}

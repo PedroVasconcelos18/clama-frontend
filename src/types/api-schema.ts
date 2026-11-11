@@ -4,6 +4,54 @@
  */
 
 export interface paths {
+    "/api/admin/eventos-mp": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listar_3"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/eventos-mp/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["detalhar_2"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/eventos-mp/{id}/reprocessamento": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["reprocessar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/instituicoes": {
         parameters: {
             query?: never;
@@ -52,6 +100,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/pedidos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listar_2"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/pedidos/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["detalhar_1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["corrigir"];
+        trace?: never;
+    };
     "/api/admin/planos": {
         parameters: {
             query?: never;
@@ -84,6 +164,38 @@ export interface paths {
         patch: operations["alterarPlano"];
         trace?: never;
     };
+    "/api/admin/repasses": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listar_1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/repasses/{id}/transferencia": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["transferir"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/usuarios": {
         parameters: {
             query?: never;
@@ -93,7 +205,7 @@ export interface paths {
         };
         get: operations["listar"];
         put?: never;
-        post: operations["criar"];
+        post: operations["criar_1"];
         delete?: never;
         options?: never;
         head?: never;
@@ -228,6 +340,22 @@ export interface paths {
         patch: operations["editar"];
         trace?: never;
     };
+    "/api/conta/pedidos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["daConta"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/conta/senha": {
         parameters: {
             query?: never;
@@ -238,6 +366,22 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["trocarSenha"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/doacoes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["doar"];
         delete?: never;
         options?: never;
         head?: never;
@@ -276,6 +420,70 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/pedidos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["criar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/pedidos/gratuito": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["criarGratuito"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/pedidos/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["status"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/pedidos/{id}/pix": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["pix"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/planos": {
         parameters: {
             query?: never;
@@ -292,6 +500,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/webhooks/mercadopago": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["receber"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -300,6 +524,31 @@ export interface components {
             ativo?: boolean;
             /** @enum {string} */
             papel?: "CLIENTE" | "ADMIN" | "SUPERUSUARIO";
+        };
+        CobrancaDoPedido: {
+            /** Format: date-time */
+            canceladaEm?: string;
+            /** Format: date-time */
+            criadaEm?: string;
+            /** Format: date-time */
+            expiraEm?: string;
+            /** Format: int64 */
+            mpPagamentoId?: number;
+            /** Format: int32 */
+            n?: number;
+            /** Format: date-time */
+            pagaEm?: string;
+            status?: string;
+        };
+        CorrecaoDoPedido: {
+            /** Format: email */
+            email?: string;
+            /** Format: int32 */
+            idade?: number;
+            nome?: string;
+            pedidoOracao?: string;
+            sexo?: string;
+            telefone?: string;
         };
         CredenciaisDeLogin: {
             email: string;
@@ -318,6 +567,42 @@ export interface components {
         ErroDeCampo: {
             campo?: string;
             mensagem?: string;
+        };
+        EventoDoPedido: {
+            /** Format: int64 */
+            id?: number;
+            motivo?: string;
+            /** Format: date-time */
+            recebidoEm?: string;
+            status?: string;
+            tipo?: string;
+        };
+        EventoMpAdmin: {
+            /** Format: date-time */
+            atualizadoEm?: string;
+            /** Format: int64 */
+            id?: number;
+            idExterno?: string;
+            motivo?: string | null;
+            mpPagamentoId?: string | null;
+            payload?: {
+                [key: string]: unknown;
+            } | null;
+            /** Format: uuid */
+            pedidoId?: string | null;
+            /** Format: date-time */
+            recebidoEm?: string;
+            status?: string;
+            tipo?: string | null;
+        };
+        EventoReprocessado: {
+            evento?: components["schemas"]["EventoMpAdmin"];
+            resultado?: string;
+        };
+        Instituicao: {
+            /** Format: int64 */
+            id?: number;
+            nome?: string;
         };
         InstituicaoAdmin: {
             ativo?: boolean;
@@ -363,6 +648,26 @@ export interface components {
         NovaSenhaDoAdmin: {
             senha: string;
         };
+        NovoPedido: {
+            consentAceito: boolean;
+            cpfCnpj: string;
+            deviceHash?: string;
+            /** Format: email */
+            email: string;
+            /** Format: int32 */
+            idade?: number;
+            /** Format: int64 */
+            instituicao?: number;
+            nome: string;
+            pedidoOracao?: string;
+            /** Format: int64 */
+            plano?: number;
+            sexo?: string;
+            telefone?: string;
+            turnstileToken?: string;
+            /** Format: int64 */
+            valorCentavos?: number;
+        };
         NovoPlano: {
             /** @enum {string} */
             complexidade?: "SIMPLES" | "COM_VERSICULO" | "COM_PROFECIA_E_VERSICULOS";
@@ -383,13 +688,110 @@ export interface components {
             /** Format: int64 */
             totalPages: number;
         };
+        PagedModelEventoMpAdmin: {
+            content: components["schemas"]["EventoMpAdmin"][];
+            page: components["schemas"]["PageMetadata"];
+        };
+        PagedModelPedidoAdminItem: {
+            content: components["schemas"]["PedidoAdminItem"][];
+            page: components["schemas"]["PageMetadata"];
+        };
+        PagedModelRepasseAdmin: {
+            content: components["schemas"]["RepasseAdmin"][];
+            page: components["schemas"]["PageMetadata"];
+        };
         PagedModelUsuarioAdminItem: {
             content: components["schemas"]["UsuarioAdminItem"][];
             page: components["schemas"]["PageMetadata"];
         };
+        PedidoAdminDetalhe: {
+            /** Format: date-time */
+            atualizadoEm?: string;
+            cobrancas?: components["schemas"]["CobrancaDoPedido"][];
+            /** Format: date-time */
+            criadoEm?: string;
+            email?: string;
+            eventos?: components["schemas"]["EventoDoPedido"][];
+            gratuito?: boolean;
+            /** Format: uuid */
+            id?: string;
+            /** Format: int32 */
+            idade?: number | null;
+            instituicao?: components["schemas"]["Instituicao"];
+            nome?: string;
+            oracaoGerada?: string | null;
+            pedidoOracao?: string | null;
+            plano?: components["schemas"]["Plano"];
+            repasse?: components["schemas"]["RepasseDoPedido"];
+            sexo?: string | null;
+            /** @enum {string} */
+            status?: "AGUARDANDO_PAGAMENTO" | "PAGO" | "GERANDO_ORACAO" | "ORACAO_GERADA" | "ENVIADA" | "AGUARDANDO_NOVA_TENTATIVA" | "ERRO";
+            telefone?: string | null;
+            /** Format: int32 */
+            tentativas?: number;
+            ultimoErro?: string | null;
+            /** Format: int64 */
+            usuarioId?: number | null;
+            /** Format: int64 */
+            valorCentavos?: number;
+        };
+        PedidoAdminItem: {
+            /** Format: date-time */
+            criadoEm?: string;
+            email?: string;
+            gratuito?: boolean;
+            /** Format: uuid */
+            id?: string;
+            nome?: string;
+            plano?: string;
+            /** @enum {string} */
+            status?: "AGUARDANDO_PAGAMENTO" | "PAGO" | "GERANDO_ORACAO" | "ORACAO_GERADA" | "ENVIADA" | "AGUARDANDO_NOVA_TENTATIVA" | "ERRO";
+            /** Format: int64 */
+            valorCentavos?: number;
+        };
+        PedidoCriado: {
+            /** Format: date-time */
+            criadoEm?: string;
+            /** Format: uuid */
+            id?: string;
+            /** Format: int64 */
+            instituicao?: number;
+            /** @enum {string} */
+            status?: "AGUARDANDO_PAGAMENTO" | "PAGO" | "GERANDO_ORACAO" | "ORACAO_GERADA" | "ENVIADA" | "AGUARDANDO_NOVA_TENTATIVA" | "ERRO";
+            /** Format: int64 */
+            valorCentavos?: number;
+        };
+        PedidoDaConta: {
+            /** Format: date-time */
+            criadoEm?: string;
+            gratuito?: boolean;
+            /** Format: uuid */
+            id?: string;
+            oracaoGerada?: string;
+            plano?: string;
+            /** @enum {string} */
+            status?: "AGUARDANDO_PAGAMENTO" | "PAGO" | "GERANDO_ORACAO" | "ORACAO_GERADA" | "ENVIADA" | "AGUARDANDO_NOVA_TENTATIVA" | "ERRO";
+            /** Format: int64 */
+            valorCentavos?: number;
+        };
         PedidoDeLink: {
             /** Format: email */
             email: string;
+        };
+        PixDoPedido: {
+            copiaECola?: string;
+            /** Format: date-time */
+            expiraEm?: string;
+            /** Format: uuid */
+            pedidoId?: string;
+            qrBase64?: string;
+        };
+        Plano: {
+            /** Format: int64 */
+            id?: number;
+            nome?: string;
+            /** Format: int64 */
+            valorCentavos?: number;
         };
         PlanoAdmin: {
             ativo?: boolean;
@@ -438,6 +840,65 @@ export interface components {
             novaSenha: string;
             token: string;
         };
+        RepasseAdmin: {
+            /** Format: date-time */
+            canceladoEm?: string | null;
+            /** Format: date-time */
+            criadoEm?: string;
+            /** Format: int64 */
+            id?: number;
+            instituicao?: string | null;
+            /** Format: int64 */
+            instituicaoId?: number;
+            motivo?: string | null;
+            /** Format: uuid */
+            pedidoId?: string;
+            /** Format: int32 */
+            percentual?: number;
+            status?: string;
+            /** Format: date-time */
+            transferidoEm?: string | null;
+            /** Format: int64 */
+            valorBaseCentavos?: number;
+            /** Format: int64 */
+            valorCentavos?: number;
+        };
+        RepasseDoPedido: {
+            /** Format: date-time */
+            canceladoEm?: string;
+            /** Format: date-time */
+            criadoEm?: string;
+            /** Format: int64 */
+            id?: number;
+            motivo?: string;
+            /** Format: int32 */
+            percentual?: number;
+            status?: string;
+            /** Format: date-time */
+            transferidoEm?: string;
+            /** Format: int64 */
+            valorBaseCentavos?: number;
+            /** Format: int64 */
+            valorCentavos?: number;
+        };
+        RespostaDoWebhook: {
+            status?: string;
+        };
+        StatusPublico: {
+            /** Format: date-time */
+            criadoEm?: string;
+            /** Format: uuid */
+            id?: string;
+            /** Format: int64 */
+            instituicao?: number;
+            mensagemPastoral?: string;
+            oracaoGerada?: string;
+            plano?: string;
+            /** @enum {string} */
+            status?: "AGUARDANDO_PAGAMENTO" | "PAGO" | "GERANDO_ORACAO" | "ORACAO_GERADA" | "ENVIADA" | "AGUARDANDO_NOVA_TENTATIVA" | "ERRO";
+            /** Format: int64 */
+            valorCentavos?: number;
+        };
         TrocaDeSenha: {
             novaSenha: string;
             senhaAtual: string;
@@ -474,6 +935,78 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    listar_3: {
+        parameters: {
+            query?: {
+                status?: string;
+                /** @description Zero-based page index (0..N) */
+                page?: number;
+                /** @description The size of the page to be returned */
+                size?: number;
+                /** @description Sorting criteria in the format: property,(asc|desc). Default sort order is ascending. Multiple sort criteria are supported. */
+                sort?: string[];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PagedModelEventoMpAdmin"];
+                };
+            };
+        };
+    };
+    detalhar_2: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["EventoMpAdmin"];
+                };
+            };
+        };
+    };
+    reprocessar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["EventoReprocessado"];
+                };
+            };
+        };
+    };
     instituicoes: {
         parameters: {
             query?: never;
@@ -593,6 +1126,91 @@ export interface operations {
             };
         };
     };
+    listar_2: {
+        parameters: {
+            query?: {
+                /** @description Um ou mais status separados por virgula. */
+                status?: string;
+                /** @description Dia inicial AAAA-MM-DD (Sao Paulo). */
+                de?: string;
+                /** @description Dia final AAAA-MM-DD (Sao Paulo), inclusivo. */
+                ate?: string;
+                gratuito?: string;
+                usuarioId?: string;
+                /** @description Busque pelo e-mail exato, pelo CPF/CNPJ exato ou pelo começo do id do pedido. */
+                q?: string;
+                /** @description Zero-based page index (0..N) */
+                page?: number;
+                /** @description The size of the page to be returned */
+                size?: number;
+                /** @description Sorting criteria in the format: property,(asc|desc). Default sort order is ascending. Multiple sort criteria are supported. */
+                sort?: string[];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PagedModelPedidoAdminItem"];
+                };
+            };
+        };
+    };
+    detalhar_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PedidoAdminDetalhe"];
+                };
+            };
+        };
+    };
+    corrigir: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CorrecaoDoPedido"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PedidoAdminDetalhe"];
+                };
+            };
+        };
+    };
     planos: {
         parameters: {
             query?: never;
@@ -663,6 +1281,59 @@ export interface operations {
             };
         };
     };
+    listar_1: {
+        parameters: {
+            query?: {
+                instituicaoId?: string;
+                status?: string;
+                de?: string;
+                ate?: string;
+                /** @description Zero-based page index (0..N) */
+                page?: number;
+                /** @description The size of the page to be returned */
+                size?: number;
+                /** @description Sorting criteria in the format: property,(asc|desc). Default sort order is ascending. Multiple sort criteria are supported. */
+                sort?: string[];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PagedModelRepasseAdmin"];
+                };
+            };
+        };
+    };
+    transferir: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["RepasseAdmin"];
+                };
+            };
+        };
+    };
     listar: {
         parameters: {
             query?: {
@@ -693,7 +1364,7 @@ export interface operations {
             };
         };
     };
-    criar: {
+    criar_1: {
         parameters: {
             query?: never;
             header?: never;
@@ -945,6 +1616,29 @@ export interface operations {
             };
         };
     };
+    daConta: {
+        parameters: {
+            query?: {
+                from?: string;
+                to?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PedidoDaConta"][];
+                };
+            };
+        };
+    };
     trocarSenha: {
         parameters: {
             query?: never;
@@ -965,6 +1659,30 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["MensagemPastoral"];
+                };
+            };
+        };
+    };
+    doar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NovoPedido"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PedidoCriado"];
                 };
             };
         };
@@ -1011,6 +1729,98 @@ export interface operations {
             };
         };
     };
+    criar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NovoPedido"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PedidoCriado"];
+                };
+            };
+        };
+    };
+    criarGratuito: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NovoPedido"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PedidoCriado"];
+                };
+            };
+        };
+    };
+    status: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["StatusPublico"];
+                };
+            };
+        };
+    };
+    pix: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PixDoPedido"];
+                };
+            };
+        };
+    };
     planos_1: {
         parameters: {
             query?: never;
@@ -1027,6 +1837,26 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["PlanoPublico"][];
+                };
+            };
+        };
+    };
+    receber: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["RespostaDoWebhook"];
                 };
             };
         };

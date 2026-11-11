@@ -10,6 +10,8 @@ export function useFormDraft<T>(
   value: T;
   setValue: React.Dispatch<React.SetStateAction<T>>;
   clearDraft: () => void;
+  /** Grava já, sem o debounce (ex.: antes de sair da página). */
+  salvarAgora: (valor: T) => void;
   isDirty: boolean;
 } {
   const [value, setValue] = useState<T>(() => {
@@ -62,5 +64,13 @@ export function useFormDraft<T>(
     setIsDirty(false);
   }, [key]);
 
-  return { value, setValue, clearDraft, isDirty };
+  const salvarAgora = useCallback(
+    (valor: T) => {
+      setValue(valor);
+      localStorage.setItem(key, JSON.stringify({ versao, valor }));
+    },
+    [key, versao],
+  );
+
+  return { value, setValue, clearDraft, salvarAgora, isDirty };
 }

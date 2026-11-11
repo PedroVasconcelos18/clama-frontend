@@ -8,8 +8,7 @@ import { isValidCpfOrCnpj } from "@/lib/validators/cpfCnpj";
  * - Removidos `otp_token` e `otp_codigo` (fluxo OTP via WhatsApp foi descontinuado).
  * - Adicionados `turnstile_token` (CAPTCHA Cloudflare Turnstile invisível)
  *   e `device_hash` (FingerprintJS visitorId).
- * - Telefone permanece OBRIGATÓRIO — Pedro decidiu coletar pra uso futuro
- *   (fluxo WhatsApp pré-existente, mesmo sem OTP).
+ * - Telefone opcional desde a onda 4 (D5).
  *
  * Mantém validação de CPF/CNPJ por dígito verificador (mesma do schema pago).
  */
@@ -29,10 +28,12 @@ const cpfCnpjSchema = z
   })
   .transform((v) => v.replace(/\D/g, ""));
 
-const telefoneRequired = z
+// Telefone opcional (D5 da onda 4: a API não exige; o canal de entrega saiu).
+// Se vier, é celular com DDD.
+const telefoneOpcional = z
   .string()
-  .min(1, "Para entrarmos em contato, precisamos do seu número.")
-  .refine((v) => v.replace(/\D/g, "").length === 11, {
+  .optional()
+  .refine((v) => !v || v.replace(/\D/g, "").length === 11, {
     message: "Informe um celular com DDD (11 dígitos).",
   });
 
@@ -48,7 +49,7 @@ export const pedidoGratuitoSchema = z.object({
     .max(120, "Nome muito longo."),
   email: z.string().email("Confira seu e-mail — parece que faltou algo."),
   cpf_cnpj: cpfCnpjSchema,
-  telefone: telefoneRequired,
+  telefone: telefoneOpcional,
   idade: z.coerce
     .number({ error: "Por favor, informe sua idade." })
     .int("Idade precisa ser um número inteiro.")

@@ -1,4 +1,5 @@
 import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { createRef } from "react";
 import { MemoryRouter } from "react-router-dom";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
@@ -7,6 +8,42 @@ import { PedidoSection } from "../PedidoSection";
 import { mockApiFetch, usuarioFixture } from "@/test/sessao";
 import { formatCurrency } from "@/lib/formatters";
 import { SessaoProvider } from "@/contexts/SessaoContext";
+import { PastoralApiError } from "@/lib/api";
+
+// Anti-robô e fingerprint resolvem na hora (o real depende da rede).
+vi.mock("@/lib/captcha/turnstile", () => ({
+  getTurnstileSiteKey: () => "chave",
+  Turnstile: ({ onSuccess }: { onSuccess: (t: string) => void }) => {
+    setTimeout(() => onSuccess("token-turnstile"), 0);
+    return null;
+  },
+}));
+// O select do base-ui precisa de APIs que o jsdom não tem; um <select> nativo basta aqui.
+vi.mock("@/components/clama/InstituicaoSelect", () => ({
+  InstituicaoSelect: ({
+    instituicoes,
+    value,
+    onChange,
+  }: {
+    instituicoes: { id: number; nome: string }[];
+    value: number | null;
+    onChange: (v: number | null) => void;
+  }) => (
+    <select
+      aria-label="Instituição"
+      value={value ?? ""}
+      onChange={(e) => onChange(e.target.value ? Number(e.target.value) : null)}
+    >
+      <option value="">Sem instituição</option>
+      {instituicoes.map((i) => (
+        <option key={i.id} value={i.id}>
+          {i.nome}
+        </option>
+      ))}
+    </select>
+  ),
+}));
+vi.mock("@/lib/fingerprint", () => ({ obterDeviceHash: () => Promise.resolve("hash-do-aparelho") }));
 
 const navigateMock = vi.fn();
 vi.mock("react-router-dom", async () => {
@@ -147,6 +184,206 @@ describe("PedidoSection", () => {
       await screen.findByText(moeda(999));
       expect(screen.queryAllByRole("radio", { checked: true }).length).toBe(1); // o semeado (Livre), não o plano antigo
       expect(localStorage.getItem("clama:form-draft") ?? "").not.toContain("uuid-antigo");
+    });
+  });
+
+  describe("envio do pedido (contrato da onda 4a)", () => {
+    const ID = "12345678-aaaa-bbbb-cccc-1234567890ab";
+    const CPF = "529.982.247-25";
+    let criados: number;
+    let corpos: Record<string, Record<string, unknown>>;
+    let statusDoPedido: string;
+    let falhaNaCriacao: PastoralApiError | null;
+
+    const outras = (path: string, init?: RequestInit) => {
+      if (path === "/api/planos") return planos;
+      if (path === "/api/instituicoes") return [{ id: 7, nome: "Casa de Apoio", logoUrl: null }];
+      if (init?.method === "POST") {
+        if (falhaNaCriacao) throw falhaNaCriacao;
+        criados += 1;
+        corpos[path] = JSON.parse(String(init.body));
+        return { id: ID, status: "AGUARDANDO_PAGAMENTO" };
+      }
+      if (path === `/api/pedidos/${ID}`) return { id: ID, status: statusDoPedido, valorCentavos: 999 };
+      throw new Error(`sem mock: ${path}`);
+    };
+
+    beforeEach(() => {
+      criados = 0;
+      corpos = {};
+      statusDoPedido = "AGUARDANDO_PAGAMENTO";
+      falhaNaCriacao = null;
+    });
+
+    // O FormControl do projeto é um <div>: o rótulo não aponta para o campo; vai pelo name.
+    const campo = (name: string) => {
+      const el = document.querySelector(`[name="${name}"]`);
+      if (!el) throw new Error(`campo ${name} ausente`);
+      return el as HTMLElement;
+    };
+
+    async function preencherLogado() {
+      await screen.findByText("Seus dados");
+      await waitFor(() => campo("cpf_cnpj"));
+      await userEvent.type(campo("cpf_cnpj"), CPF);
+      await userEvent.type(campo("idade"), "30");
+      await userEvent.selectOptions(campo("sexo"), "feminino");
+      await userEvent.click(screen.getByRole("checkbox"));
+    }
+
+    async function enviarLogadoPago() {
+      mockApiFetch({ usuario: usuarioFixture, outras });
+      renderWithRouter(<PedidoSection />);
+      await preencherLogado();
+      await userEvent.click(screen.getByRole("radio", { name: /Plano 2|Mais escolhido/ }));
+      await userEvent.click(screen.getByRole("button", { name: /Levar meu clamor/i }));
+    }
+
+    it("logado pago: cria em /api/pedidos com camelCase, sem canal, e vai para a confirmação", async () => {
+      await enviarLogadoPago();
+      await waitFor(() => expect(navigateMock).toHaveBeenCalledWith(`/confirmacao?pedido_id=${ID}`));
+      expect(corpos["/api/pedidos"]).toMatchObject({
+        nome: "Pedro",
+        email: "fiel@example.com",
+        cpfCnpj: "52998224725",
+        idade: 30,
+        sexo: "feminino",
+        consentAceito: true,
+        plano: 2,
+        valorCentavos: 999,
+      });
+      expect(corpos["/api/pedidos"]).not.toHaveProperty("canal_entrega");
+      expect(corpos["/api/pedidos"]).not.toHaveProperty("telefone"); // opcional e vazio
+      expect(Object.keys(corpos)).toEqual(["/api/pedidos"]); // o Pix é da confirmação
+    });
+
+    it("logado pago: enviar de novo reusa o pedido criado (estado e rascunho), sem POST novo", async () => {
+      await enviarLogadoPago();
+      await waitFor(() => expect(navigateMock).toHaveBeenCalledTimes(1));
+      await userEvent.click(screen.getByRole("button", { name: /Levar meu clamor/i }));
+      await waitFor(() => expect(navigateMock).toHaveBeenCalledTimes(2));
+      expect(navigateMock).toHaveBeenLastCalledWith(`/confirmacao?pedido_id=${ID}`);
+      expect(criados).toBe(1);
+      expect(localStorage.getItem("clama:form-draft")).toContain(ID);
+    });
+
+    it("rascunho com pedido aguardando pagamento: novo envio vai direto à confirmação", async () => {
+      localStorage.setItem(
+        "clama:form-draft",
+        JSON.stringify({
+          versao: 2,
+          valor: {
+            formData: {},
+            offering: { selectedPlanId: 2, valorLivre: null, valorLivreActive: false, gratuito: false },
+            canal: "EMAIL",
+            pedido: { id: ID, valorCentavos: 999, usuarioId: usuarioFixture.id },
+          },
+        }),
+      );
+      mockApiFetch({ usuario: usuarioFixture, outras });
+      renderWithRouter(<PedidoSection />);
+      await preencherLogado();
+      await userEvent.click(screen.getByRole("button", { name: /Levar meu clamor/i }));
+      await waitFor(() => expect(navigateMock).toHaveBeenCalledWith(`/confirmacao?pedido_id=${ID}`));
+      expect(criados).toBe(0);
+    });
+
+    it("rascunho com pedido já pago: cria um pedido novo", async () => {
+      statusDoPedido = "PAGO";
+      localStorage.setItem(
+        "clama:form-draft",
+        JSON.stringify({
+          versao: 2,
+          valor: {
+            formData: {},
+            offering: { selectedPlanId: 2, valorLivre: null, valorLivreActive: false, gratuito: false },
+            canal: "EMAIL",
+            pedido: { id: ID, valorCentavos: 999, usuarioId: usuarioFixture.id },
+          },
+        }),
+      );
+      mockApiFetch({ usuario: usuarioFixture, outras });
+      renderWithRouter(<PedidoSection />);
+      await preencherLogado();
+      await userEvent.click(screen.getByRole("button", { name: /Levar meu clamor/i }));
+      await waitFor(() => expect(criados).toBe(1));
+    });
+
+    it("rascunho com pedido de outra pessoa (mesmo navegador): cria um pedido novo", async () => {
+      localStorage.setItem(
+        "clama:form-draft",
+        JSON.stringify({
+          versao: 2,
+          valor: {
+            formData: {},
+            offering: { selectedPlanId: 2, valorLivre: null, valorLivreActive: false, gratuito: false },
+            pedido: { id: ID, valorCentavos: 999, usuarioId: null },
+          },
+        }),
+      );
+      mockApiFetch({ usuario: usuarioFixture, outras });
+      renderWithRouter(<PedidoSection />);
+      await preencherLogado();
+      await userEvent.click(screen.getByRole("button", { name: /Levar meu clamor/i }));
+      await waitFor(() => expect(criados).toBe(1));
+    });
+
+    it("erro da criação mostra a mensagem pastoral do servidor", async () => {
+      falhaNaCriacao = new PastoralApiError(
+        "Erro",
+        "valor_abaixo_do_minimo",
+        "O valor mínimo para doação é R$ 1,00.",
+        422,
+      );
+      await enviarLogadoPago();
+      expect(await screen.findByText("O valor mínimo para doação é R$ 1,00.")).toBeInTheDocument();
+      expect(navigateMock).not.toHaveBeenCalled();
+    });
+
+    it("400 dados_invalidos mostra a mensagem do campo, não só 'Dados inválidos.'", async () => {
+      falhaNaCriacao = new PastoralApiError("Erro", "dados_invalidos", "Dados inválidos.", 400, {}, {
+        instituicao: "Não encontramos essa instituição. Escolha uma da lista, por favor.",
+      });
+      await enviarLogadoPago();
+      expect(await screen.findByText(/Não encontramos essa instituição/)).toBeInTheDocument();
+    });
+
+    it("logado gratuito: /api/pedidos/gratuito e confirmação", async () => {
+      mockApiFetch({ usuario: usuarioFixture, outras });
+      renderWithRouter(<PedidoSection />);
+      await preencherLogado();
+      await userEvent.click(screen.getByRole("radio", { name: /Gratuito/ }));
+      await userEvent.click(screen.getByRole("button", { name: /Levar meu clamor/i }));
+      await waitFor(() => expect(navigateMock).toHaveBeenCalledWith(`/confirmacao?pedido_id=${ID}`));
+      expect(Object.keys(corpos)).toEqual(["/api/pedidos/gratuito"]);
+      expect(corpos["/api/pedidos/gratuito"]).toMatchObject({ cpfCnpj: "52998224725", consentAceito: true });
+    });
+
+    it("anônimo pago: /api/doacoes com Turnstile, valor livre e instituição; telefone opcional", async () => {
+      mockApiFetch({ outras });
+      renderWithRouter(<PedidoSection />);
+      expect(await screen.findByText("Telefone (opcional)")).toBeInTheDocument();
+      await userEvent.type(campo("nome"), "Maria Doadora");
+      await userEvent.type(campo("email"), "maria@example.com");
+      await userEvent.type(campo("cpf_cnpj"), CPF);
+      await userEvent.type(campo("idade"), "40");
+      await userEvent.selectOptions(campo("sexo"), "nao_informado");
+      await userEvent.click(screen.getByRole("checkbox"));
+      await userEvent.selectOptions(await screen.findByRole("combobox", { name: "Instituição" }), "7");
+      await userEvent.click(screen.getByRole("button", { name: /Contribuir e receber/i }));
+      await waitFor(() => expect(navigateMock).toHaveBeenCalledWith(`/confirmacao?pedido_id=${ID}`));
+      expect(Object.keys(corpos)).toEqual(["/api/doacoes"]);
+      expect(corpos["/api/doacoes"]).toMatchObject({
+        nome: "Maria Doadora",
+        email: "maria@example.com",
+        cpfCnpj: "52998224725",
+        valorCentavos: 100,
+        instituicao: 7,
+        turnstileToken: "token-turnstile",
+        deviceHash: "hash-do-aparelho",
+        consentAceito: true,
+      });
+      expect(corpos["/api/doacoes"]).not.toHaveProperty("telefone");
     });
   });
 });

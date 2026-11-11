@@ -1,14 +1,12 @@
 import { z } from "zod";
 import { isValidCpfOrCnpj } from "@/lib/validators/cpfCnpj";
 
-// Telefone sempre obrigatório no form pago — paridade com o form gratuito
-// (decisão do PM em 2026-05-10: coletar telefone independente do canal de
-// entrega, pra uso futuro). O `telefoneOptional` ficou no histórico mas
-// não é mais usado.
-const telefoneRequired = z
+// Telefone opcional (D5 da onda 4: a API não exige; o canal de entrega saiu).
+// Se vier, é celular com DDD.
+const telefoneOpcional = z
   .string()
-  .min(1, "Para entrarmos em contato, precisamos do seu número.")
-  .refine((v) => v.replace(/\D/g, "").length === 11, {
+  .optional()
+  .refine((v) => !v || v.replace(/\D/g, "").length === 11, {
     message: "Informe um celular com DDD (11 dígitos).",
   });
 
@@ -52,26 +50,14 @@ const baseSchema = {
     .refine((v) => v === true, {
       message: "Para enviar seu pedido, é preciso concordar com a política de privacidade.",
     }),
-  // Instituição parceira para repasse — opcional. UUID da instituição ativa
-  // (mesmo nome de campo do backend), `null`/ausente quando não direcionada.
-  instituicao: z
-    .string()
-    .uuid("Instituição inválida.")
-    .nullable()
-    .optional(),
 };
 
 export const pedidoSchema = z.object({
   ...baseSchema,
-  telefone: telefoneRequired,
+  telefone: telefoneOpcional,
 });
 
-/**
- * @deprecated Telefone agora é sempre obrigatório no form pago. A função
- * mantém a assinatura por retrocompatibilidade — `requireTelefone` é
- * ignorado, retorna sempre o schema com telefone obrigatório.
- */
-export function getPedidoSchema(_requireTelefone?: boolean): typeof pedidoSchema {
+export function getPedidoSchema(): typeof pedidoSchema {
   return pedidoSchema;
 }
 

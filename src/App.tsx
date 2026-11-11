@@ -6,7 +6,6 @@ import Landing from "@/pages/Landing"
 import Confirmar from "@/pages/Confirmar"
 import Confirmado from "@/pages/Confirmado"
 import Confirmacao from "@/pages/Confirmacao"
-import Cancelado from "@/pages/Cancelado"
 import Privacidade from "@/pages/Privacidade"
 import Termos from "@/pages/Termos"
 import NotFound from "@/pages/NotFound"
@@ -48,7 +47,6 @@ export default function App() {
         <Route path="/confirmar" element={<Confirmar />} />
         <Route path="/confirmado" element={<Confirmado />} />
         <Route path="/confirmacao" element={<Confirmacao />} />
-        <Route path="/cancelado" element={<Cancelado />} />
         <Route path="/privacidade" element={<Privacidade />} />
         <Route path="/termos" element={<Termos />} />
         <Route path="/_dev/showcase" element={<DevShowcase />} />

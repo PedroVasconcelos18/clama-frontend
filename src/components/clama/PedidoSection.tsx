@@ -8,11 +8,12 @@ import { useFormDraft } from "@/hooks/useFormDraft";
 import { useSessao } from "@/contexts/SessaoContext";
 import { useApi } from "@/hooks/useApi";
 import { criarPedidoGratuito } from "@/lib/api/freemium";
-import { criarDoacaoAnonima, gerarCheckout } from "@/lib/api/doacoes";
+import { corpoDoPedido, criarDoacaoAnonima } from "@/lib/api/doacoes";
 import { type Plan } from "@/types/plano.types";
 import { type Instituicao } from "@/types/instituicao.types";
 import { type PedidoFormData } from "@/lib/schemas/pedido";
 import { type PedidoGratuitoData } from "@/lib/schemas/pedido-gratuito";
+import type { PedidoCriado, StatusPublico } from "@/types/pedido-status.types";
 
 import { PrayerForm } from "@/components/clama/PrayerForm";
 import { PrayerFormGratuito } from "@/components/clama/PrayerFormGratuito";
@@ -22,12 +23,6 @@ import {
   OfferingCards,
   type OfferingState,
 } from "@/components/clama/OfferingCards";
-// ChannelToggle comentado: só temos e-mail por enquanto. O type
-// CanalEntrega segue em uso (estado do draft fixo em "EMAIL").
-import {
-  // ChannelToggle,
-  type CanalEntrega,
-} from "@/components/clama/ChannelToggle";
 import { Divider } from "@/components/utility/Divider";
 import PastoralAlert from "@/components/utility/PastoralAlert";
 import LoadingSpinner from "@/components/utility/LoadingSpinner";
@@ -36,7 +31,8 @@ import { Button } from "@/components/ui/button";
 interface FormDraftState {
   formData: Partial<PedidoFormData>;
   offering: OfferingState;
-  canal: CanalEntrega;
+  /** Pedido pago já criado: um novo envio com o mesmo valor o reusa (nunca recria). */
+  pedido?: { id: string; valorCentavos: number; usuarioId?: number | null } | null;
 }
 
 // Versão 2: ids de plano passaram de UUID (string) para number (onda 3).
@@ -50,7 +46,14 @@ const INITIAL_DRAFT: FormDraftState = {
     valorLivreActive: false,
     gratuito: false,
   },
-  canal: "EMAIL",
+  pedido: null,
+};
+
+// 400 `dados_invalidos` traz a explicação em `erros` (a pastoral é genérica).
+const mensagemDoErro = (err: unknown) => {
+  const e = err as PastoralApiError;
+  const campos = Object.values(e.campos ?? {});
+  return campos.length ? campos.join(" ") : e.pastoralMessage;
 };
 
 // Valor livre pré-selecionado por padrão (deve casar com o mínimo do
@@ -71,10 +74,14 @@ export interface PedidoSectionProps {
  * Dois tipos de pedido: **Gratuito** e **Valor livre** (pago). O caminho de
  * envio deriva do estado de autenticação e do tipo escolhido:
  *
- *  |            | Gratuito                       | Livre (pago)                         |
- *  |------------|--------------------------------|--------------------------------------|
- *  | Logado     | POST /api/pedidos/gratuito/     | POST /api/pedidos/ + /checkout/       |
- *  | Anônimo    | POST /api/freemium/pedidos/     | POST /api/doacoes/ + /checkout/       |
+ *  |            | Gratuito                       | Livre (pago)                 |
+ *  |------------|--------------------------------|------------------------------|
+ *  | Logado     | POST /api/pedidos/gratuito     | POST /api/pedidos            |
+ *  | Anônimo    | POST /api/freemium/pedidos/    | POST /api/doacoes            |
+ *
+ * O pago guarda o id criado (estado + rascunho) e vai para a confirmação, que
+ * pede o Pix. Um novo envio com o mesmo valor, enquanto o pedido aguarda
+ * pagamento, volta para a confirmação dele em vez de criar outro.
  *
  * Anônimo usa o `PrayerFormGratuito` (Turnstile invisível + fingerprint +
  * consent). O grátis anônimo é double opt-in por e-mail (mostra `SubmittedView`).
@@ -116,7 +123,7 @@ export const PedidoSection = forwardRef<HTMLElement, PedidoSectionProps>(
     toast.info("Seu rascunho está seguro.", { duration: 2500 });
   }, []);
 
-  const { value: draft, setValue: setDraft, clearDraft } = useFormDraft<FormDraftState>(
+  const { value: draft, setValue: setDraft, clearDraft, salvarAgora } = useFormDraft<FormDraftState>(
     "clama:form-draft",
     INITIAL_DRAFT,
     handleDraftSaved,
@@ -137,9 +144,6 @@ export const PedidoSection = forwardRef<HTMLElement, PedidoSectionProps>(
   const [attemptedSubmit, setAttemptedSubmit] = useState(false);
   // Grátis anônimo: guarda o e-mail pra tela "Confira seu e-mail".
   const [submitted, setSubmitted] = useState<{ email: string } | null>(null);
-  // Livre anônimo: guarda o pedido criado; se o checkout falhar, o retry NÃO
-  // re-posta /api/doacoes/ (reconsumiria o token Turnstile single-use).
-  const [pedidoCriadoId, setPedidoCriadoId] = useState<string | null>(null);
 
   // Normaliza o modo "Livre" (rascunhos antigos podem não ter o campo).
   const valorLivreActive =
@@ -249,77 +253,87 @@ export const PedidoSection = forwardRef<HTMLElement, PedidoSectionProps>(
     return draft.offering.valorLivre ?? 0;
   };
 
+  const irParaConfirmacao = (id: string) => navigate(`/confirmacao?pedido_id=${id}`);
+
+  // Pedido pago já criado com este valor, pela mesma pessoa (ou sem conta), ainda aguardando pagamento: reusa.
+  // Já pago (ou sumiu): cria outro. Falha de rede sobe (melhor do que duplicar).
+  const pedidoReaproveitavel = async (valor: number): Promise<string | null> => {
+    const salvo = draft.pedido;
+    if (!salvo || salvo.valorCentavos !== valor || (salvo.usuarioId ?? null) !== (usuario?.id ?? null)) return null;
+    try {
+      const atual = await apiFetch<StatusPublico>(`/api/pedidos/${salvo.id}`, { showToast: false });
+      return atual.status === "AGUARDANDO_PAGAMENTO" ? salvo.id : null;
+    } catch (err) {
+      if ((err as PastoralApiError).httpStatus === 404) return null;
+      throw err;
+    }
+  };
+
+  // Pago (logado ou anônimo): reusa ou cria, grava o id no rascunho e vai à confirmação.
+  const enviarPago = async (criar: (valor: number) => Promise<PedidoCriado>) => {
+    setIsSubmitting(true);
+    setSubmitError(null);
+    try {
+      const valor = valorCentavosDaOferta();
+      let id = await pedidoReaproveitavel(valor);
+      if (!id) {
+        id = (await criar(valor)).id!;
+        salvarAgora({ ...draft, pedido: { id, valorCentavos: valor, usuarioId: usuario?.id ?? null } });
+      }
+      irParaConfirmacao(id);
+    } catch (err) {
+      setSubmitError(mensagemDoErro(err));
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   // ---- LOGADO: PrayerForm (fetchApi) ----
   const handleLoggedSubmit = async (formData: PedidoFormData) => {
     if (!ofertaValida()) return;
 
-    setIsSubmitting(true);
-    setSubmitError(null);
-
-    // Gratuito: cria o pedido sem checkout.
+    // Gratuito: cria o pedido sem cobrança; a confirmação mostra "gerando".
     if (draft.offering.gratuito) {
+      setIsSubmitting(true);
+      setSubmitError(null);
       try {
-        const { id } = await fetchApi<{ id: string }>(
-          "/api/pedidos/gratuito/",
-          {
-            method: "POST",
-            body: JSON.stringify({
-              ...formData,
-              canal_entrega: draft.canal.toLowerCase(),
-            }),
-            showToast: false,
-          },
-        );
+        const { id } = await fetchApi<PedidoCriado>("/api/pedidos/gratuito", {
+          method: "POST",
+          body: JSON.stringify(corpoDoPedido(formData)),
+          showToast: false,
+        });
         clearDraft();
-        window.location.href = `/confirmacao?pedido_id=${id}`;
+        irParaConfirmacao(id!);
       } catch (err) {
-        setSubmitError((err as PastoralApiError).pastoralMessage);
+        setSubmitError(mensagemDoErro(err));
+      } finally {
         setIsSubmitting(false);
       }
       return;
     }
 
-    // Livre (pago): cria o pedido + gera o Pix.
-    try {
-      const payload: Record<string, unknown> = {
-        ...formData,
-        valor_centavos: valorCentavosDaOferta(),
-        canal_entrega: draft.canal.toLowerCase(),
-      };
-      if (draft.offering.selectedPlanId) {
-        payload.plano = draft.offering.selectedPlanId;
-      }
-      if (instituicaoId) {
-        payload.instituicao = instituicaoId;
-      }
-
-      const { id } = await fetchApi<{ id: string }>("/api/pedidos/", {
+    await enviarPago((valor) =>
+      fetchApi<PedidoCriado>("/api/pedidos", {
         method: "POST",
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          ...corpoDoPedido(formData),
+          valorCentavos: valor,
+          plano: draft.offering.selectedPlanId ?? undefined,
+          instituicao: instituicaoId ?? undefined,
+        }),
         showToast: false,
-      });
-      await fetchApi(`/api/pedidos/${id}/checkout/`, {
-        method: "POST",
-        showToast: false,
-      });
-
-      clearDraft();
-      window.location.href = `/confirmacao?pedido_id=${id}`;
-    } catch (err) {
-      setSubmitError((err as PastoralApiError).pastoralMessage);
-      setIsSubmitting(false);
-    }
+      }),
+    );
   };
 
   // ---- ANÔNIMO: PrayerFormGratuito (apiFetch + Turnstile/fingerprint) ----
   const handleAnonSubmit = async (data: PedidoGratuitoData) => {
     if (!ofertaValida()) return;
 
-    setIsSubmitting(true);
-    setSubmitError(null);
-
-    // Gratuito anônimo: fluxo freemium double opt-in (mostra "confira e-mail").
+    // Gratuito anônimo: fluxo freemium double opt-in (onda 5; mostra "confira e-mail").
     if (draft.offering.gratuito) {
+      setIsSubmitting(true);
+      setSubmitError(null);
       try {
         await criarPedidoGratuito(data);
         toast.success("Pedido recebido! Confira seu e-mail pra confirmar.");
@@ -344,25 +358,8 @@ export const PedidoSection = forwardRef<HTMLElement, PedidoSectionProps>(
       return;
     }
 
-    // Livre anônimo (pago): cria a doação + gera o Pix.
-    try {
-      let pedidoId = pedidoCriadoId;
-      if (!pedidoId) {
-        const pedido = await criarDoacaoAnonima({
-          ...data,
-          valor_centavos: valorCentavosDaOferta(),
-          instituicao: instituicaoId ?? undefined,
-        });
-        pedidoId = pedido.id;
-        setPedidoCriadoId(pedidoId);
-      }
-      await gerarCheckout(pedidoId);
-      clearDraft();
-      window.location.href = `/confirmacao?pedido_id=${pedidoId}`;
-    } catch (err) {
-      setSubmitError((err as PastoralApiError).pastoralMessage);
-      setIsSubmitting(false);
-    }
+    // Livre anônimo (pago): reusar evita gastar de novo o token do Turnstile.
+    await enviarPago((valor) => criarDoacaoAnonima(data, valor, instituicaoId));
   };
 
   const handleRetryLoadPlanos = () => {

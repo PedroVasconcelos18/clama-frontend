@@ -1,53 +1,21 @@
 import type { components } from "@/types/api-schema"
 
-export interface AdminPedido {
-  id: string
-  nome: string
-  email: string
-  telefone: string | null
-  idade: number | null
-  sexo: string | null
-  pedido_oracao: string
-  plano: {
-    id: string
-    nome: string
-    valor_reais_str: string
-  }
-  valor_centavos: number
-  valor_reais_str: string
-  eh_gratuito: boolean
-  status: string
-  canal_entrega: "email" | "whatsapp"
-  oracao_gerada: string | null
-  provider_payment_id: string | null
-  provider_checkout_url: string | null
-  retry_count: number
-  last_error: string | null
-  whatsapp_message_id: string | null
-  whatsapp_delivered_at: string | null
-  whatsapp_read_at: string | null
-  created_at: string
-  updated_at: string
-  webhook_events?: Array<{
-    id: string
-    event_type: string
-    status: string
-    created_at: string
-  }>
+type S = components["schemas"]
+
+/** Lista e detalhe de `/api/admin/pedidos` (D22: o PATCH só corrige dados). */
+export type AdminPedidoItem = S["PedidoAdminItem"]
+export type AdminPedidoDetalhe = S["PedidoAdminDetalhe"]
+/** `/api/admin/eventos-mp` (D21: só eventos do Mercado Pago). */
+export type AdminEventoMp = S["EventoMpAdmin"]
+export type AdminRepasse = S["RepasseAdmin"]
+
+/** `PagedModel` do Spring (D23). */
+export interface PagedModel<T> {
+  content: T[]
+  page: S["PageMetadata"]
 }
 
-export interface AdminPedidoListItem {
-  id: string
-  nome: string
-  email: string
-  plano_nome: string
-  valor_reais_str: string
-  status: string
-  canal_entrega: "email" | "whatsapp"
-  created_at: string
-  eh_gratuito?: boolean
-}
-
+/** Paginação antiga (limit/offset), ainda usada pelas telas do freemium (onda 5). */
 export interface PaginatedResponse<T> {
   count: number
   next: string | null
@@ -103,40 +71,8 @@ export interface AdminDocumentoContexto {
 }
 
 // ---------------------------------------------------------------------------
-// Etapa 7: Repasses, Webhooks e Freemium
+// Etapa 7: Freemium (onda 5)
 // ---------------------------------------------------------------------------
-
-export interface AdminRepasse {
-  id: string
-  pedido_id: string
-  instituicao_id: string
-  instituicao_nome: string
-  valor_base_centavos: number
-  percentual: number
-  valor_centavos: number
-  status: "registrado" | "transferido"
-  transferido_em: string | null
-  comprovante: string
-  created_at: string
-  updated_at: string
-}
-
-export type AdminWebhookStatus = "RECEBIDO" | "PROCESSADO" | "IGNORADO" | "ERRO"
-export type AdminWebhookProvider = "MERCADO_PAGO" | "WORDPRESS" | "ASAAS" | "ZAPI"
-
-export interface AdminWebhook {
-  id: string
-  created_at: string
-  updated_at: string
-  provider: AdminWebhookProvider
-  event_type: string
-  status: AdminWebhookStatus
-  external_event_id: string
-  pedido_id: string | null
-  error_message: string
-  /** Só no detalhe. */
-  payload?: unknown
-}
 
 export interface AdminFreemiumBloqueio {
   id: string

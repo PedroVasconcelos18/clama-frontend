@@ -184,7 +184,7 @@ export function PrayerFormGratuito({
       pedido_oracao: data.pedido_oracao || undefined,
       // Telefone vai em E.164 (backend aceita "+5511...").
       // toE164BR remove a máscara visual antes de enviar.
-      telefone: toE164BR(data.telefone),
+      telefone: data.telefone ? toE164BR(data.telefone) : undefined,
     };
     await onSubmit(cleaned);
   });
@@ -317,13 +317,13 @@ export function PrayerFormGratuito({
           )}
         />
 
-        {/* Telefone (obrigatório — Pedro decidiu coletar pra uso futuro) */}
+        {/* Telefone — opcional (D5). */}
         <FormField
           control={form.control}
           name="telefone"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className={labelClass}>WhatsApp</FormLabel>
+              <FormLabel className={labelClass}>Telefone (opcional)</FormLabel>
               <FormControl>
                 <Input
                   type="tel"

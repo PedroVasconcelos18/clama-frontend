@@ -5,11 +5,12 @@ import { LoadingSpinner } from "@/components/utility/LoadingSpinner"
 import { PastoralAlert } from "@/components/utility/PastoralAlert"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import { X, ExternalLink, RefreshCw, Gift, Pencil } from "lucide-react"
-import { toast } from "sonner"
+import { X, Pencil } from "lucide-react"
 import { PedidoEditForm } from "@/components/admin/PedidoEditForm"
-import { PEDIDO_STATUS_COLORS } from "@/lib/pedido-status"
-import type { AdminPedido } from "@/types/admin.types"
+import { PEDIDO_STATUS_COLORS, rotuloDoStatus } from "@/lib/pedido-status"
+import { formatarDataHora } from "@/lib/datetime"
+import { formatCurrency } from "@/lib/formatters"
+import type { AdminPedidoDetalhe } from "@/types/admin.types"
 
 interface PedidoDetailDrawerProps {
   pedidoId: string | null
@@ -18,16 +19,15 @@ interface PedidoDetailDrawerProps {
   onChanged?: () => void
 }
 
-
+/**
+ * Detalhe do pedido no admin: dados, cobranças, repasse, eventos do MP e último erro.
+ * Só edição de dados (D22). Gratuidade, reenvio e regeneração voltam na 4b (D10).
+ */
 export function PedidoDetailDrawer({ pedidoId, onClose, onChanged }: PedidoDetailDrawerProps) {
   const { fetchApi } = useApi()
-  const [pedido, setPedido] = useState<AdminPedido | null>(null)
+  const [pedido, setPedido] = useState<AdminPedidoDetalhe | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [isResending, setIsResending] = useState(false)
-  const [showConfirmResend, setShowConfirmResend] = useState(false)
-  const [isMarkingFree, setIsMarkingFree] = useState(false)
-  const [showConfirmFree, setShowConfirmFree] = useState(false)
   const [editing, setEditing] = useState(false)
 
   useEffect(() => {
@@ -41,14 +41,9 @@ export function PedidoDetailDrawer({ pedidoId, onClose, onChanged }: PedidoDetai
       setIsLoading(true)
       setError(null)
       try {
-        const data = await fetchApi<AdminPedido>(`/api/admin/pedidos/${pedidoId}/`)
-        setPedido(data)
+        setPedido(await fetchApi<AdminPedidoDetalhe>(`/api/admin/pedidos/${pedidoId}`))
       } catch (err) {
-        if (err instanceof PastoralApiError) {
-          setError(err.pastoralMessage)
-        } else {
-          setError("Erro ao carregar pedido.")
-        }
+        setError(err instanceof PastoralApiError ? err.pastoralMessage : "Erro ao carregar pedido.")
       } finally {
         setIsLoading(false)
       }
@@ -56,62 +51,6 @@ export function PedidoDetailDrawer({ pedidoId, onClose, onChanged }: PedidoDetai
 
     loadPedido()
   }, [pedidoId, fetchApi])
-
-  const canResend =
-    pedido &&
-    (pedido.status === "erro" ||
-      pedido.status === "aguardando_reenvio" ||
-      (pedido.status === "pago" && !pedido.oracao_gerada))
-
-  // Pode marcar gratuito qualquer pedido ainda não enviado e que já não
-  // seja gratuito. O backend é a defesa final (409 para enviada).
-  const canMarkFree =
-    pedido && pedido.status !== "enviada" && !pedido.eh_gratuito
-
-  async function handleResend() {
-    if (!pedido) return
-    setIsResending(true)
-    try {
-      await fetchApi(`/api/admin/pedidos/${pedido.id}/reenviar/`, {
-        method: "POST",
-      })
-      toast.success("Reenvio agendado. Acompanhe pelo status.")
-      setShowConfirmResend(false)
-      // Reload pedido
-      const data = await fetchApi<AdminPedido>(`/api/admin/pedidos/${pedido.id}/`)
-      setPedido(data)
-    } catch (err) {
-      if (err instanceof PastoralApiError) {
-        toast.error(err.pastoralMessage)
-      } else {
-        toast.error("Erro ao reenviar pedido.")
-      }
-    } finally {
-      setIsResending(false)
-    }
-  }
-
-  async function handleMarkFree() {
-    if (!pedido) return
-    setIsMarkingFree(true)
-    try {
-      await fetchApi(`/api/admin/pedidos/${pedido.id}/marcar-gratuito/`, {
-        method: "POST",
-      })
-      toast.success("Pedido marcado como gratuito. Gerando oração.")
-      setShowConfirmFree(false)
-      const data = await fetchApi<AdminPedido>(`/api/admin/pedidos/${pedido.id}/`)
-      setPedido(data)
-    } catch (err) {
-      if (err instanceof PastoralApiError) {
-        toast.error(err.pastoralMessage)
-      } else {
-        toast.error("Erro ao marcar como gratuito.")
-      }
-    } finally {
-      setIsMarkingFree(false)
-    }
-  }
 
   const isOpen = !!pedidoId
 
@@ -142,13 +81,13 @@ export function PedidoDetailDrawer({ pedidoId, onClose, onChanged }: PedidoDetai
               <span
                 className={cn(
                   "px-2 py-1 text-xs rounded",
-                  PEDIDO_STATUS_COLORS[pedido.status] || "bg-gray-500/20 text-gray-400"
+                  PEDIDO_STATUS_COLORS[pedido.status ?? ""] || "bg-gray-500/20 text-gray-400"
                 )}
               >
-                {pedido.status.replace(/_/g, " ")}
+                {rotuloDoStatus(pedido.status)}
               </span>
             )}
-            {pedido?.eh_gratuito && (
+            {pedido?.gratuito && (
               <span className="px-2 py-1 text-xs rounded bg-clama-gold/20 text-clama-gold">
                 Gratuito
               </span>
@@ -193,18 +132,20 @@ export function PedidoDetailDrawer({ pedidoId, onClose, onChanged }: PedidoDetai
               <section>
                 <h3 className="text-sm font-medium text-clama-gold mb-3">Pedido</h3>
                 <div className="space-y-2 text-sm">
-                  <Row label="Nome" value={pedido.nome} />
-                  <Row label="E-mail" value={pedido.email} />
+                  <Row label="Nome" value={pedido.nome ?? "—"} />
+                  <Row label="E-mail" value={pedido.email ?? "—"} />
                   <Row label="Telefone" value={pedido.telefone || "Não informado"} />
                   <Row label="Idade" value={pedido.idade?.toString() || "Não informada"} />
                   <Row label="Sexo" value={pedido.sexo || "Não informado"} />
-                  <Row label="Plano" value={`${pedido.plano.nome} (${pedido.plano.valor_reais_str})`} />
-                  <Row label="Valor" value={pedido.valor_reais_str} />
-                  <Row label="Canal" value={pedido.canal_entrega} />
                   <Row
-                    label="Criado em"
-                    value={new Date(pedido.created_at).toLocaleString("pt-BR")}
+                    label="Plano"
+                    value={pedido.plano ? `${pedido.plano.nome} (${formatCurrency(pedido.plano.valorCentavos ?? 0)})` : "—"}
                   />
+                  <Row label="Valor" value={formatCurrency(pedido.valorCentavos ?? 0)} />
+                  <Row label="Instituição" value={pedido.instituicao?.nome ?? "Nenhuma"} />
+                  <Row label="Conta" value={pedido.usuarioId != null ? `#${pedido.usuarioId}` : "Sem conta"} />
+                  <Row label="Criado em" value={formatarDataHora(pedido.criadoEm)} />
+                  <Row label="Atualizado em" value={formatarDataHora(pedido.atualizadoEm)} />
                 </div>
               </section>
 
@@ -213,194 +154,96 @@ export function PedidoDetailDrawer({ pedidoId, onClose, onChanged }: PedidoDetai
                 <h3 className="text-sm font-medium text-clama-gold mb-3">Conteúdo do Pedido</h3>
                 <div className="bg-clama-night rounded-lg p-3 max-h-48 overflow-y-auto">
                   <p className="text-sm text-clama-cream/80 whitespace-pre-wrap">
-                    {pedido.pedido_oracao || "[Pedido vazio]"}
+                    {pedido.pedidoOracao || "[Pedido vazio]"}
                   </p>
                 </div>
               </section>
 
               {/* Oração Gerada */}
-              {pedido.oracao_gerada && (
+              {pedido.oracaoGerada && (
                 <section>
                   <h3 className="text-sm font-medium text-clama-gold mb-3">Oração Gerada</h3>
                   <div className="bg-clama-night rounded-lg p-3 max-h-64 overflow-y-auto">
-                    <p className="text-sm text-clama-cream font-serif whitespace-pre-wrap">
-                      {pedido.oracao_gerada}
-                    </p>
+                    <p className="text-sm text-clama-cream font-serif whitespace-pre-wrap">{pedido.oracaoGerada}</p>
                   </div>
                 </section>
               )}
 
-              {/* Pagamento */}
+              {/* Cobranças Pix (histórico; a mais nova primeiro) */}
               <section>
-                <h3 className="text-sm font-medium text-clama-gold mb-3">Pagamento</h3>
-                <div className="space-y-2 text-sm">
-                  <Row label="ID do pagamento" value={pedido.provider_payment_id || "N/A"} />
-                  {pedido.provider_checkout_url && (
-                    <div className="flex items-center justify-between py-1">
-                      <span className="text-clama-cream/60">Checkout</span>
-                      <a
-                        href={pedido.provider_checkout_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-clama-gold hover:underline flex items-center gap-1"
-                      >
-                        Abrir <ExternalLink className="w-3 h-3" />
-                      </a>
-                    </div>
-                  )}
-                </div>
+                <h3 className="text-sm font-medium text-clama-gold mb-3">Cobranças Pix</h3>
+                {pedido.cobrancas?.length ? (
+                  <ul className="space-y-2 text-sm">
+                    {[...pedido.cobrancas].reverse().map((c) => (
+                      <li key={c.n} className="border-b border-clama-gold/10 pb-2 last:border-0">
+                        <p className="text-clama-cream">{`#${c.n} · ${c.status}`}</p>
+                        <p className="text-xs text-clama-cream/50">
+                          Criada {formatarDataHora(c.criadaEm)}
+                          {c.pagaEm && ` · paga ${formatarDataHora(c.pagaEm)}`}
+                          {!c.pagaEm && c.canceladaEm && ` · cancelada ${formatarDataHora(c.canceladaEm)}`}
+                          {!c.pagaEm && !c.canceladaEm && ` · vence ${formatarDataHora(c.expiraEm)}`}
+                        </p>
+                        {c.mpPagamentoId != null && (
+                          <p className="font-mono text-xs text-clama-cream/40">MP {c.mpPagamentoId}</p>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-sm text-clama-cream/50">Nenhuma cobrança.</p>
+                )}
               </section>
 
-              {/* WhatsApp Info */}
-              {pedido.canal_entrega === "whatsapp" && (
-                <section>
-                  <h3 className="text-sm font-medium text-clama-gold mb-3">WhatsApp</h3>
-                  <div className="space-y-2 text-sm">
-                    <Row label="Message ID" value={pedido.whatsapp_message_id || "N/A"} />
-                    <Row
-                      label="Entregue em"
-                      value={
-                        pedido.whatsapp_delivered_at
-                          ? new Date(pedido.whatsapp_delivered_at).toLocaleString("pt-BR")
-                          : "Aguardando"
-                      }
-                    />
-                    <Row
-                      label="Lido em"
-                      value={
-                        pedido.whatsapp_read_at
-                          ? new Date(pedido.whatsapp_read_at).toLocaleString("pt-BR")
-                          : "Aguardando"
-                      }
-                    />
-                  </div>
-                </section>
-              )}
-
-              {/* Error Info */}
-              {pedido.last_error && (
-                <section>
-                  <h3 className="text-sm font-medium text-red-400 mb-3">Último Erro</h3>
-                  <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3">
-                    <p className="text-sm text-red-300">{pedido.last_error}</p>
-                    <p className="text-xs text-clama-cream/40 mt-2">
-                      Tentativas: {pedido.retry_count}
+              {/* Repasse */}
+              <section>
+                <h3 className="text-sm font-medium text-clama-gold mb-3">Repasse</h3>
+                {pedido.repasse ? (
+                  <div className="text-sm">
+                    <p className="text-clama-cream">
+                      {`${pedido.repasse.status} · ${formatCurrency(pedido.repasse.valorCentavos ?? 0)} (${pedido.repasse.percentual}%)`}
+                    </p>
+                    <p className="text-xs text-clama-cream/50">
+                      Registrado {formatarDataHora(pedido.repasse.criadoEm)}
+                      {pedido.repasse.transferidoEm && ` · transferido ${formatarDataHora(pedido.repasse.transferidoEm)}`}
+                      {pedido.repasse.canceladoEm && ` · cancelado ${formatarDataHora(pedido.repasse.canceladoEm)}`}
+                      {pedido.repasse.motivo && ` (${pedido.repasse.motivo})`}
                     </p>
                   </div>
+                ) : (
+                  <p className="text-sm text-clama-cream/50">Sem repasse.</p>
+                )}
+              </section>
+
+              {/* Último erro */}
+              {pedido.ultimoErro && (
+                <section>
+                  <h3 className="text-sm font-medium text-red-400 mb-3">Último erro</h3>
+                  <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3">
+                    <p className="text-sm text-red-300">{pedido.ultimoErro}</p>
+                    <p className="text-xs text-clama-cream/40 mt-2">Tentativas: {pedido.tentativas ?? 0}</p>
+                  </div>
                 </section>
               )}
 
-              {/* Webhook Events */}
-              {pedido.webhook_events && pedido.webhook_events.length > 0 && (
+              {/* Eventos do Mercado Pago */}
+              {pedido.eventos && pedido.eventos.length > 0 && (
                 <section>
-                  <h3 className="text-sm font-medium text-clama-gold mb-3">Histórico de Eventos</h3>
+                  <h3 className="text-sm font-medium text-clama-gold mb-3">Eventos do Mercado Pago</h3>
                   <div className="space-y-2">
-                    {pedido.webhook_events.map((event) => (
+                    {pedido.eventos.map((event) => (
                       <div
                         key={event.id}
                         className="flex items-center justify-between py-2 border-b border-clama-gold/10 last:border-0"
                       >
                         <div>
-                          <p className="text-sm text-clama-cream">{event.event_type}</p>
-                          <p className="text-xs text-clama-cream/40">{event.status}</p>
+                          <p className="text-sm text-clama-cream">{`${event.tipo} · ${event.status}`}</p>
+                          {event.motivo && <p className="text-xs text-clama-cream/40">{event.motivo}</p>}
                         </div>
-                        <span className="text-xs text-clama-cream/60">
-                          {new Date(event.created_at).toLocaleString("pt-BR")}
-                        </span>
+                        <span className="text-xs text-clama-cream/60">{formatarDataHora(event.recebidoEm)}</span>
                       </div>
                     ))}
                   </div>
                 </section>
-              )}
-
-              {/* Resend Button */}
-              {canResend && (
-                <div className="pt-4 border-t border-clama-gold/20">
-                  {showConfirmResend ? (
-                    <div className="space-y-3">
-                      <p className="text-sm text-clama-cream">
-                        Reenviar oração para <strong>{pedido.nome}</strong>?
-                      </p>
-                      <div className="flex gap-2">
-                        <Button
-                          onClick={handleResend}
-                          disabled={isResending}
-                          className="flex-1"
-                        >
-                          {isResending ? (
-                            <>
-                              <LoadingSpinner className="w-4 h-4 mr-2" />
-                              Reenviando...
-                            </>
-                          ) : (
-                            "Confirmar Reenvio"
-                          )}
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          onClick={() => setShowConfirmResend(false)}
-                          className="text-clama-cream/60 hover:text-clama-cream"
-                        >
-                          Cancelar
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <Button
-                      onClick={() => setShowConfirmResend(true)}
-                      className="w-full"
-                    >
-                      <RefreshCw className="w-4 h-4 mr-2" />
-                      Reenviar
-                    </Button>
-                  )}
-                </div>
-              )}
-
-              {/* Marcar como gratuito */}
-              {canMarkFree && (
-                <div className="pt-4 border-t border-clama-gold/20">
-                  {showConfirmFree ? (
-                    <div className="space-y-3">
-                      <p className="text-sm text-clama-cream">
-                        Marcar o pedido de <strong>{pedido.nome}</strong> como
-                        gratuito? A oração será gerada sem cobrança.
-                      </p>
-                      <div className="flex gap-2">
-                        <Button
-                          onClick={handleMarkFree}
-                          disabled={isMarkingFree}
-                          className="flex-1"
-                        >
-                          {isMarkingFree ? (
-                            <>
-                              <LoadingSpinner className="w-4 h-4 mr-2" />
-                              Processando...
-                            </>
-                          ) : (
-                            "Confirmar gratuito"
-                          )}
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          onClick={() => setShowConfirmFree(false)}
-                          className="text-clama-cream/60 hover:text-clama-cream"
-                        >
-                          Cancelar
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <Button
-                      onClick={() => setShowConfirmFree(true)}
-                      variant="outline"
-                      className="w-full"
-                    >
-                      <Gift className="w-4 h-4 mr-2" />
-                      Marcar como gratuito
-                    </Button>
-                  )}
-                </div>
               )}
             </>
             )

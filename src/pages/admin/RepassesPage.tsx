@@ -1,79 +1,119 @@
-import { useState } from "react"
-import { Search } from "lucide-react"
+import { useEffect, useState } from "react"
+import { toast } from "sonner"
 
-import { useAdminList } from "@/hooks/useAdminList"
+import { useApi } from "@/hooks/useApi"
+import { usePaginaAdmin } from "@/hooks/useAdminList"
 import { AdminPager } from "@/components/admin/AdminPager"
-import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { LoadingSpinner } from "@/components/utility/LoadingSpinner"
 import { PastoralAlert } from "@/components/utility/PastoralAlert"
-import type { AdminRepasse } from "@/types/admin.types"
+import { formatarData } from "@/lib/datetime"
+import { formatCurrency } from "@/lib/formatters"
+import type { AdminInstituicao, AdminRepasse } from "@/types/admin.types"
 
-const reais = (c: number) =>
-  (c / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
-const data = (iso: string | null) =>
-  iso ? new Date(iso).toLocaleDateString("pt-BR") : "—"
+const SELECT = "mt-1 block bg-clama-night border border-clama-gold/30 text-clama-cream rounded-md h-9 px-2 text-sm"
+const ROTULO = "text-xs uppercase tracking-wider text-clama-gold/80"
+const STATUS: Record<string, string> = { REGISTRADO: "Registrado", TRANSFERIDO: "Transferido", CANCELADO: "Cancelado" }
 
+/** Repasses às instituições (sem PII). Só REGISTRADO pode ser marcado como transferido. */
 export default function RepassesPage() {
-  const [q, setQ] = useState("")
+  const { fetchApi } = useApi()
+  const [instituicaoId, setInstituicaoId] = useState("")
   const [status, setStatus] = useState("")
+  const [de, setDe] = useState("")
+  const [ate, setAte] = useState("")
   const [offset, setOffset] = useState(0)
-  const { data: page, loading, error } = useAdminList<AdminRepasse>(
-    "/api/admin/repasses/",
-    { q, status },
+  const [reloadToken, setReloadToken] = useState(0)
+  const [instituicoes, setInstituicoes] = useState<AdminInstituicao[]>([])
+  const [alvo, setAlvo] = useState<AdminRepasse | null>(null)
+  const [busy, setBusy] = useState(false)
+
+  const { data: page, loading, error } = usePaginaAdmin<AdminRepasse>(
+    "/api/admin/repasses",
+    { instituicaoId, status, de, ate },
     offset,
+    reloadToken,
   )
-  const rows = page?.results ?? []
-  const total = page?.count ?? 0
+  const rows = page?.content ?? []
+  const total = page?.page.totalElements ?? 0
+
+  useEffect(() => {
+    fetchApi<AdminInstituicao[]>("/api/admin/instituicoes", { showToast: false })
+      .then(setInstituicoes)
+      .catch(() => setInstituicoes([])) // o filtro é opcional
+  }, [fetchApi])
+
+  const filtro = (set: (v: string) => void) => (v: string) => {
+    set(v)
+    setOffset(0)
+  }
+
+  async function transferir() {
+    if (!alvo) return
+    setBusy(true)
+    try {
+      await fetchApi(`/api/admin/repasses/${alvo.id}/transferencia`, { method: "POST", showToast: false })
+      toast.success("Repasse marcado como transferido.")
+      setAlvo(null)
+      setReloadToken((n) => n + 1)
+    } catch (err) {
+      toast.error((err as { pastoralMessage?: string })?.pastoralMessage ?? "Não foi possível marcar o repasse.")
+    } finally {
+      setBusy(false)
+    }
+  }
 
   return (
     <div className="space-y-4">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="font-serif text-2xl text-clama-gold">Repasses</h1>
-          <p className="text-sm text-clama-cream/60">
-            Parte de cada pedido pago destinada às instituições (somente leitura).
-          </p>
+          <p className="text-sm text-clama-cream/60">Parte de cada pedido pago destinada às instituições.</p>
         </div>
         <span className="text-sm text-clama-cream/60">{total} no total</span>
       </header>
 
       <div className="flex flex-wrap items-end gap-3 rounded-md border border-clama-gold/15 bg-clama-night-deep p-3">
-        <div className="flex-1 min-w-[220px]">
-          <Label htmlFor="rep-q" className="text-xs uppercase tracking-wider text-clama-gold/80">
-            Instituição
-          </Label>
-          <div className="relative mt-1">
-            <Search className="absolute left-2 top-2.5 h-4 w-4 text-clama-cream/40" />
-            <Input
-              id="rep-q"
-              value={q}
-              onChange={(e) => {
-                setQ(e.target.value)
-                setOffset(0)
-              }}
-              placeholder="nome da instituição"
-              className="pl-8 bg-clama-night border-clama-gold/30 text-clama-cream"
-            />
-          </div>
+        <div>
+          <Label htmlFor="rep-inst" className={ROTULO}>Instituição</Label>
+          <select id="rep-inst" value={instituicaoId} onChange={(e) => filtro(setInstituicaoId)(e.target.value)} className={SELECT}>
+            <option value="">Todas</option>
+            {instituicoes.map((i) => (
+              <option key={i.id} value={i.id}>
+                {i.nome}
+              </option>
+            ))}
+          </select>
         </div>
         <div>
-          <Label htmlFor="rep-status" className="text-xs uppercase tracking-wider text-clama-gold/80">
-            Status
-          </Label>
-          <select
-            id="rep-status"
-            value={status}
-            onChange={(e) => {
-              setStatus(e.target.value)
-              setOffset(0)
-            }}
-            className="mt-1 block bg-clama-night border border-clama-gold/30 text-clama-cream rounded-md h-9 px-2 text-sm"
-          >
+          <Label htmlFor="rep-status" className={ROTULO}>Status</Label>
+          <select id="rep-status" value={status} onChange={(e) => filtro(setStatus)(e.target.value)} className={SELECT}>
             <option value="">Todos</option>
-            <option value="registrado">Registrado</option>
-            <option value="transferido">Transferido</option>
+            {Object.entries(STATUS).map(([v, l]) => (
+              <option key={v} value={v}>
+                {l}
+              </option>
+            ))}
           </select>
+        </div>
+        <div>
+          <Label htmlFor="rep-de" className={ROTULO}>De</Label>
+          <input id="rep-de" type="date" value={de} max={ate || undefined}
+            onChange={(e) => filtro(setDe)(e.target.value)} className={`${SELECT} [color-scheme:dark]`} />
+        </div>
+        <div>
+          <Label htmlFor="rep-ate" className={ROTULO}>Até</Label>
+          <input id="rep-ate" type="date" value={ate} min={de || undefined}
+            onChange={(e) => filtro(setAte)(e.target.value)} className={`${SELECT} [color-scheme:dark]`} />
         </div>
       </div>
 
@@ -90,8 +130,8 @@ export default function RepassesPage() {
               <th className="p-3 text-right">%</th>
               <th className="p-3 text-right">Repasse</th>
               <th className="p-3">Status</th>
-              <th className="p-3">Transferido em</th>
-              <th className="p-3">Comprovante</th>
+              <th className="p-3">Desfecho</th>
+              <th className="p-3 text-right">Ações</th>
             </tr>
           </thead>
           <tbody>
@@ -112,28 +152,26 @@ export default function RepassesPage() {
             {!loading &&
               rows.map((r) => (
                 <tr key={r.id} className="border-t border-clama-gold/10">
-                  <td className="p-3 text-clama-cream/60">{data(r.created_at)}</td>
-                  <td className="p-3 text-clama-cream">{r.instituicao_nome}</td>
-                  <td className="p-3 font-mono text-xs text-clama-cream/60">
-                    {r.pedido_id.slice(0, 8)}
+                  <td className="p-3 text-clama-cream/60">{formatarData(r.criadoEm)}</td>
+                  <td className="p-3 text-clama-cream">{r.instituicao ?? `#${r.instituicaoId}`}</td>
+                  <td className="p-3 font-mono text-xs text-clama-cream/60" title={r.pedidoId}>
+                    {r.pedidoId?.slice(0, 8)}
                   </td>
-                  <td className="p-3 text-right text-clama-cream/80">
-                    {reais(r.valor_base_centavos)}
-                  </td>
+                  <td className="p-3 text-right text-clama-cream/80">{formatCurrency(r.valorBaseCentavos ?? 0)}</td>
                   <td className="p-3 text-right text-clama-cream/80">{r.percentual}%</td>
-                  <td className="p-3 text-right text-clama-cream">{reais(r.valor_centavos)}</td>
-                  <td className="p-3 text-clama-cream/80">
-                    {r.status === "transferido" ? "Transferido" : "Registrado"}
+                  <td className="p-3 text-right text-clama-cream">{formatCurrency(r.valorCentavos ?? 0)}</td>
+                  <td className="p-3 text-clama-cream/80">{STATUS[r.status ?? ""] ?? r.status}</td>
+                  <td className="p-3 text-xs text-clama-cream/60">
+                    {r.transferidoEm && formatarData(r.transferidoEm)}
+                    {r.canceladoEm && formatarData(r.canceladoEm)}
+                    {r.motivo && <span className="block">{r.motivo}</span>}
                   </td>
-                  <td className="p-3 text-clama-cream/60">{data(r.transferido_em)}</td>
-                  <td className="p-3 text-xs text-clama-cream/80">
-                    {/^https?:\/\//.test(r.comprovante) ? (
-                      <a href={r.comprovante} target="_blank" rel="noopener noreferrer"
-                        className="text-clama-gold hover:underline">
-                        Abrir
-                      </a>
-                    ) : (
-                      r.comprovante || "—"
+                  <td className="p-3 text-right">
+                    {r.status === "REGISTRADO" && (
+                      <Button variant="outline" size="sm" onClick={() => setAlvo(r)}
+                        className="border-clama-gold/40 text-clama-gold hover:bg-clama-gold/10">
+                        Marcar transferido
+                      </Button>
                     )}
                   </td>
                 </tr>
@@ -143,6 +181,27 @@ export default function RepassesPage() {
       </div>
 
       <AdminPager offset={offset} total={total} onChange={setOffset} />
+
+      <Dialog open={!!alvo} onOpenChange={(open) => !open && !busy && setAlvo(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Marcar como transferido?</DialogTitle>
+            <DialogDescription>
+              Confirme que {formatCurrency(alvo?.valorCentavos ?? 0)} já foram transferidos para{" "}
+              {alvo?.instituicao ?? "a instituição"}. Depois disso, um estorno do pedido não cancela mais o repasse:
+              vira acerto no próximo ciclo.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAlvo(null)} disabled={busy}>
+              Cancelar
+            </Button>
+            <Button onClick={transferir} disabled={busy}>
+              {busy ? "Marcando…" : "Confirmar transferência"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

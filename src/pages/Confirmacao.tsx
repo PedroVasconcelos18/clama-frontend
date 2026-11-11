@@ -1,14 +1,13 @@
-import { useState, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 
-import { apiFetch } from "@/lib/api";
-import { type PedidoStatus, type PedidoStatusValue } from "@/types/pedido-status.types";
+import { apiFetch, PastoralApiError } from "@/lib/api";
+import { formatarDataHora } from "@/lib/datetime";
+import type { PixDoPedido, StatusPedido, StatusPublico } from "@/types/pedido-status.types";
 import {
   MSG_CONFIRMACAO_EMAIL,
-  MSG_CONFIRMACAO_WHATSAPP,
   MSG_GERANDO_ORACAO,
   MSG_ORACAO_ENVIADA_EMAIL,
-  MSG_ORACAO_ENVIADA_WHATSAPP,
   MSG_REAGENDADO,
   MSG_ERRO_DEFINITIVO,
 } from "@/lib/pastoral_messages";
@@ -20,8 +19,9 @@ import PastoralAlert from "@/components/utility/PastoralAlert";
 import LoadingSpinner from "@/components/utility/LoadingSpinner";
 
 const POLL_INTERVAL_MS = 5000;
-// ~15 min: enquanto aguarda o pagamento Pix, seguimos consultando o status.
+// ~15 min: enquanto aguarda o pagamento Pix e a oração, seguimos consultando o status.
 const MAX_POLL_ATTEMPTS = 180;
+const TERMINAIS: (StatusPedido | undefined)[] = ["ENVIADA", "ERRO"];
 
 interface StatusInfo {
   title: string;
@@ -31,15 +31,9 @@ interface StatusInfo {
   isWaiting: boolean;
 }
 
-function getStatusMessage(
-  status: PedidoStatusValue | null,
-  canal: string,
-  pastoralMessage?: string | null
-): StatusInfo {
-  const isEmail = canal === "email";
-
+function getStatusMessage(status: StatusPedido | undefined, pastoralMessage?: string | null): StatusInfo {
   switch (status) {
-    case "aguardando_pagamento":
+    case "AGUARDANDO_PAGAMENTO":
       return {
         title: "Quase lá — pague com Pix",
         message:
@@ -48,25 +42,25 @@ function getStatusMessage(
         isError: false,
         isWaiting: false,
       };
-    case "pago":
-    case "gerando_oracao":
-    case "oracao_gerada":
+    case "PAGO":
+    case "GERANDO_ORACAO":
+    case "ORACAO_GERADA":
       return {
         title: "Seu clamor foi recebido",
-        message: isEmail ? MSG_CONFIRMACAO_EMAIL : MSG_CONFIRMACAO_WHATSAPP,
+        message: MSG_CONFIRMACAO_EMAIL,
         isComplete: false,
         isError: false,
         isWaiting: false,
       };
-    case "enviada":
+    case "ENVIADA":
       return {
         title: "Sua oração já está aí!",
-        message: isEmail ? MSG_ORACAO_ENVIADA_EMAIL : MSG_ORACAO_ENVIADA_WHATSAPP,
+        message: MSG_ORACAO_ENVIADA_EMAIL,
         isComplete: true,
         isError: false,
         isWaiting: false,
       };
-    case "aguardando_reenvio":
+    case "AGUARDANDO_NOVA_TENTATIVA":
       return {
         title: "Aguardando...",
         message: MSG_REAGENDADO,
@@ -74,7 +68,7 @@ function getStatusMessage(
         isError: false,
         isWaiting: true,
       };
-    case "erro":
+    case "ERRO":
       return {
         title: "Tivemos um soluço",
         message: pastoralMessage || MSG_ERRO_DEFINITIVO,
@@ -93,19 +87,28 @@ function getStatusMessage(
   }
 }
 
+/**
+ * Status do pedido (`GET /api/pedidos/{id}` a cada 5 s). Em `AGUARDANDO_PAGAMENTO`
+ * pede o Pix (`POST /api/pedidos/{id}/pix`, idempotente: devolve a cobrança vigente
+ * ou recria a vencida). Tentar de novo só repete o Pix: o pedido nunca é recriado.
+ */
 export default function Confirmacao() {
   const [searchParams] = useSearchParams();
   const pedidoId = searchParams.get("pedido_id");
 
-  const [status, setStatus] = useState<PedidoStatusValue | null>(null);
-  const [canal, setCanal] = useState<string>("email");
-  const [pastoralMessage, setPastoralMessage] = useState<string | null>(null);
-  const [oracaoGerada, setOracaoGerada] = useState<string>("");
-  const [pixQrCode, setPixQrCode] = useState<string | null>(null);
-  const [pixQrCodeBase64, setPixQrCodeBase64] = useState<string | null>(null);
+  const [pedido, setPedido] = useState<StatusPublico | null>(null);
+  const [pix, setPix] = useState<PixDoPedido | null>(null);
+  const [erroPix, setErroPix] = useState<string | null>(null);
+  const [gerandoPix, setGerandoPix] = useState(false);
   const [pixCopiado, setPixCopiado] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(
+    pedidoId ? null : "Pedido não encontrado. Retorne à página inicial e tente novamente.",
+  );
+
+  const status = pedido?.status;
+  const oracaoGerada = pedido?.oracaoGerada ?? "";
+  const pixQrCode = pix?.copiaECola ?? null;
+  const isLoading = !pedido && !error;
 
   const copiarPix = async () => {
     if (!pixQrCode) return;
@@ -119,56 +122,60 @@ export default function Confirmacao() {
     }
   };
 
-  const attemptsRef = useRef(0);
-  const intervalRef = useRef<number | null>(null);
+  const pedirPix = useCallback(async () => {
+    setErroPix(null);
+    setGerandoPix(true);
+    try {
+      setPix(await apiFetch<PixDoPedido>(`/api/pedidos/${pedidoId}/pix`, { method: "POST", showToast: false }));
+    } catch (err) {
+      // Já pago (409 pedido_ja_pago): o polling mostra o status novo.
+      if ((err as PastoralApiError).code !== "pedido_ja_pago") {
+        setErroPix((err as PastoralApiError).pastoralMessage);
+      }
+    } finally {
+      setGerandoPix(false);
+    }
+  }, [pedidoId]);
+
+  // Pede o Pix uma vez, quando o status chega em AGUARDANDO_PAGAMENTO.
+  const pixPedido = useRef(false);
+  useEffect(() => {
+    if (status !== "AGUARDANDO_PAGAMENTO" || pixPedido.current) return;
+    pixPedido.current = true;
+    void pedirPix();
+  }, [status, pedirPix]);
 
   useEffect(() => {
-    if (!pedidoId) {
-      setIsLoading(false);
-      setError("Pedido não encontrado. Retorne à página inicial e tente novamente.");
-      return;
-    }
+    if (!pedidoId) return;
+    let attempts = 0;
+    let intervalo: number | null = null;
+    const parar = () => {
+      if (intervalo !== null) window.clearInterval(intervalo);
+      intervalo = null;
+    };
 
     const poll = async () => {
       try {
-        const data = await apiFetch<PedidoStatus>(`/api/pedidos/${pedidoId}/`);
-        setStatus(data.status);
-        setCanal(data.canal_entrega);
-        setPastoralMessage(data.pastoral_message ?? null);
-        setOracaoGerada(data.oracao_gerada ?? "");
-        setPixQrCode(data.pix_qr_code ?? null);
-        setPixQrCodeBase64(data.pix_qr_code_base64 ?? null);
-        setIsLoading(false);
-
-        // Stop polling when in terminal states
-        if (data.status === "enviada" || data.status === "erro") {
-          if (intervalRef.current) {
-            clearInterval(intervalRef.current);
-            intervalRef.current = null;
-          }
+        const data = await apiFetch<StatusPublico>(`/api/pedidos/${pedidoId}`, { showToast: false });
+        setPedido(data);
+        if (TERMINAIS.includes(data.status)) parar();
+      } catch (err) {
+        if ((err as PastoralApiError).httpStatus === 404) {
+          setError((err as PastoralApiError).pastoralMessage);
+          parar();
         }
-      } catch {
-        setIsLoading(false);
+        // Outras falhas (rede, limite): a próxima rodada tenta de novo.
       }
-
-      attemptsRef.current += 1;
-      if (attemptsRef.current >= MAX_POLL_ATTEMPTS && intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
+      attempts += 1;
+      if (attempts >= MAX_POLL_ATTEMPTS) parar();
     };
 
-    poll();
-    intervalRef.current = window.setInterval(poll, POLL_INTERVAL_MS);
-
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
-    };
+    void poll();
+    intervalo = window.setInterval(poll, POLL_INTERVAL_MS);
+    return parar;
   }, [pedidoId]);
 
-  const statusInfo = getStatusMessage(status, canal, pastoralMessage);
+  const statusInfo = getStatusMessage(status, pedido?.mensagemPastoral);
 
   return (
     <div className="min-h-screen bg-white">
@@ -235,11 +242,11 @@ export default function Confirmacao() {
             )}
 
             {/* Pix — QR + copia-e-cola enquanto aguardando o pagamento */}
-            {status === "aguardando_pagamento" && pixQrCode && (
+            {status === "AGUARDANDO_PAGAMENTO" && pixQrCode && (
               <div className="border-[1.5px] border-clama-gold/50 rounded-xl p-6 bg-[#fffbee] mb-8">
-                {pixQrCodeBase64 && (
+                {pix?.qrBase64 && (
                   <img
-                    src={`data:image/png;base64,${pixQrCodeBase64}`}
+                    src={`data:image/png;base64,${pix.qrBase64}`}
                     alt="QR code Pix para pagamento"
                     className="w-52 h-52 mx-auto mb-4 rounded-lg bg-white p-2"
                   />
@@ -262,19 +269,43 @@ export default function Confirmacao() {
                 <p className="font-sans text-[#aaa] text-[0.72rem] mt-3">
                   Pague no app do seu banco. A confirmação é automática — esta
                   tela avança sozinha.
+                  {pix?.expiraEm && <> Este Pix vale até {formatarDataHora(pix.expiraEm)}.</>}
                 </p>
               </div>
             )}
 
+            {status === "AGUARDANDO_PAGAMENTO" && !pixQrCode && (
+              <div className="mb-8">
+                {erroPix ? (
+                  <>
+                    <PastoralAlert variant="error">{erroPix}</PastoralAlert>
+                    <button
+                      type="button"
+                      onClick={() => void pedirPix()}
+                      disabled={gerandoPix}
+                      className="mt-4 bg-clama-night text-white py-[0.7rem] px-6 text-[0.9rem] font-semibold font-sans rounded-full hover:bg-clama-night/90 transition-colors disabled:opacity-60"
+                    >
+                      Tentar de novo
+                    </button>
+                  </>
+                ) : (
+                  <div className="flex items-center justify-center gap-2 text-[#888] text-sm">
+                    <LoadingSpinner size={16} />
+                    <span>Gerando seu Pix...</span>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Compartilhar no WhatsApp (logo após o aviso, antes da oração) */}
-            {status === "enviada" && oracaoGerada && (
+            {status === "ENVIADA" && oracaoGerada && (
               <div className="mb-6">
                 <WhatsAppShareButton oracaoTexto={oracaoGerada} />
               </div>
             )}
 
             {/* Prayer Card — só após entrega */}
-            {status === "enviada" && oracaoGerada && (
+            {status === "ENVIADA" && oracaoGerada && (
               <div className="border border-clama-gold/40 rounded-xl p-6 bg-[#fffbee] mb-6 text-left">
                 <p className="font-sans text-clama-accent text-[0.78rem] tracking-[1px] uppercase mb-3">
                   Sua oração
@@ -316,7 +347,7 @@ export default function Confirmacao() {
             )}
 
             {/* Compartilhar no WhatsApp (segunda CTA, após o versículo) */}
-            {status === "enviada" && oracaoGerada && (
+            {status === "ENVIADA" && oracaoGerada && (
               <div className="mb-4">
                 <WhatsAppShareButton oracaoTexto={oracaoGerada} />
               </div>

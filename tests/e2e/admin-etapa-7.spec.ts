@@ -3,6 +3,7 @@ import { test, expect, type Page } from "@playwright/test"
 /**
  * Etapa 7 do admin, com a API inteira mockada (nenhum back no ar).
  * Rodar: `npm run dev` à parte e `BASE_URL=http://localhost:5173 npm run test:e2e -- tests/e2e/admin-etapa-7.spec.ts`.
+ * Pedidos, eventos do MP e repasses saíram daqui na onda 4a: o `pedido.spec.ts` os cobre contra o backend real.
  */
 
 type Chamada = { method: string; path: string; query: URLSearchParams; body: unknown }
@@ -19,11 +20,6 @@ const USUARIO = {
   id: 7, email: "ana@exemplo.com", nomeCompleto: "Ana", criadoEm: "2026-10-01T10:00:00Z",
   ultimoLoginEm: null, papel: "CLIENTE", ativo: true, temSenha: true,
 }
-const PEDIDO_ID = "12345678-aaaa-bbbb-cccc-1234567890ab"
-const PEDIDO = {
-  id: PEDIDO_ID, nome: "Ana", email: "ana@exemplo.com", plano_nome: "Mensal", valor_reais_str: "R$ 10,00",
-  status: "enviada", canal_entrega: "email", created_at: "2026-11-01T10:00:00Z",
-}
 const COMENTARIO = {
   id: "c1", post: null, customer: 42, customer_email: "bia@exemplo.com", customer_nome: "Bia", conteudo: "oi",
   is_suspeito: false, ip_address: "1.2.3.4", created_at: "2026-11-01T10:00:00Z", updated_at: "2026-11-01T10:00:00Z",
@@ -32,15 +28,6 @@ const COMENTARIO = {
 const BANIDO = {
   id: "ban-uuid-1", customer: 42, customer_email: "bia@exemplo.com", customer_nome: "Bia", motivo: "ofensa",
   banido_em: "2026-11-01T10:00:00Z", banido_por_email: "pedro@clama.me", revogado_em: null,
-}
-const WEBHOOK = {
-  id: "w1", created_at: "2026-11-01T10:00:00Z", updated_at: "2026-11-01T10:00:00Z", provider: "MERCADO_PAGO",
-  event_type: "payment", status: "ERRO", external_event_id: "evt-123", pedido_id: PEDIDO_ID, error_message: "falhou",
-}
-const REPASSE = {
-  id: "r1", pedido_id: PEDIDO_ID, instituicao_id: "i1", instituicao_nome: "Mar de Espanha", valor_base_centavos: 10000,
-  percentual: 10, valor_centavos: 1000, status: "registrado", transferido_em: null, comprovante: "",
-  created_at: "2026-11-01T10:00:00Z", updated_at: "2026-11-01T10:00:00Z",
 }
 const BLOQUEIO = {
   id: "b1", created_at: "2026-11-01T10:00:00Z", cpf_hash_curto: "cafe1234", email_hash_curto: "beef5678",
@@ -88,12 +75,8 @@ async function preparar(page: Page) {
     }
     if (path === "/api/admin/usuarios") return json(paginaUsuarios([USUARIO]))
     if (path === "/api/admin/usuarios/7") return json(USUARIO)
-    if (path === "/api/admin/pedidos/") return json(pagina([PEDIDO]))
     if (path === "/api/blog/admin/comments/") return json(pagina([COMENTARIO]))
     if (path === "/api/blog/admin/banned-customers/") return json(pagina([BANIDO]))
-    if (path === "/api/admin/webhooks/") return json(pagina([WEBHOOK]))
-    if (path === "/api/admin/webhooks/w1/") return json({ ...WEBHOOK, payload: {} })
-    if (path === "/api/admin/repasses/") return json(pagina([REPASSE]))
     if (path === "/api/admin/freemium/bloqueios/") return json(pagina([BLOQUEIO]))
     desconhecidas.push(`leitura GET ${path}`)
     return json({ detail: "sem mock" }, 500)
@@ -149,23 +132,6 @@ test.describe("Admin, etapa 7 (API mockada)", () => {
     })
   }
 
-  test("Repasses lista", async ({ page }) => {
-    await preparar(page)
-    await page.goto("/admin/repasses")
-    await expect(page.getByRole("heading", { name: "Repasses" })).toBeVisible()
-    await expect(page.getByText("Mar de Espanha")).toBeVisible()
-  })
-
-  test("Webhooks lista e reprocessar pede confirmacao", async ({ page }) => {
-    const { escritas } = await preparar(page)
-    await page.goto("/admin/webhooks")
-    await expect(page.getByText("evt-123")).toBeVisible()
-    await page.getByRole("button", { name: "Detalhes" }).click()
-    await page.getByRole("button", { name: /Reprocessar/ }).click()
-    await expect(page.getByText("Reprocessar webhook?")).toBeVisible()
-    expect(escritas()).toHaveLength(0)
-  })
-
   test("Freemium lista e desbloquear pede confirmacao", async ({ page }) => {
     const { escritas } = await preparar(page)
     await page.goto("/admin/freemium")
@@ -210,18 +176,5 @@ test.describe("Admin, etapa 7 (API mockada)", () => {
     await expect.poll(() => escritas().map((c) => `${c.method} ${c.path}`)).toEqual([
       "DELETE /api/admin/usuarios/7",
     ])
-  })
-
-  test("Pedidos lista, filtra por canal, q e status; a lista pede limit", async ({ page }) => {
-    const { ultima } = await preparar(page)
-    await page.goto("/admin/pedidos")
-    await expect(page.getByText("R$ 10,00")).toBeVisible()
-    expect(ultima("/api/admin/pedidos/")?.query.get("limit")).toBe("20")
-    await page.getByLabel("Canal").selectOption("whatsapp")
-    await expect.poll(() => ultima("/api/admin/pedidos/")?.query.get("canal")).toBe("whatsapp")
-    await page.getByLabel("Status").selectOption("enviada")
-    await expect.poll(() => ultima("/api/admin/pedidos/")?.query.get("status")).toBe("enviada")
-    await page.getByLabel("Buscar pedidos").fill("ana")
-    await expect.poll(() => ultima("/api/admin/pedidos/")?.query.get("q")).toBe("ana")
   })
 })
