@@ -148,8 +148,10 @@ test("admin acha o pedido pelo e-mail exato e marca o repasse como transferido",
   await expect(repasse).toContainText("Registrado")
   await expect(repasse).toContainText(/R\$\s*0,20/) // 20% de R$ 1,00
   await repasse.getByRole("button", { name: "Marcar transferido" }).click()
+  await admin.getByLabel("Comprovante").fill("PIX-E2E-001")
   await admin.getByRole("button", { name: "Confirmar transferência" }).click()
   await expect(repasse).toContainText("Transferido")
+  await expect(repasse).toContainText("PIX-E2E-001")
   await expect(repasse.getByRole("button", { name: "Marcar transferido" })).toHaveCount(0)
 })
 

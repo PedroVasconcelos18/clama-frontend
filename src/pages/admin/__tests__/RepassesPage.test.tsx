@@ -62,9 +62,18 @@ describe("RepassesPage", () => {
     await userEvent.click(await screen.findByRole("button", { name: "Marcar transferido" }))
     expect(fetchApi.mock.calls.some(([, i]) => i?.method === "POST")).toBe(false)
     const antes = fetchApi.mock.calls.length
-    await userEvent.click(screen.getByRole("button", { name: "Confirmar transferência" }))
+    const confirmar = screen.getByRole("button", { name: "Confirmar transferência" }) as HTMLButtonElement
+    expect(confirmar.disabled).toBe(true) // comprovante é obrigatório
+    const campo = screen.getByLabelText("Comprovante") as HTMLInputElement
+    expect(campo.maxLength).toBe(120)
+    await userEvent.type(campo, "  PIX-E123 ")
+    await userEvent.click(confirmar)
     await waitFor(() =>
-      expect(fetchApi).toHaveBeenCalledWith("/api/admin/repasses/1/transferencia", { method: "POST", showToast: false }),
+      expect(fetchApi).toHaveBeenCalledWith("/api/admin/repasses/1/transferencia", {
+        method: "POST",
+        body: JSON.stringify({ comprovante: "PIX-E123" }),
+        showToast: false,
+      }),
     )
     await waitFor(() => expect(toast.success).toHaveBeenCalled())
     await waitFor(() => expect(fetchApi.mock.calls.length).toBeGreaterThan(antes + 1)) // recarregou a lista
@@ -81,6 +90,7 @@ describe("RepassesPage", () => {
     post = () => Promise.reject(new PastoralApiError("Erro", "repasse_cancelado", "Repasse cancelado não se transfere.", 409))
     render(<RepassesPage />)
     await userEvent.click(await screen.findByRole("button", { name: "Marcar transferido" }))
+    await userEvent.type(screen.getByLabelText("Comprovante"), "PIX-1")
     await userEvent.click(screen.getByRole("button", { name: "Confirmar transferência" }))
     await waitFor(() => expect(toast.error).toHaveBeenCalledWith("Repasse cancelado não se transfere."))
   })

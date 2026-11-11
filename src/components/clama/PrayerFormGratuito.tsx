@@ -8,7 +8,7 @@ import {
   type PedidoGratuitoData,
   type PedidoGratuitoInput,
 } from "@/lib/schemas/pedido-gratuito";
-import { Turnstile, getTurnstileSiteKey } from "@/lib/captcha/turnstile";
+import { Turnstile, getTurnstileSiteKey, type TurnstileInstance } from "@/lib/captcha/turnstile";
 import { obterDeviceHash } from "@/lib/fingerprint";
 
 import {
@@ -38,7 +38,8 @@ function toE164BR(raw: string): string {
 }
 
 interface PrayerFormGratuitoProps {
-  onSubmit: (data: PedidoGratuitoData) => Promise<void> | void;
+  /** Devolver `false` = o envio falhou: o token do Turnstile já foi gasto, então o widget é reiniciado. */
+  onSubmit: (data: PedidoGratuitoData) => Promise<boolean | void> | boolean | void;
   isSubmitting?: boolean;
   /** "light" (default) = visual original; "dark" = tema da LP redesenhada. */
   theme?: "light" | "dark";
@@ -60,6 +61,8 @@ export function PrayerFormGratuito({
   const isDark = theme === "dark";
   const schema = useMemo(() => pedidoGratuitoSchema, []);
   const siteKey = useMemo(() => getTurnstileSiteKey(), []);
+  const [turnstile, setTurnstile] = useState<TurnstileInstance | null>(null); // ref de callback: o reset() é do widget
+  const turnstileRef = useCallback((i: TurnstileInstance | null | undefined) => setTurnstile(i ?? null), []);
 
   const form = useForm<PedidoGratuitoInput, unknown, PedidoGratuitoData>({
     // `onTouched`: valida ao primeiro blur de cada campo (e depois a cada
@@ -178,6 +181,12 @@ export function PrayerFormGratuito({
     });
   }, [form]);
 
+  // Token de uso único: depois de um envio que falhou, reinicia o widget (senão o próximo envio reusaria o gasto).
+  const reiniciarTurnstile = useCallback(() => {
+    form.setValue("turnstile_token", "", { shouldValidate: true, shouldTouch: true });
+    turnstile?.reset();
+  }, [form, turnstile]);
+
   const handleSubmit = form.handleSubmit(async (data) => {
     const cleaned: PedidoGratuitoData = {
       ...data,
@@ -186,7 +195,7 @@ export function PrayerFormGratuito({
       // toE164BR remove a máscara visual antes de enviar.
       telefone: data.telefone ? toE164BR(data.telefone) : undefined,
     };
-    await onSubmit(cleaned);
+    if ((await onSubmit(cleaned)) === false) reiniciarTurnstile();
   });
 
   // Estilos por tema. Light = visual original (intacto).
@@ -425,6 +434,7 @@ export function PrayerFormGratuito({
             invisible / interactive conforme o risco do request. */}
         <div data-testid="turnstile-host" className="my-2">
           <Turnstile
+            ref={turnstileRef}
             siteKey={siteKey}
             onSuccess={handleTurnstileSuccess}
             onError={handleTurnstileError}

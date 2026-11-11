@@ -287,7 +287,7 @@ export const PedidoSection = forwardRef<HTMLElement, PedidoSectionProps>(
 
   // Pago (logado ou anônimo): reusa ou cria e vai à confirmação. O rascunho fica só com a
   // oferta e {id, assinatura, criadoEm}: nada de CPF ou nome no localStorage.
-  const enviarPago = async (conteudo: object, criar: () => Promise<PedidoCriado>) => {
+  const enviarPago = async (conteudo: object, criar: () => Promise<PedidoCriado>): Promise<boolean> => {
     setIsSubmitting(true);
     setSubmitError(null);
     try {
@@ -298,8 +298,10 @@ export const PedidoSection = forwardRef<HTMLElement, PedidoSectionProps>(
         salvarAgora({ ...draft, formData: {}, pedido: { id, assinatura, criadoEm: Date.now() } });
       }
       irParaConfirmacao(id);
+      return true;
     } catch (err) {
       setSubmitError(mensagemDoErro(err));
+      return false;
     } finally {
       setIsSubmitting(false);
     }
@@ -341,8 +343,9 @@ export const PedidoSection = forwardRef<HTMLElement, PedidoSectionProps>(
   };
 
   // ---- ANÔNIMO: PrayerFormGratuito (apiFetch + Turnstile/fingerprint) ----
-  const handleAnonSubmit = async (data: PedidoGratuitoData) => {
-    if (!ofertaValida()) return;
+  // Devolve false se o envio falhou: o PrayerFormGratuito reinicia o Turnstile (o token é de uso único).
+  const handleAnonSubmit = async (data: PedidoGratuitoData): Promise<boolean> => {
+    if (!ofertaValida()) return true; // nada foi enviado: o token segue válido
 
     // Gratuito anônimo: fluxo freemium double opt-in (onda 5; mostra "confira e-mail").
     if (draft.offering.gratuito) {
@@ -352,6 +355,7 @@ export const PedidoSection = forwardRef<HTMLElement, PedidoSectionProps>(
         await criarPedidoGratuito(data);
         toast.success("Pedido recebido! Confira seu e-mail pra confirmar.");
         setSubmitted({ email: data.email });
+        return true;
       } catch (err) {
         const error = err as PastoralApiError;
         const msg =
@@ -363,18 +367,18 @@ export const PedidoSection = forwardRef<HTMLElement, PedidoSectionProps>(
               error.extra.redirect) ||
             "/login";
           navigate(redirect, { state: { flashMessage: msg, next: "/" } });
-          return;
+          return true;
         }
         setSubmitError(msg);
         toast.error(msg);
         setIsSubmitting(false);
+        return false;
       }
-      return;
     }
 
     // Livre anônimo (pago): reusar evita gastar de novo o token do Turnstile.
     const valor = valorCentavosDaOferta();
-    await enviarPago(
+    return enviarPago(
       { ...corpoDoPedido(data), valorCentavos: valor, instituicao: instituicaoId ?? undefined },
       () => criarDoacaoAnonima(data, valor, instituicaoId),
     );

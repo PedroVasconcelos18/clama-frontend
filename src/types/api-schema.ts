@@ -516,6 +516,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/webhooks/mercadopago/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["receber_1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -843,6 +859,7 @@ export interface components {
         RepasseAdmin: {
             /** Format: date-time */
             canceladoEm?: string | null;
+            comprovante?: string | null;
             /** Format: date-time */
             criadoEm?: string;
             /** Format: int64 */
@@ -898,6 +915,9 @@ export interface components {
             status?: "AGUARDANDO_PAGAMENTO" | "PAGO" | "GERANDO_ORACAO" | "ORACAO_GERADA" | "ENVIADA" | "AGUARDANDO_NOVA_TENTATIVA" | "ERRO";
             /** Format: int64 */
             valorCentavos?: number;
+        };
+        Transferencia: {
+            comprovante: string;
         };
         TrocaDeSenha: {
             novaSenha: string;
@@ -1321,7 +1341,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Transferencia"];
+            };
+        };
         responses: {
             /** @description OK */
             200: {
@@ -1842,6 +1866,26 @@ export interface operations {
         };
     };
     receber: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["RespostaDoWebhook"];
+                };
+            };
+        };
+    };
+    receber_1: {
         parameters: {
             query?: never;
             header?: never;

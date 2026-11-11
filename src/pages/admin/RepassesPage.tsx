@@ -5,6 +5,7 @@ import { useApi } from "@/hooks/useApi"
 import { usePaginaAdmin } from "@/hooks/useAdminList"
 import { AdminPager } from "@/components/admin/AdminPager"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
   Dialog,
@@ -36,6 +37,7 @@ export default function RepassesPage() {
   const [instituicoes, setInstituicoes] = useState<AdminInstituicao[]>([])
   const [alvo, setAlvo] = useState<AdminRepasse | null>(null)
   const [busy, setBusy] = useState(false)
+  const [comprovante, setComprovante] = useState("")
 
   const { data: page, loading, error } = usePaginaAdmin<AdminRepasse>(
     "/api/admin/repasses",
@@ -57,13 +59,22 @@ export default function RepassesPage() {
     setOffset(0)
   }
 
+  function fechar() {
+    setAlvo(null)
+    setComprovante("")
+  }
+
   async function transferir() {
-    if (!alvo) return
+    if (!alvo || !comprovante.trim()) return
     setBusy(true)
     try {
-      await fetchApi(`/api/admin/repasses/${alvo.id}/transferencia`, { method: "POST", showToast: false })
+      await fetchApi(`/api/admin/repasses/${alvo.id}/transferencia`, {
+        method: "POST",
+        body: JSON.stringify({ comprovante: comprovante.trim() }),
+        showToast: false,
+      })
       toast.success("Repasse marcado como transferido.")
-      setAlvo(null)
+      fechar()
       setReloadToken((n) => n + 1)
     } catch (err) {
       toast.error((err as { pastoralMessage?: string })?.pastoralMessage ?? "Não foi possível marcar o repasse.")
@@ -165,6 +176,7 @@ export default function RepassesPage() {
                     {r.transferidoEm && formatarData(r.transferidoEm)}
                     {r.canceladoEm && formatarData(r.canceladoEm)}
                     {r.motivo && <span className="block">{r.motivo}</span>}
+                    {r.comprovante && <span className="block">Comprovante: {r.comprovante}</span>}
                   </td>
                   <td className="p-3 text-right">
                     {r.status === "REGISTRADO" && (
@@ -182,7 +194,7 @@ export default function RepassesPage() {
 
       <AdminPager offset={offset} total={total} onChange={setOffset} />
 
-      <Dialog open={!!alvo} onOpenChange={(open) => !open && !busy && setAlvo(null)}>
+      <Dialog open={!!alvo} onOpenChange={(open) => !open && !busy && fechar()}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Marcar como transferido?</DialogTitle>
@@ -192,11 +204,16 @@ export default function RepassesPage() {
               vira acerto no próximo ciclo.
             </DialogDescription>
           </DialogHeader>
+          <div>
+            <Label htmlFor="rep-comprovante" className={ROTULO}>Comprovante</Label>
+            <Input id="rep-comprovante" value={comprovante} maxLength={120} required
+              placeholder="Identificador do Pix ou número do recibo" onChange={(e) => setComprovante(e.target.value)} />
+          </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setAlvo(null)} disabled={busy}>
+            <Button variant="outline" onClick={fechar} disabled={busy}>
               Cancelar
             </Button>
-            <Button onClick={transferir} disabled={busy}>
+            <Button onClick={transferir} disabled={busy || !comprovante.trim()}>
               {busy ? "Marcando…" : "Confirmar transferência"}
             </Button>
           </DialogFooter>

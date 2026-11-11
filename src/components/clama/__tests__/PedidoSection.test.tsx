@@ -11,13 +11,31 @@ import { SessaoProvider } from "@/contexts/SessaoContext";
 import { PastoralApiError } from "@/lib/api";
 
 // Anti-robô e fingerprint resolvem na hora (o real depende da rede).
-vi.mock("@/lib/captcha/turnstile", () => ({
-  getTurnstileSiteKey: () => "chave",
-  Turnstile: ({ onSuccess }: { onSuccess: (t: string) => void }) => {
-    setTimeout(() => onSuccess("token-turnstile"), 0);
-    return null;
-  },
-}));
+const { resetTurnstile } = vi.hoisted(() => ({ resetTurnstile: vi.fn() }));
+vi.mock("@/lib/captcha/turnstile", async () => {
+  const { forwardRef, useEffect, useImperativeHandle } = await import("react");
+  return {
+    getTurnstileSiteKey: () => "chave",
+    Turnstile: forwardRef(function Turnstile(
+      { onSuccess }: { onSuccess: (t: string) => void },
+      ref: React.Ref<{ reset: () => void }>,
+    ) {
+      useImperativeHandle(ref, () => ({
+        // como o widget real: reiniciar gera um token novo
+        reset: () => {
+          resetTurnstile();
+          setTimeout(() => onSuccess("token-novo"), 0);
+        },
+      }), [onSuccess]);
+      useEffect(() => {
+        const t = setTimeout(() => onSuccess("token-turnstile"), 0);
+        return () => clearTimeout(t);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+      }, []); // só ao montar, como o widget real
+      return null;
+    }),
+  };
+});
 // O select do base-ui precisa de APIs que o jsdom não tem; um <select> nativo basta aqui.
 vi.mock("@/components/clama/InstituicaoSelect", () => ({
   InstituicaoSelect: ({
@@ -75,6 +93,7 @@ describe("PedidoSection", () => {
   beforeEach(() => {
     localStorage.clear();
     navigateMock.mockClear();
+    resetTurnstile.mockClear();
     planos = [
       { id: 1, nome: "Plano 1", descricao: "d1", valorCentavos: 199, complexidade: "SIMPLES", ordem: 1 },
       { id: 2, nome: "Plano 2", descricao: "d2", valorCentavos: 999, complexidade: "COM_VERSICULO", ordem: 2 },
@@ -391,6 +410,29 @@ describe("PedidoSection", () => {
         consentAceito: true,
       });
       expect(corpos["/api/doacoes"]).not.toHaveProperty("telefone");
+      expect(resetTurnstile).not.toHaveBeenCalled(); // deu certo: o widget segue como está
+    });
+
+    it("anônimo pago: depois de um 400 em /api/doacoes o Turnstile é reiniciado e o envio seguinte leva o token novo", async () => {
+      mockApiFetch({ outras });
+      renderWithRouter(<PedidoSection />);
+      expect(await screen.findByText("Telefone (opcional)")).toBeInTheDocument();
+      await userEvent.type(campo("nome"), "Maria Doadora");
+      await userEvent.type(campo("email"), "maria@example.com");
+      await userEvent.type(campo("cpf_cnpj"), CPF);
+      await userEvent.type(campo("idade"), "40");
+      await userEvent.selectOptions(campo("sexo"), "nao_informado");
+      await userEvent.click(screen.getByRole("checkbox"));
+      falhaNaCriacao = new PastoralApiError("Erro", "captcha_invalido", "Verificação anti-robô falhou.", 400);
+      await userEvent.click(screen.getByRole("button", { name: /Contribuir e receber/i }));
+      expect(await screen.findByText("Verificação anti-robô falhou.")).toBeInTheDocument();
+      expect(resetTurnstile).toHaveBeenCalledTimes(1);
+      expect(navigateMock).not.toHaveBeenCalled();
+
+      falhaNaCriacao = null;
+      await userEvent.click(screen.getByRole("button", { name: /Contribuir e receber/i }));
+      await waitFor(() => expect(navigateMock).toHaveBeenCalledWith(`/confirmacao?pedido_id=${ID}`));
+      expect(corpos["/api/doacoes"]).toMatchObject({ turnstileToken: "token-novo" });
     });
   });
 });
