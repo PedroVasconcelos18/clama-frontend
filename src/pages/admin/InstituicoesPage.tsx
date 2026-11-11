@@ -31,9 +31,19 @@ const STATUS_FILTER_OPTIONS: { value: StatusFilter; label: string }[] = [
 ]
 
 const instituicaoSchema = z.object({
-  nome: z.string().min(1, "Nome é obrigatório"),
-  ordem: z.coerce.number().int().min(1, "Ordem deve ser pelo menos 1"),
+  nome: z.string().min(1, "Nome é obrigatório").max(120, "Nome muito longo"),
+  ordem: z.coerce.number().int().min(0, "Ordem não pode ser negativa"),
 })
+
+const LOGO_TIPOS = ["image/png", "image/jpeg", "image/gif", "image/webp"]
+const LOGO_MAX_BYTES = 250 * 1024
+const LOGO_DICA = "PNG, JPG, GIF ou WEBP, até 250 KB."
+
+function erroDaLogo(f: File): string | null {
+  if (!LOGO_TIPOS.includes(f.type)) return `Formato não aceito. ${LOGO_DICA}`
+  if (f.size > LOGO_MAX_BYTES) return `A logo passa de 250 KB. ${LOGO_DICA}`
+  return null
+}
 
 type InstituicaoFormInput = z.input<typeof instituicaoSchema>
 type InstituicaoFormData = z.output<typeof instituicaoSchema>
@@ -58,6 +68,7 @@ export default function InstituicoesPage() {
   )
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("todos")
   const [logoFile, setLogoFile] = useState<File | null>(null)
+  const [logoErro, setLogoErro] = useState<string | null>(null)
 
   // Preview da logo escolhida (object URL, revogado ao trocar de arquivo).
   const logoPreview = useMemo(() => {
@@ -81,6 +92,7 @@ export default function InstituicoesPage() {
     register,
     handleSubmit,
     reset,
+    setError: setFieldError,
     formState: { errors, isSubmitting },
   } = useForm<InstituicaoFormInput, unknown, InstituicaoFormData>({
     resolver: zodResolver(instituicaoSchema),
@@ -91,7 +103,7 @@ export default function InstituicoesPage() {
     setError(null)
     try {
       const data = await fetchApi<AdminInstituicao[]>(
-        "/api/admin/instituicoes/",
+        "/api/admin/instituicoes",
         { showToast: false },
       )
       setInstituicoes(data)
@@ -113,6 +125,7 @@ export default function InstituicoesPage() {
   function openNewDialog() {
     setEditingInstituicao(null)
     setLogoFile(null)
+    setLogoErro(null)
     reset({
       nome: "",
       ordem: instituicoes.length + 1,
@@ -123,6 +136,7 @@ export default function InstituicoesPage() {
   function openEditDialog(inst: AdminInstituicao) {
     setEditingInstituicao(inst)
     setLogoFile(null)
+    setLogoErro(null)
     reset({
       nome: inst.nome,
       ordem: inst.ordem,
@@ -130,28 +144,61 @@ export default function InstituicoesPage() {
     setIsDialogOpen(true)
   }
 
-  async function onSubmit(data: InstituicaoFormData) {
-    // FormData (multipart) porque a logo vai como arquivo (logo_file).
+  async function enviarLogo(id: number, arquivo: File): Promise<boolean> {
     const formData = new FormData()
-    formData.append("nome", data.nome)
-    formData.append("ordem", String(data.ordem))
-    if (logoFile) formData.append("logo_file", logoFile)
-
+    formData.append("logo", arquivo)
     try {
-      if (editingInstituicao) {
-        await fetchApi(`/api/admin/instituicoes/${editingInstituicao.id}/`, {
-          method: "PATCH",
-          body: formData,
-        })
-        toast.success("Instituição atualizada.")
-      } else {
-        await fetchApi("/api/admin/instituicoes/", {
-          method: "POST",
-          body: formData,
-        })
-        toast.success("Instituição criada.")
+      await fetchApi(`/api/admin/instituicoes/${id}/logo`, { method: "PUT", body: formData, showToast: false })
+      return true
+    } catch (err) {
+      // logo_invalida e arquivo_grande_demais: a mensagem vai embaixo do campo da logo.
+      setLogoErro(err instanceof PastoralApiError ? err.pastoralMessage : "Não foi possível enviar a logo.")
+      return false
+    }
+  }
+
+  async function onSubmit(data: InstituicaoFormData) {
+    if (logoFile && erroDaLogo(logoFile)) return
+    let salva: AdminInstituicao
+    try {
+      // Criar e editar são JSON; a logo vai em uma segunda chamada (PUT multipart).
+      salva = editingInstituicao
+        ? await fetchApi<AdminInstituicao>(`/api/admin/instituicoes/${editingInstituicao.id}`, {
+            method: "PATCH",
+            body: JSON.stringify(data),
+            showToast: false,
+          })
+        : await fetchApi<AdminInstituicao>("/api/admin/instituicoes", {
+            method: "POST",
+            body: JSON.stringify(data),
+            showToast: false,
+          })
+    } catch (err) {
+      if (!(err instanceof PastoralApiError)) return
+      const campos = Object.entries(err.campos)
+      for (const [campo, mensagem] of campos) {
+        if (campo in instituicaoSchema.shape) setFieldError(campo as keyof InstituicaoFormInput, { message: mensagem })
       }
-      setIsDialogOpen(false)
+      if (campos.length === 0) toast.error(err.pastoralMessage)
+      return
+    }
+
+    if (logoFile && !(await enviarLogo(salva.id, logoFile))) {
+      // A instituição já foi gravada: o diálogo continua aberto, agora em edição, só para corrigir a logo.
+      setEditingInstituicao(salva)
+      loadInstituicoes()
+      return
+    }
+    toast.success(editingInstituicao ? "Instituição atualizada." : "Instituição criada.")
+    setIsDialogOpen(false)
+    loadInstituicoes()
+  }
+
+  async function removerLogo(inst: AdminInstituicao) {
+    try {
+      await fetchApi(`/api/admin/instituicoes/${inst.id}/logo`, { method: "DELETE" })
+      toast.success("Logo removida.")
+      setEditingInstituicao({ ...inst, logoUrl: null, temLogo: false })
       loadInstituicoes()
     } catch {
       // Toast de erro já exibido automaticamente pelo fetchApi
@@ -160,18 +207,11 @@ export default function InstituicoesPage() {
 
   async function handleToggleAtivo(inst: AdminInstituicao) {
     try {
-      if (inst.ativo) {
-        await fetchApi(`/api/admin/instituicoes/${inst.id}/desativar/`, {
-          method: "POST",
-        })
-        toast.success("Instituição desativada.")
-      } else {
-        await fetchApi(`/api/admin/instituicoes/${inst.id}/`, {
-          method: "PATCH",
-          body: JSON.stringify({ ativo: true }),
-        })
-        toast.success("Instituição ativada.")
-      }
+      await fetchApi(`/api/admin/instituicoes/${inst.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ ativo: !inst.ativo }),
+      })
+      toast.success(inst.ativo ? "Instituição desativada." : "Instituição ativada.")
       setConfirmToggle(null)
       loadInstituicoes()
     } catch {
@@ -240,7 +280,7 @@ export default function InstituicoesPage() {
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center gap-3 min-w-0">
                   <img
-                    src={logoSrc(inst.logo)}
+                    src={logoSrc(inst.logoUrl)}
                     onError={handleImgError}
                     width={40}
                     height={40}
@@ -322,12 +362,12 @@ export default function InstituicoesPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="logo_file" className="text-clama-cream/80">
+              <Label htmlFor="logo" className="text-clama-cream/80">
                 Logo
               </Label>
               <div className="flex items-center gap-3">
                 <img
-                  src={logoPreview ?? logoSrc(editingInstituicao?.logo)}
+                  src={logoPreview ?? logoSrc(editingInstituicao?.logoUrl)}
                   onError={handleImgError}
                   width={48}
                   height={48}
@@ -335,17 +375,34 @@ export default function InstituicoesPage() {
                   className="w-12 h-12 shrink-0 rounded border border-clama-gold/20 object-contain bg-clama-night"
                 />
                 <input
-                  id="logo_file"
+                  id="logo"
                   type="file"
-                  accept="image/png,image/jpeg,image/svg+xml,image/webp,image/gif"
-                  onChange={(e) => setLogoFile(e.target.files?.[0] ?? null)}
+                  accept="image/png,image/jpeg,image/gif,image/webp"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0] ?? null
+                    const erro = f && erroDaLogo(f)
+                    setLogoErro(erro || null)
+                    setLogoFile(erro ? null : f)
+                  }}
                   className="block w-full text-sm text-clama-cream/70 file:mr-3 file:rounded-lg file:border-0 file:bg-clama-gold/20 file:px-3 file:py-1.5 file:text-clama-cream hover:file:bg-clama-gold/30"
                 />
               </div>
               <p className="text-xs text-clama-cream/40">
-                PNG, JPG, SVG, WEBP ou GIF, até 250 KB.
+                {LOGO_DICA}
                 {editingInstituicao && " Deixe em branco para manter a atual."}
               </p>
+              {logoErro && <p className="text-red-400 text-sm">{logoErro}</p>}
+              {editingInstituicao?.temLogo && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => removerLogo(editingInstituicao)}
+                  className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                >
+                  Remover logo
+                </Button>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -355,7 +412,7 @@ export default function InstituicoesPage() {
               <Input
                 id="ordem"
                 type="number"
-                min={1}
+                min={0}
                 {...register("ordem")}
                 className="bg-clama-night border-clama-gold/30 text-clama-cream"
               />

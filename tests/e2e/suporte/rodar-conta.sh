@@ -2,7 +2,7 @@
 # Sobe Postgres 18 (container), o clama-api (perfil local) e o Vite, todos em portas livres, semeia usuários,
 # roda o Playwright contra eles e derruba tudo no fim.
 #
-# Uso: tests/e2e/suporte/rodar-conta.sh [args do playwright]   (padrão: tests/e2e/conta.spec.ts)
+# Uso: tests/e2e/suporte/rodar-conta.sh [spec ou args do playwright]   (padrão: tests/e2e/conta.spec.ts; catálogo: tests/e2e/catalogo.spec.ts)
 # Variáveis: CLAMA_API_DIR (padrão ../clama-api), SKIP_BUILD=1 para não recompilar o jar.
 set -euo pipefail
 

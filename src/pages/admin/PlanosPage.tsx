@@ -31,29 +31,38 @@ const STATUS_FILTER_OPTIONS: { value: StatusFilter; label: string }[] = [
 ]
 
 const COMPLEXIDADE_OPTIONS = [
-  { value: "simples", label: "Simples" },
-  { value: "com_versiculo", label: "Com Versículo" },
-  { value: "com_profecia_e_versiculos", label: "Com Profecia e Versículos" },
+  { value: "SIMPLES", label: "Simples" },
+  { value: "COM_VERSICULO", label: "Com Versículo" },
+  { value: "COM_PROFECIA_E_VERSICULOS", label: "Com Profecia e Versículos" },
 ]
 
-const planoSchema = z.object({
-  nome: z.string().min(1, "Nome é obrigatório"),
-  valor_reais: z
-    .string()
-    .min(1, "Valor é obrigatório")
-    .refine(
-      (val) => {
-        // Remove pontos de milhar e troca vírgula por ponto
-        const normalized = val.replace(/\./g, "").replace(",", ".")
-        const num = parseFloat(normalized)
-        return !isNaN(num) && num >= 0.01
-      },
-      "Valor deve ser no mínimo R$ 0,01"
-    ),
-  descricao: z.string().min(1, "Descrição é obrigatória"),
-  complexidade: z.enum(["simples", "com_versiculo", "com_profecia_e_versiculos"]),
-  ordem: z.coerce.number().int().min(1, "Ordem deve ser pelo menos 1"),
-})
+const reais = (centavos: number) =>
+  (centavos / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" }).replace(/\u00a0/g, " ")
+
+function rotuloDoValor(p: AdminPlano): string {
+  if (p.tipo === "GRATUITO") return "Gratuito"
+  if (p.tipo === "VALOR_LIVRE") return "Valor livre"
+  return reais(p.valorCentavos)
+}
+
+// `tipo` não é um campo da tela: viaja no formulário para o plano técnico (GRATUITO, VALOR_LIVRE)
+// não ser validado por valor, complexidade e ordem, que ficam desabilitados.
+const planoSchema = z
+  .object({
+    tipo: z.string(),
+    nome: z.string().min(1, "Nome é obrigatório").max(120, "Nome muito longo"),
+    valorReais: z.string(),
+    descricao: z.string().min(1, "Descrição é obrigatória").max(2000, "Descrição muito longa"),
+    complexidade: z.enum(["SIMPLES", "COM_VERSICULO", "COM_PROFECIA_E_VERSICULOS"]),
+    ordem: z.coerce.number().int().min(0, "Ordem não pode ser negativa"),
+  })
+  .superRefine((v, ctx) => {
+    if (v.tipo !== "COMUM") return
+    const num = parseCurrencyToFloat(v.valorReais)
+    if (!v.valorReais) ctx.addIssue({ code: "custom", path: ["valorReais"], message: "Valor é obrigatório" })
+    else if (!(num >= 0.01))
+      ctx.addIssue({ code: "custom", path: ["valorReais"], message: "Valor deve ser no mínimo R$ 0,01" })
+  })
 
 function formatCurrencyInput(value: string): string {
   // Remove tudo que não é dígito ou vírgula
@@ -116,6 +125,8 @@ export default function PlanosPage() {
   const [confirmToggle, setConfirmToggle] = useState<AdminPlano | null>(null)
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("todos")
 
+  const tecnico = !!editingPlano && editingPlano.tipo !== "COMUM"
+
   const filteredPlanos = planos.filter((plano) => {
     if (statusFilter === "todos") return true
     if (statusFilter === "ativos") return plano.ativo
@@ -128,6 +139,7 @@ export default function PlanosPage() {
     handleSubmit,
     reset,
     control,
+    setError: setFieldError,
     formState: { errors, isSubmitting },
   } = useForm<PlanoFormInput, unknown, PlanoFormData>({
     resolver: zodResolver(planoSchema),
@@ -137,7 +149,7 @@ export default function PlanosPage() {
     setIsLoading(true)
     setError(null)
     try {
-      const data = await fetchApi<AdminPlano[]>("/api/admin/planos/", {
+      const data = await fetchApi<AdminPlano[]>("/api/admin/planos", {
         showToast: false,
       })
       setPlanos(data)
@@ -159,10 +171,11 @@ export default function PlanosPage() {
   function openNewDialog() {
     setEditingPlano(null)
     reset({
+      tipo: "COMUM",
       nome: "",
-      valor_reais: "",
+      valorReais: "",
       descricao: "",
-      complexidade: "simples",
+      complexidade: "SIMPLES",
       ordem: planos.length + 1,
     })
     setIsDialogOpen(true)
@@ -172,11 +185,12 @@ export default function PlanosPage() {
     setEditingPlano(plano)
     // Formata valor com vírgula para decimais e ponto para milhares
     const valorReais = formatCurrencyInput(
-      (plano.valor_centavos / 100).toFixed(2).replace(".", ",")
+      (plano.valorCentavos / 100).toFixed(2).replace(".", ",")
     )
     reset({
+      tipo: plano.tipo,
       nome: plano.nome,
-      valor_reais: valorReais,
+      valorReais: valorReais,
       descricao: plano.descricao,
       complexidade: plano.complexidade,
       ordem: plano.ordem,
@@ -185,51 +199,54 @@ export default function PlanosPage() {
   }
 
   async function onSubmit(data: PlanoFormData) {
-    const valorCentavos = Math.round(parseCurrencyToFloat(data.valor_reais) * 100)
-
-    const payload = {
-      nome: data.nome,
-      valor_centavos: valorCentavos,
-      descricao: data.descricao,
-      complexidade: data.complexidade,
-      ordem: data.ordem,
-    }
+    // Plano técnico: o backend só aceita mudar nome e descrição.
+    const payload =
+      editingPlano && editingPlano.tipo !== "COMUM"
+        ? { nome: data.nome, descricao: data.descricao }
+        : {
+            nome: data.nome,
+            valorCentavos: Math.round(parseCurrencyToFloat(data.valorReais) * 100),
+            descricao: data.descricao,
+            complexidade: data.complexidade,
+            ordem: data.ordem,
+          }
 
     try {
       if (editingPlano) {
-        await fetchApi(`/api/admin/planos/${editingPlano.id}/`, {
+        await fetchApi(`/api/admin/planos/${editingPlano.id}`, {
           method: "PATCH",
           body: JSON.stringify(payload),
+          showToast: false,
         })
         toast.success("Plano atualizado.")
       } else {
-        await fetchApi("/api/admin/planos/", {
+        await fetchApi("/api/admin/planos", {
           method: "POST",
           body: JSON.stringify(payload),
+          showToast: false,
         })
         toast.success("Plano criado.")
       }
       setIsDialogOpen(false)
       loadPlanos()
-    } catch {
-      // Toast de erro já exibido automaticamente pelo fetchApi
+    } catch (err) {
+      if (!(err instanceof PastoralApiError)) return
+      const campos = Object.entries(err.campos)
+      for (const [campo, mensagem] of campos) {
+        const nome = campo === "valorCentavos" ? "valorReais" : campo
+        if (nome in planoSchema.shape) setFieldError(nome as keyof PlanoFormInput, { message: mensagem })
+      }
+      if (campos.length === 0) toast.error(err.pastoralMessage)
     }
   }
 
   async function handleToggleAtivo(plano: AdminPlano) {
     try {
-      if (plano.ativo) {
-        await fetchApi(`/api/admin/planos/${plano.id}/desativar/`, {
-          method: "POST",
-        })
-        toast.success("Plano desativado.")
-      } else {
-        await fetchApi(`/api/admin/planos/${plano.id}/`, {
-          method: "PATCH",
-          body: JSON.stringify({ ativo: true }),
-        })
-        toast.success("Plano ativado.")
-      }
+      await fetchApi(`/api/admin/planos/${plano.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ ativo: !plano.ativo }),
+      })
+      toast.success(plano.ativo ? "Plano desativado." : "Plano ativado.")
       setConfirmToggle(null)
       loadPlanos()
     } catch {
@@ -297,8 +314,13 @@ export default function PlanosPage() {
               <div>
                 <h3 className="text-lg font-medium text-clama-cream">{plano.nome}</h3>
                 <p className="text-2xl font-bold text-clama-gold mt-1">
-                  {plano.valor_reais_str}
+                  {rotuloDoValor(plano)}
                 </p>
+                {plano.tipo !== "COMUM" && (
+                  <span className="mt-1 inline-block px-2 py-0.5 text-xs bg-clama-gold/20 text-clama-gold rounded">
+                    Do sistema
+                  </span>
+                )}
               </div>
               {!plano.ativo && (
                 <span className="px-2 py-1 text-xs bg-gray-500/20 text-gray-400 rounded">
@@ -312,7 +334,7 @@ export default function PlanosPage() {
             </p>
 
             <div className="flex items-center gap-2 text-xs text-clama-cream/50 mb-4">
-              <span className="capitalize">{plano.complexidade.replace(/_/g, " ")}</span>
+              <span className="capitalize">{plano.complexidade.toLowerCase().replace(/_/g, " ")}</span>
               <span>&bull;</span>
               <span>Ordem: {plano.ordem}</span>
             </div>
@@ -327,6 +349,7 @@ export default function PlanosPage() {
                 <Edit className="w-4 h-4 mr-1" />
                 Editar
               </Button>
+              {plano.tipo === "COMUM" && (
               <Button
                 variant="ghost"
                 size="sm"
@@ -341,6 +364,7 @@ export default function PlanosPage() {
                 <Power className="w-4 h-4 mr-1" />
                 {plano.ativo ? "Desativar" : "Ativar"}
               </Button>
+              )}
             </div>
           </div>
           ))}
@@ -356,7 +380,9 @@ export default function PlanosPage() {
             </DialogTitle>
             {editingPlano && (
               <DialogDescription className="text-yellow-400/80">
-                Editar valor ou complexidade não afeta pedidos já realizados.
+                {tecnico
+                  ? "Plano do sistema: só o nome e a descrição podem mudar."
+                  : "Editar valor ou complexidade não afeta pedidos já realizados."}
               </DialogDescription>
             )}
           </DialogHeader>
@@ -377,15 +403,15 @@ export default function PlanosPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="valor_reais" className="text-clama-cream/80">
+              <Label htmlFor="valorReais" className="text-clama-cream/80">
                 Valor (R$)
               </Label>
               <Controller
-                name="valor_reais"
+                name="valorReais"
                 control={control}
                 render={({ field }) => (
                   <Input
-                    id="valor_reais"
+                    id="valorReais"
                     placeholder="20,00"
                     value={field.value || ""}
                     onChange={(e) => {
@@ -393,12 +419,13 @@ export default function PlanosPage() {
                       field.onChange(formatted)
                     }}
                     onBlur={field.onBlur}
+                    disabled={tecnico}
                     className="bg-clama-night border-clama-gold/30 text-clama-cream"
                   />
                 )}
               />
-              {errors.valor_reais && (
-                <p className="text-red-400 text-sm">{errors.valor_reais.message}</p>
+              {errors.valorReais && (
+                <p className="text-red-400 text-sm">{errors.valorReais.message}</p>
               )}
             </div>
 
@@ -424,6 +451,7 @@ export default function PlanosPage() {
               <select
                 id="complexidade"
                 {...register("complexidade")}
+                disabled={tecnico}
                 className="w-full h-9 px-3 rounded-lg bg-clama-night border border-clama-gold/30 text-clama-cream text-sm focus:outline-none focus:border-clama-gold"
               >
                 {COMPLEXIDADE_OPTIONS.map((opt) => (
@@ -444,7 +472,8 @@ export default function PlanosPage() {
               <Input
                 id="ordem"
                 type="number"
-                min={1}
+                min={0}
+                disabled={tecnico}
                 {...register("ordem")}
                 className="bg-clama-night border-clama-gold/30 text-clama-cream"
               />

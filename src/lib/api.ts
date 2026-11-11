@@ -1,7 +1,7 @@
 import { toast } from "sonner"
 import { getNetworkError, getLocale } from "@/i18n"
 import { csrfHeaders, exigeCsrf, lerCookieXsrf } from "@/lib/csrf"
-import { extractErrorMessage, extrairCodigo, extrairExtra } from "@/lib/erros"
+import { extractErrorMessage, extrairCampos, extrairCodigo, extrairExtra } from "@/lib/erros"
 
 export class PastoralApiError extends Error {
   code: string
@@ -13,13 +13,16 @@ export class PastoralApiError extends Error {
    * tratamento próprio.
    */
   extra: Record<string, unknown>
+  /** Mensagem por campo, vinda de `erros[{campo, mensagem}]`. */
+  campos: Record<string, string>
 
   constructor(
     message: string,
     code: string,
     pastoralMessage: string,
     httpStatus: number,
-    extra: Record<string, unknown> = {}
+    extra: Record<string, unknown> = {},
+    campos: Record<string, string> = {}
   ) {
     super(message)
     this.name = "PastoralApiError"
@@ -27,6 +30,7 @@ export class PastoralApiError extends Error {
     this.pastoralMessage = pastoralMessage
     this.httpStatus = httpStatus
     this.extra = extra
+    this.campos = campos
   }
 }
 
@@ -107,7 +111,8 @@ export async function apiFetch<T>(
       extrairCodigo(body),
       extractErrorMessage(body),
       response.status,
-      extrairExtra(body)
+      extrairExtra(body),
+      extrairCampos(body)
     )
 
     if (showToast) toast.error(error.pastoralMessage)

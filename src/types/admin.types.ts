@@ -1,3 +1,5 @@
+import type { components } from "@/types/api-schema"
+
 export interface AdminPedido {
   id: string
   nome: string
@@ -53,28 +55,11 @@ export interface PaginatedResponse<T> {
   results: T[]
 }
 
-export interface AdminPlano {
-  id: string
-  nome: string
-  valor_centavos: number
-  valor_reais_str: string
-  descricao: string
-  complexidade: "simples" | "com_versiculo" | "com_profecia_e_versiculos"
-  ordem: number
-  ativo: boolean
-  created_at: string
-  updated_at: string
-}
+// Derivados do contrato gerado; o springdoc marca tudo como opcional, mas a API devolve todos os campos.
+export type AdminPlano = Required<components["schemas"]["PlanoAdmin"]>
 
-export interface AdminInstituicao {
-  id: string
-  nome: string
-  /** data-URI da logo (preview); "" quando não há logo. */
-  logo: string
-  ativo: boolean
-  ordem: number
-  created_at: string
-  updated_at: string
+export type AdminInstituicao = Omit<Required<components["schemas"]["InstituicaoAdmin"]>, "logoUrl"> & {
+  logoUrl: string | null
 }
 
 export interface AdminPromptTemplate {

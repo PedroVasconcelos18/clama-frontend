@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { extractErrorMessage, extrairCodigo } from "../erros"
+import { extractErrorMessage, extrairCampos, extrairCodigo } from "../erros"
 import { getGenericError } from "@/i18n"
 
 describe("erros", () => {
@@ -42,5 +42,12 @@ describe("erros", () => {
   it("corpo inválido vira genérico e codigo ausente vira unknown", () => {
     expect(extractErrorMessage(null)).toBe(getGenericError())
     expect(extrairCodigo("texto")).toBe("unknown")
+  })
+
+  it("extrairCampos mapeia erros[] por campo e ignora lixo", () => {
+    expect(
+      extrairCampos({ erros: [{ campo: "nome", mensagem: "já existe" }, { campo: "nome", mensagem: "outra" }, { campo: "" }, 3] }),
+    ).toEqual({ nome: "já existe" })
+    expect(extrairCampos(null)).toEqual({})
   })
 })

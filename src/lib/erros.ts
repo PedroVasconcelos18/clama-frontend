@@ -49,3 +49,16 @@ export function extrairExtra(body: unknown): Record<string, unknown> {
     Object.entries(body).filter(([k]) => !CAMPOS_DO_PROBLEMA.has(k)),
   )
 }
+
+/** `erros[{campo, mensagem}]` como mapa campo -> mensagem (a primeira de cada campo). */
+export function extrairCampos(body: unknown): Record<string, string> {
+  const campos: Record<string, string> = {}
+  if (!ehCorpo(body) || !Array.isArray(body.erros)) return campos
+  for (const e of body.erros) {
+    if (!ehCorpo(e)) continue
+    const campo = texto(e.campo)
+    const mensagem = texto(e.mensagem)
+    if (campo && mensagem && !(campo in campos)) campos[campo] = mensagem
+  }
+  return campos
+}
