@@ -1,8 +1,7 @@
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
 
 import { useApi } from "@/hooks/useApi"
-import { useEffect } from "react"
 import { usePaginaAdmin } from "@/hooks/useAdminList"
 import { AdminPager } from "@/components/admin/AdminPager"
 import { Button } from "@/components/ui/button"
@@ -42,6 +41,9 @@ export default function TarefasPage() {
   const [busy, setBusy] = useState(false)
   const [erroRodar, setErroRodar] = useState<string | null>(null)
 
+  const releitura = useRef<ReturnType<typeof setTimeout>>(undefined)
+  useEffect(() => () => clearTimeout(releitura.current), [])
+
   useEffect(() => {
     fetchApi<Tarefa[]>("/api/admin/tarefas", { showToast: false })
       .then((t) => {
@@ -71,7 +73,8 @@ export default function TarefasPage() {
       toast.success(simular ? "Simulação enfileirada." : "Execução enfileirada.")
       setAlvo(null)
       recarregar()
-      setTimeout(recarregar, 3000) // a fila é assíncrona: relê quando ela já deve ter rodado
+      clearTimeout(releitura.current)
+      releitura.current = setTimeout(recarregar, 3000) // a fila é assíncrona: relê quando ela já deve ter rodado
     } catch (err) {
       setErroRodar((err as { pastoralMessage?: string })?.pastoralMessage ?? "Não foi possível rodar a tarefa.")
     } finally {

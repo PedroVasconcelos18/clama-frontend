@@ -106,7 +106,7 @@ export default function RelatoriosRepassePage() {
   }
 
   async function quitar() {
-    if (!previa || !comprovante.trim()) return
+    if (!previa || !comprovante.trim() || carregando || pendentes === 0) return
     setBusy(true)
     setErroLote(null)
     try {
@@ -114,7 +114,7 @@ export default function RelatoriosRepassePage() {
         method: "POST",
         body: JSON.stringify({
           instituicaoId: Number(instId), de: previa.de, ate: previa.ate,
-          comprovante: comprovante.trim(), quantidade: previa.pendentes,
+          comprovante: comprovante.trim(), quantidade: previa.pendentes, totalCentavos: previa.totalPendenteCentavos,
         }),
         showToast: false,
       })
@@ -123,8 +123,9 @@ export default function RelatoriosRepassePage() {
       setComprovante("")
       setReloadToken((n) => n + 1)
     } catch (e) {
-      // 409: o recorte mudou desde a prévia; mostra a mensagem e relê a prévia, sem fechar o diálogo.
+      // 409: o recorte mudou desde a prévia; fecha o diálogo e relê a prévia, para quem confirma olhar os números novos.
       setErroLote((e as { pastoralMessage?: string })?.pastoralMessage ?? "Não foi possível marcar os repasses.")
+      if ((e as { httpStatus?: number })?.httpStatus === 409) setLoteAberto(false)
       setReloadToken((n) => n + 1)
     } finally {
       setBusy(false)
@@ -132,7 +133,9 @@ export default function RelatoriosRepassePage() {
   }
 
   const pendentes = previa?.pendentes ?? 0
-  const csv = (rota: string) => `${BASE}/api/admin/repasses/${rota}?${query}`
+  // o CSV é do período da prévia que está na tela, não do formulário (que pode ter virado o ciclo desde então)
+  const queryDaPrevia = new URLSearchParams({ instituicaoId: instId, de: previa?.de ?? "", ate: previa?.ate ?? "" }).toString()
+  const csv = (rota: string) => `${BASE}/api/admin/repasses/${rota}?${queryDaPrevia}`
   const linhas = previa?.linhas ?? []
   const qtd = previa?.quantidade ?? 0
 
@@ -186,6 +189,7 @@ export default function RelatoriosRepassePage() {
 
       {erro && <PastoralAlert variant="error">{erro}</PastoralAlert>}
       {carregando && <LoadingSpinner size={20} />}
+      {!loteAberto && erroLote && <PastoralAlert variant="error">{erroLote}</PastoralAlert>}
 
       {previa && (
         <section aria-label="Prévia" className="space-y-3">
@@ -335,7 +339,7 @@ export default function RelatoriosRepassePage() {
           {erroLote && <PastoralAlert variant="error">{erroLote}</PastoralAlert>}
           <DialogFooter>
             <Button variant="outline" onClick={() => setLoteAberto(false)} disabled={busy}>Cancelar</Button>
-            <Button onClick={quitar} disabled={busy || !comprovante.trim()}>
+            <Button onClick={quitar} disabled={busy || carregando || pendentes === 0 || !comprovante.trim()}>
               {busy ? "Marcando…" : "Confirmar transferência"}
             </Button>
           </DialogFooter>

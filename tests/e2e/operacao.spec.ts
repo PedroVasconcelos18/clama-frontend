@@ -137,7 +137,9 @@ test("3. CSV da instituição sem e-mail; o interno com e-mail e o aviso", async
 
   await admin.getByRole("button", { name: "Baixar auditoria interna" }).click()
   await expect(admin.getByText("Não entregar à instituição")).toBeVisible()
-  const interno = (await baixar(admin, () => admin.getByRole("link", { name: /Entendi, baixar/ }).click())).toString("utf8")
+  const internoBytes = await baixar(admin, () => admin.getByRole("link", { name: /Entendi, baixar/ }).click())
+  expect([...internoBytes.subarray(0, 3)]).toEqual([0xef, 0xbb, 0xbf])
+  const interno = internoBytes.toString("utf8")
   expect(interno).toContain(MARIA.email)
   expect(interno).toContain("USO INTERNO")
 })

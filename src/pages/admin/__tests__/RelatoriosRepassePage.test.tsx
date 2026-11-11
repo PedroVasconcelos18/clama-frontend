@@ -59,17 +59,18 @@ describe("RelatoriosRepassePage", () => {
       expect(fetchApi).toHaveBeenCalledWith("/api/admin/repasses/relatorio?instituicaoId=7&de=2026-11-01&ate=2026-11-05", { showToast: false }))
   })
 
+  // a prévia tem de/ate resolvidos pela API (ciclo sem parâmetros na query): os links usam esses, não o formulário
   it("o CSV da instituição é um link de download; o interno só depois do aviso", async () => {
     await escolher()
     const csv = await screen.findByRole("link", { name: "Baixar CSV da instituição" })
-    expect(csv.getAttribute("href")).toBe("/api/admin/repasses/relatorio.csv?instituicaoId=7")
+    expect(csv.getAttribute("href")).toBe("/api/admin/repasses/relatorio.csv?instituicaoId=7&de=2026-10-28&ate=2026-11-27")
     expect(csv.hasAttribute("download")).toBe(true)
     expect(screen.queryByRole("link", { name: /Entendi/ })).toBeNull()
     await userEvent.click(screen.getByRole("button", { name: "Baixar auditoria interna" }))
     expect(screen.getByText("USO INTERNO")).toBeTruthy()
     expect(screen.getByText(/Não entregar à instituição/)).toBeTruthy()
     const interno = screen.getByRole("link", { name: /Entendi/ })
-    expect(interno.getAttribute("href")).toBe("/api/admin/repasses/relatorio-interno.csv?instituicaoId=7")
+    expect(interno.getAttribute("href")).toBe("/api/admin/repasses/relatorio-interno.csv?instituicaoId=7&de=2026-10-28&ate=2026-11-27")
   })
 
   it("quitação em lote manda a quantidade da prévia, com comprovante", async () => {
@@ -82,18 +83,48 @@ describe("RelatoriosRepassePage", () => {
     await waitFor(() =>
       expect(fetchApi).toHaveBeenCalledWith("/api/admin/repasses/transferencias", {
         method: "POST", showToast: false,
-        body: JSON.stringify({ instituicaoId: 7, de: "2026-10-28", ate: "2026-11-27", comprovante: "PIX-1", quantidade: 2 }),
+        body: JSON.stringify({ instituicaoId: 7, de: "2026-10-28", ate: "2026-11-27", comprovante: "PIX-1", quantidade: 2, totalCentavos: 40 }),
       }))
   })
 
-  it("409 no lote mostra a mensagem da API e mantém o diálogo", async () => {
+  it("409 no lote fecha o diálogo, mostra a mensagem e relê a prévia", async () => {
     lote = () => Promise.reject(new PastoralApiError("Erro", "recorte_mudou", "Os repasses do período mudaram desde a prévia.", 409))
     await escolher()
     await userEvent.click(await screen.findByRole("button", { name: "Marcar 2 pendentes como transferidos" }))
     await userEvent.type(screen.getByLabelText("Comprovante"), "PIX-1")
+    const antes = fetchApi.mock.calls.filter(([u]) => String(u).startsWith("/api/admin/repasses/relatorio?")).length
     await userEvent.click(screen.getByRole("button", { name: "Confirmar transferência" }))
     expect(await screen.findByText("Os repasses do período mudaram desde a prévia.")).toBeTruthy()
-    expect(screen.getByRole("button", { name: "Confirmar transferência" })).toBeTruthy()
+    expect(screen.queryByRole("button", { name: "Confirmar transferência" })).toBeNull()
+    await waitFor(() =>
+      expect(fetchApi.mock.calls.filter(([u]) => String(u).startsWith("/api/admin/repasses/relatorio?")).length).toBe(antes + 1))
+  })
+
+  it("Confirmar fica desabilitado enquanto a prévia recarrega", async () => {
+    await escolher()
+    await userEvent.click(await screen.findByRole("button", { name: "Marcar 2 pendentes como transferidos" }))
+    await userEvent.type(screen.getByLabelText("Comprovante"), "PIX-1")
+    const confirmar = screen.getByRole("button", { name: "Confirmar transferência" }) as HTMLButtonElement
+    expect(confirmar.disabled).toBe(false)
+    let soltar: (p: unknown) => void = () => {}
+    const base = fetchApi.getMockImplementation()!
+    fetchApi.mockImplementation((url: string, init?: { method?: string }) =>
+      url.startsWith("/api/admin/repasses/relatorio?") ? new Promise((r) => { soltar = r }) : base(url, init))
+    await userEvent.selectOptions(screen.getByLabelText("Período"), "mes")
+    await userEvent.type(screen.getByLabelText("Mês"), "2026-10")
+    await waitFor(() => expect(confirmar.disabled).toBe(true))
+    soltar(previa)
+    await waitFor(() => expect(confirmar.disabled).toBe(false))
+  })
+
+  it("sem pendentes não há botão de lote", async () => {
+    const semPendentes = { ...previa, pendentes: 0, totalPendenteCentavos: 0 }
+    const base = fetchApi.getMockImplementation()!
+    fetchApi.mockImplementation((url: string, init?: { method?: string }) =>
+      url.startsWith("/api/admin/repasses/relatorio?") ? Promise.resolve(semPendentes) : base(url, init))
+    await escolher()
+    await screen.findByText(/TOTAL \(2 doações\)/)
+    expect(screen.queryByRole("button", { name: /Marcar .* pendentes/ })).toBeNull()
   })
 
   it("Conferir ledger: consistente e com achados", async () => {
