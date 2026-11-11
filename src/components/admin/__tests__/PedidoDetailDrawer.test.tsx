@@ -11,7 +11,7 @@ const moeda = (c: number) => new RegExp(formatCurrency(c).replace(/[$]/g, "\\$")
 
 const fetchApi = vi.fn()
 vi.mock("@/hooks/useApi", () => ({ useApi: () => ({ fetchApi }) }))
-vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }))
+vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn(), info: vi.fn() } }))
 
 const ID = "12345678-aaaa-bbbb-cccc-1234567890ab"
 const detalhe = {
@@ -32,6 +32,7 @@ const detalhe = {
 
 describe("PedidoDetailDrawer", () => {
   beforeEach(() => {
+    vi.mocked(toast.success).mockClear(); vi.mocked(toast.error).mockClear(); vi.mocked(toast.info).mockClear()
     fetchApi.mockReset().mockResolvedValue(detalhe)
   })
 
@@ -98,7 +99,7 @@ describe("PedidoDetailDrawer", () => {
     expect(fetchApi).toHaveBeenCalledTimes(1)
   })
 
-  it("409 pagamento_ja_aprovado vira toast pastoral e nao relê o detalhe", async () => {
+  it("409 pagamento_ja_aprovado vira toast pastoral", async () => {
     const msg = "O pagamento já foi aprovado."
     fetchApi.mockImplementation(async (_u: string, init?: RequestInit) => {
       if (init?.method === "POST") throw new PastoralApiError("Conflito", "pagamento_ja_aprovado", msg, 409)
@@ -108,7 +109,64 @@ describe("PedidoDetailDrawer", () => {
     await userEvent.click(await screen.findByRole("button", { name: /Conceder gratuidade/ }))
     await userEvent.click(screen.getByRole("button", { name: "Confirmar" }))
     await waitFor(() => expect(toast.error).toHaveBeenCalledWith(msg))
-    expect(fetchApi.mock.calls.filter(([u]) => u === `/api/admin/pedidos/${ID}`)).toHaveLength(1)
+  })
+
+  const lidas = () => fetchApi.mock.calls.filter(([u]) => u === `/api/admin/pedidos/${ID}`).length
+
+  it("409 de indisponibilidade tambem relê o detalhe, para os botoes refletirem o estado", async () => {
+    let posted = false
+    fetchApi.mockImplementation(async (_u: string, init?: RequestInit) => {
+      if (init?.method === "POST") { posted = true; throw new PastoralApiError("Conflito", "regeneracao_indisponivel", "Indisponível.", 409) }
+      return posted ? { ...detalhe, status: "PAGO" } : detalhe
+    })
+    render(<PedidoDetailDrawer pedidoId={ID} onClose={vi.fn()} />)
+    await userEvent.click(await screen.findByRole("button", { name: /Regenerar oração/ }))
+    await userEvent.click(screen.getByRole("button", { name: "Confirmar" }))
+    await waitFor(() => expect(toast.error).toHaveBeenCalledWith("Indisponível."))
+    await waitFor(() => expect(screen.queryByRole("button", { name: /Regenerar oração/ })).toBeNull())
+    expect(lidas()).toBe(2)
+  })
+
+  it("POST ok e GET falha: onChanged chamado, sem toast de falha da acao", async () => {
+    const onChanged = vi.fn()
+    let posted = false
+    fetchApi.mockImplementation(async (_u: string, init?: RequestInit) => {
+      if (init?.method === "POST") { posted = true; return { id: ID, status: "PAGO" } }
+      if (posted) throw new Error("rede")
+      return detalhe
+    })
+    render(<PedidoDetailDrawer pedidoId={ID} onClose={vi.fn()} onChanged={onChanged} />)
+    await userEvent.click(await screen.findByRole("button", { name: /Regenerar oração/ }))
+    await userEvent.click(screen.getByRole("button", { name: "Confirmar" }))
+    await waitFor(() => expect(onChanged).toHaveBeenCalled())
+    await waitFor(() => expect(lidas()).toBe(2))
+    expect(toast.error).not.toHaveBeenCalled()
+    expect(toast.success).toHaveBeenCalled()
+  })
+
+  it("reenvio com jaEmAndamento avisa que ja ha envio em andamento", async () => {
+    fetchApi.mockImplementation(async (_u: string, init?: RequestInit) =>
+      init?.method === "POST" ? { id: ID, status: "ENVIADA", jaEmAndamento: true } : { ...detalhe, status: "ENVIADA", oracaoGerada: "Senhor..." })
+    render(<PedidoDetailDrawer pedidoId={ID} onClose={vi.fn()} />)
+    await userEvent.click(await screen.findByRole("button", { name: /Reenviar oração/ }))
+    await userEvent.click(screen.getByRole("button", { name: "Confirmar" }))
+    await waitFor(() => expect(toast.info).toHaveBeenCalledWith("Já há um envio em andamento."))
+    expect(toast.success).not.toHaveBeenCalled()
+  })
+
+  it("duplo clique em Confirmar chama o POST uma vez so", async () => {
+    let solta: () => void = () => {}
+    fetchApi.mockImplementation(async (_u: string, init?: RequestInit) => {
+      if (init?.method === "POST") { await new Promise<void>((r) => { solta = r }); return { id: ID } }
+      return detalhe
+    })
+    render(<PedidoDetailDrawer pedidoId={ID} onClose={vi.fn()} />)
+    await userEvent.click(await screen.findByRole("button", { name: /Regenerar oração/ }))
+    const confirmar = screen.getByRole("button", { name: "Confirmar" })
+    await userEvent.dblClick(confirmar)
+    solta()
+    await waitFor(() => expect(lidas()).toBe(2))
+    expect(fetchApi.mock.calls.filter(([, i]) => i?.method === "POST")).toHaveLength(1)
   })
 
   it("Editar abre o formulário só de dados", async () => {

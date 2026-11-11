@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useApi } from "@/hooks/useApi"
 import { PastoralApiError } from "@/lib/api"
 import { LoadingSpinner } from "@/components/utility/LoadingSpinner"
@@ -57,18 +57,35 @@ export function PedidoDetailDrawer({ pedidoId, onClose, onChanged }: PedidoDetai
   const [acao, setAcao] = useState<Acao | null>(null)
   const [executando, setExecutando] = useState(false)
 
+  const emVoo = useRef(false)
+  const idAtual = useRef(pedidoId)
+  idAtual.current = pedidoId
+
   async function executar(a: Acao) {
+    if (emVoo.current) return
+    emVoo.current = true
+    const id = pedidoId
     setExecutando(true)
+    setAcao(null)
     try {
-      await fetchApi(`/api/admin/pedidos/${pedidoId}/${ACOES[a].caminho}`, { method: "POST", showToast: false })
-      toast.success(ACOES[a].sucesso)
-      setAcao(null)
-      setPedido(await fetchApi<AdminPedidoDetalhe>(`/api/admin/pedidos/${pedidoId}`))
-      onChanged?.()
-    } catch (err) {
-      setAcao(null)
-      toast.error(err instanceof PastoralApiError ? err.pastoralMessage : "Algo não saiu como o esperado. Tente novamente.")
+      let resposta: { jaEmAndamento?: boolean } | undefined
+      try {
+        resposta = await fetchApi<{ jaEmAndamento?: boolean }>(`/api/admin/pedidos/${id}/${ACOES[a].caminho}`, { method: "POST", showToast: false })
+        onChanged?.()
+        if (a === "reenvio" && resposta?.jaEmAndamento) toast.info("Já há um envio em andamento.")
+        else toast.success(ACOES[a].sucesso)
+      } catch (err) {
+        toast.error(err instanceof PastoralApiError ? err.pastoralMessage : "Algo não saiu como o esperado. Tente novamente.")
+      }
+      // O estado pode ter mudado por baixo do admin (409 incluso): lê de novo sempre. Falha aqui não é falha da ação.
+      try {
+        const novo = await fetchApi<AdminPedidoDetalhe>(`/api/admin/pedidos/${id}`)
+        if (idAtual.current === id) setPedido(novo)
+      } catch {
+        // mantém o detalhe antigo
+      }
     } finally {
+      emVoo.current = false
       setExecutando(false)
     }
   }
@@ -182,7 +199,7 @@ export function PedidoDetailDrawer({ pedidoId, onClose, onChanged }: PedidoDetai
                 Editar pedido
               </Button>
               {acoes.map((a) => (
-                <Button key={a} variant="outline" className="w-full" onClick={() => setAcao(a)}>
+                <Button key={a} variant="outline" className="w-full" disabled={executando} onClick={() => setAcao(a)}>
                   {ACOES[a].rotulo}
                 </Button>
               ))}

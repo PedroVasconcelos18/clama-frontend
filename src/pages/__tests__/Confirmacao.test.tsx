@@ -137,6 +137,28 @@ describe("Confirmacao", () => {
     expect(screen.queryByRole("button", { name: "Gerar novo Pix" })).toBeNull()
   })
 
+  it("falha do 'Gerar novo Pix' mostra a mensagem e mantem o QR antigo", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    pix = () => Promise.resolve({ ...PIX, expiraEm: new Date(Date.now() + 60_000).toISOString() })
+    abrir()
+    expect(await screen.findByText(PIX.copiaECola)).toBeInTheDocument()
+    const msg = "Não conseguimos gerar o Pix agora."
+    pix = () => Promise.reject(new PastoralApiError("Erro", "pagamento_indisponivel", msg, 503))
+    await act(() => vi.advanceTimersByTimeAsync(75_000))
+    await userEvent.click(await screen.findByRole("button", { name: "Gerar novo Pix" }))
+    expect(await screen.findByText(msg)).toBeInTheDocument()
+    expect(screen.getByText(PIX.copiaECola)).toBeInTheDocument()
+  })
+
+  it("relogio adiantado: expiraEm repetido esconde o botao de novo", async () => {
+    pix = () => Promise.resolve({ ...PIX, expiraEm: "2020-01-01T00:00:00Z" }) // o relogio do navegador diz "vencido"; o servidor reaproveita a mesma cobranca
+    abrir()
+    await userEvent.click(await screen.findByRole("button", { name: "Gerar novo Pix" }))
+    await waitFor(() => expect(chamadas("POST", `/api/pedidos/${ID}/pix`)).toBe(2))
+    await waitFor(() => expect(screen.queryByRole("button", { name: "Gerar novo Pix" })).toBeNull())
+    expect(screen.getByText(PIX.copiaECola)).toBeInTheDocument()
+  })
+
   it("falha do Pix mostra a mensagem pastoral e o tentar de novo reusa o mesmo pedido", async () => {
     const msg = "Não conseguimos gerar o Pix agora. Tente de novo em alguns minutos."
     pix = () => Promise.reject(new PastoralApiError("Erro", "pagamento_indisponivel", msg, 503))

@@ -37,6 +37,9 @@ test.beforeAll(async ({ browser }) => {
 })
 
 test.afterAll(async () => {
+  // Mesmo que o teste do prompt falhe no meio, a versão nova não pode ficar ativa (204 também sem versão ativa).
+  const xsrf = (await admin?.context().cookies())?.find((c) => c.name === "XSRF-TOKEN")?.value ?? ""
+  await admin?.request.delete("/api/admin/prompts/ativacao", { headers: { "X-XSRF-TOKEN": xsrf } })
   await admin?.context().close()
 })
 

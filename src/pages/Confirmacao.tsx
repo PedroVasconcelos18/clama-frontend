@@ -128,11 +128,18 @@ export default function Confirmacao() {
     }
   };
 
+  // expiraEm que o servidor devolveu de novo (cobrança aberta reaproveitada): o relógio do navegador está adiantado.
+  const [vencimentoIgnorado, setVencimentoIgnorado] = useState<string | null>(null);
+  const expiraEmAtual = useRef<string | undefined>(undefined);
+
   const pedirPix = useCallback(async () => {
     setErroPix(null);
     setGerandoPix(true);
     try {
-      setPix(await apiFetch<PixDoPedido>(`/api/pedidos/${pedidoId}/pix`, { method: "POST", showToast: false }));
+      const novo = await apiFetch<PixDoPedido>(`/api/pedidos/${pedidoId}/pix`, { method: "POST", showToast: false });
+      if (novo.expiraEm && novo.expiraEm === expiraEmAtual.current) setVencimentoIgnorado(novo.expiraEm);
+      expiraEmAtual.current = novo.expiraEm;
+      setPix(novo);
     } catch (err) {
       // Já pago (409 pedido_ja_pago): o polling mostra o status novo.
       if ((err as PastoralApiError).code !== "pedido_ja_pago") {
@@ -150,7 +157,7 @@ export default function Confirmacao() {
     const t = window.setInterval(() => setAgora(Date.now()), 15_000)
     return () => window.clearInterval(t)
   }, [pix?.expiraEm])
-  const pixVencido = !!pix?.expiraEm && new Date(pix.expiraEm).getTime() <= agora
+  const pixVencido = !!pix?.expiraEm && new Date(pix.expiraEm).getTime() <= agora && pix.expiraEm !== vencimentoIgnorado
 
   // Pede o Pix uma vez, quando o status chega em AGUARDANDO_PAGAMENTO.
   const pixPedido = useRef(false);
@@ -300,6 +307,7 @@ export default function Confirmacao() {
                   tela avança sozinha.
                   {pix?.expiraEm && <> Este Pix vale até {formatarDataHora(pix.expiraEm)}.</>}
                 </p>
+                {erroPix && <div className="mt-4"><PastoralAlert variant="error">{erroPix}</PastoralAlert></div>}
                 {pixVencido && (
                   <div className="mt-4">
                     <p className="font-sans text-[#666] text-[0.8rem] mb-2">Este Pix venceu. Gere um novo para pagar.</p>
