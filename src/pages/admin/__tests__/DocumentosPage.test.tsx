@@ -125,4 +125,56 @@ describe("DocumentosPage", () => {
     await userEvent.click(screen.getByRole("button", { name: "Enviar" }))
     await waitFor(() => expect(toast.error).toHaveBeenCalledWith(m))
   })
+
+  it(".pdf com type application/x-pdf e aceito e sai como application/pdf", async () => {
+    render(<DocumentosPage />)
+    await abrirNovo()
+    fireEvent.change(arquivo(), { target: { files: [new File(["%PDF"], "a.pdf", { type: "application/x-pdf" })] } })
+    await userEvent.click(screen.getByRole("button", { name: "Enviar" }))
+    await waitFor(() => expect(escritas()).toHaveLength(2))
+    expect(((escritas()[1]![1] as RequestInit).headers as Record<string, string>)["Content-Type"]).toBe("application/pdf")
+  })
+
+  it("renomear e remover com falha mantem o dialogo aberto", async () => {
+    fetchApi.mockImplementation(async (_p: string, init?: RequestInit) => {
+      if (init?.method) throw erro(502, "anthropic_falhou", "Falhou.")
+      return [doc]
+    })
+    render(<DocumentosPage />)
+    await userEvent.click(await screen.findByRole("button", { name: "Renomear" }))
+    await userEvent.click(screen.getByRole("button", { name: "Salvar" }))
+    await waitFor(() => expect(toast.error).toHaveBeenCalledTimes(1))
+    expect((screen.getByLabelText("Novo nome") as HTMLInputElement).value).toBe("Manual")
+    await userEvent.keyboard("{Escape}")
+    await userEvent.click(screen.getByRole("button", { name: "Remover" }))
+    await userEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Remover" }))
+    await waitFor(() => expect(toast.error).toHaveBeenCalledTimes(2))
+    expect(screen.getByRole("dialog")).toBeTruthy()
+  })
+
+  it("POST ok e PUT falho deixa a linha Sem arquivo, e o reenvio funciona", async () => {
+    const semArquivo = { ...doc, id: 9, nome: "Novo doc", fileId: null, mime: null, tamanhoBytes: null }
+    let lista: object[] = [doc]
+    let put = 0
+    fetchApi.mockImplementation(async (p: string, init?: RequestInit) => {
+      if (p.endsWith("/arquivo")) {
+        if (put++ === 0) throw erro(503, "documento_upload_ocupado", "Ocupado.")
+        lista = [doc, { ...semArquivo, fileId: "f2", mime: "application/pdf", tamanhoBytes: 4 }]
+        return {}
+      }
+      if (init?.method === "POST") { lista = [doc, semArquivo]; return semArquivo }
+      return lista
+    })
+    render(<DocumentosPage />)
+    await abrirNovo()
+    fireEvent.change(arquivo(), { target: { files: [pdf()] } })
+    await userEvent.click(screen.getByRole("button", { name: "Enviar" }))
+    await waitFor(() => expect(toast.error).toHaveBeenCalledWith("Ocupado."))
+    const linha = (await screen.findByText("Novo doc")).closest("tr")!
+    expect(linha.textContent).toContain("Sem arquivo")
+    const input = within(linha).getByText("Enviar arquivo").querySelector("input")!
+    fireEvent.change(input, { target: { files: [pdf()] } })
+    await waitFor(() => expect(put).toBe(2))
+    await waitFor(() => expect(screen.getByText("Novo doc").closest("tr")!.textContent).not.toContain("Sem arquivo"))
+  })
 })

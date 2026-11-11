@@ -20,12 +20,11 @@ const msg = (e: unknown) => (e instanceof PastoralApiError ? e.pastoralMessage :
 const tamanho = (b?: number | null) =>
   b == null ? "—" : b >= 1048576 ? `${(b / 1048576).toFixed(1).replace(".", ",")} MB` : `${(b / 1024).toFixed(1).replace(".", ",")} KB`
 
-/** Tipo do arquivo (o navegador às vezes deixa `type` vazio em .txt/.pdf) ou null se não for PDF/TXT. */
+/** Content-Type a enviar: a extensão decide (o navegador reporta `x-pdf` etc.); `type` só se não houver .pdf/.txt. O backend confere o formato pelo conteúdo. */
 function tipoDe(f: File): string | null {
-  if (TIPOS[f.type]) return f.type
-  if (!f.type && /\.pdf$/i.test(f.name)) return "application/pdf"
-  if (!f.type && /\.txt$/i.test(f.name)) return "text/plain"
-  return null
+  if (/\.pdf$/i.test(f.name)) return "application/pdf"
+  if (/\.txt$/i.test(f.name)) return "text/plain"
+  return TIPOS[f.type] ? f.type : null
 }
 
 function validar(f: File): string | null {
@@ -107,12 +106,15 @@ export default function DocumentosPage() {
     }
   }
 
-  async function acao(fn: () => Promise<unknown>) {
+  /** true se deu certo; em falha mostra o toast e devolve false (o diálogo fica aberto). */
+  async function acao(fn: () => Promise<unknown>): Promise<boolean> {
     try {
       await fn()
       await carregar()
+      return true
     } catch (e) {
       toast.error(msg(e))
+      return false
     }
   }
 
@@ -180,7 +182,7 @@ export default function DocumentosPage() {
           <DialogHeader><DialogTitle className="text-clama-gold">Renomear</DialogTitle><DialogDescription className="sr-only">Novo nome</DialogDescription></DialogHeader>
           <Label htmlFor="doc-renomear">Novo nome</Label>
           <Input id="doc-renomear" maxLength={200} value={novoNome} onChange={(e) => setNovoNome(e.target.value)} />
-          <Button disabled={!novoNome.trim()} onClick={() => renomear && mudar(renomear, { nome: novoNome.trim() }).then(() => setRenomear(null))}>Salvar</Button>
+          <Button disabled={!novoNome.trim()} onClick={() => renomear && mudar(renomear, { nome: novoNome.trim() }).then((ok) => ok && setRenomear(null))}>Salvar</Button>
         </DialogContent>
       </Dialog>
 
@@ -193,7 +195,7 @@ export default function DocumentosPage() {
           <div className="flex gap-3">
             <Button variant="ghost" className="flex-1" onClick={() => setRemover(null)}>Cancelar</Button>
             <Button className="flex-1 bg-red-500 hover:bg-red-600 text-white"
-              onClick={() => remover && acao(() => fetchApi(`/api/admin/documentos/${remover.id}`, { method: "DELETE", showToast: false })).then(() => setRemover(null))}>
+              onClick={() => remover && acao(() => fetchApi(`/api/admin/documentos/${remover.id}`, { method: "DELETE", showToast: false })).then((ok) => ok && setRemover(null))}>
               Remover
             </Button>
           </div>
