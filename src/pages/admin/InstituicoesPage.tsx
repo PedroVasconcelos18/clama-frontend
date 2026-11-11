@@ -63,6 +63,7 @@ export default function InstituicoesPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingInstituicao, setEditingInstituicao] =
     useState<AdminInstituicao | null>(null)
+  const [confirmRemoverLogo, setConfirmRemoverLogo] = useState<AdminInstituicao | null>(null)
   const [confirmToggle, setConfirmToggle] = useState<AdminInstituicao | null>(
     null,
   )
@@ -158,7 +159,6 @@ export default function InstituicoesPage() {
   }
 
   async function onSubmit(data: InstituicaoFormData) {
-    if (logoFile && erroDaLogo(logoFile)) return
     let salva: AdminInstituicao
     try {
       // Criar e editar são JSON; a logo vai em uma segunda chamada (PUT multipart).
@@ -397,7 +397,7 @@ export default function InstituicoesPage() {
                   type="button"
                   variant="ghost"
                   size="sm"
-                  onClick={() => removerLogo(editingInstituicao)}
+                  onClick={() => setConfirmRemoverLogo(editingInstituicao)}
                   className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
                 >
                   Remover logo
@@ -442,6 +442,37 @@ export default function InstituicoesPage() {
               </Button>
             </div>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Confirmar remoção da logo */}
+      <Dialog open={!!confirmRemoverLogo} onOpenChange={() => setConfirmRemoverLogo(null)}>
+        <DialogContent className="bg-clama-night-deep border-clama-gold/20 text-clama-cream">
+          <DialogHeader>
+            <DialogTitle className="text-clama-gold">Remover logo</DialogTitle>
+            <DialogDescription className="text-clama-cream/60">
+              {`Remover a logo de "${confirmRemoverLogo?.nome}"? Ela voltará a usar a imagem padrão.`}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex gap-3 mt-4">
+            <Button
+              variant="ghost"
+              onClick={() => setConfirmRemoverLogo(null)}
+              className="flex-1 text-clama-cream/60 hover:text-clama-cream"
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={() => {
+                const alvo = confirmRemoverLogo
+                setConfirmRemoverLogo(null)
+                if (alvo) removerLogo(alvo)
+              }}
+              className="flex-1 bg-red-500 hover:bg-red-600 text-white"
+            >
+              Remover
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
 

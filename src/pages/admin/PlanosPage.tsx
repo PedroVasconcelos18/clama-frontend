@@ -50,14 +50,16 @@ function rotuloDoValor(p: AdminPlano): string {
 const planoSchema = z
   .object({
     tipo: z.string(),
-    nome: z.string().min(1, "Nome é obrigatório").max(120, "Nome muito longo"),
+    nome: z.string().min(1, "Nome é obrigatório").max(80, "Nome muito longo"),
     valorReais: z.string(),
-    descricao: z.string().min(1, "Descrição é obrigatória").max(2000, "Descrição muito longa"),
+    descricao: z.string().max(2000, "Descrição muito longa"),
     complexidade: z.enum(["SIMPLES", "COM_VERSICULO", "COM_PROFECIA_E_VERSICULOS"]),
     ordem: z.coerce.number().int().min(0, "Ordem não pode ser negativa"),
   })
   .superRefine((v, ctx) => {
-    if (v.tipo !== "COMUM") return
+    if (v.tipo !== "COMUM") return // plano técnico pode ter descrição vazia (o Livre nasce assim)
+    if (!v.descricao.trim())
+      ctx.addIssue({ code: "custom", path: ["descricao"], message: "Descrição é obrigatória" })
     const num = parseCurrencyToFloat(v.valorReais)
     if (!v.valorReais) ctx.addIssue({ code: "custom", path: ["valorReais"], message: "Valor é obrigatório" })
     else if (!(num >= 0.01))

@@ -135,13 +135,19 @@ test("desativar some da landing e reativar volta", async ({ browser }) => {
 
 test("logo inválida (texto com extensão .png) mostra o erro do servidor", async () => {
   await criarInstituicao("Casa Falsa", { name: "falsa.png", mimeType: "image/png", buffer: Buffer.from("isto nao e uma imagem") })
-  // a instituição foi gravada, o diálogo fica aberto com o erro da logo
-  await expect(admin.getByRole("dialog").getByText(/logo|imagem|arquivo/i).first()).toBeVisible()
-  await expect(admin.getByRole("dialog").locator("p.text-red-400")).toBeVisible()
-  await expect(admin.getByRole("dialog")).toBeVisible()
+  // a instituição foi gravada (passo 1), o diálogo fica aberto com o erro da logo (passo 2)
+  const dialogo = admin.getByRole("dialog")
+  const erro = dialogo.locator("p.text-red-400")
+  await expect(erro).toHaveCount(1)
+  await expect(erro).toHaveText("Formato de imagem não suportado. Use PNG, JPG, WEBP ou GIF.")
+  await expect(dialogo.getByLabel("Nome")).toHaveValue("Casa Falsa")
+  await admin.getByRole("button", { name: "Cancelar" }).click()
+  await expect(admin.getByRole("heading", { name: "Casa Falsa" })).toBeVisible()
 })
 
 test("nome duplicado entre ativos aparece embaixo do campo nome", async () => {
   await criarInstituicao("Casa E2E")
-  await expect(admin.getByRole("dialog").locator("p.text-red-400")).toBeVisible()
+  const dialogo = admin.getByRole("dialog")
+  await expect(dialogo.locator("p.text-red-400")).toHaveCount(1)
+  await expect(dialogo.locator("#nome ~ p.text-red-400")).toHaveText("Já existe uma instituição ativa com este nome.")
 })

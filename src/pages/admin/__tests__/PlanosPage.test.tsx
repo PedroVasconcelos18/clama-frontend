@@ -12,7 +12,7 @@ const comum = {
   id: 1, nome: "Bênção", descricao: "Uma oração", valorCentavos: 2000,
   complexidade: "SIMPLES", tipo: "COMUM", ordem: 1, ativo: true,
 }
-const gratuito = { ...comum, id: 2, nome: "Gratuito", valorCentavos: 0, tipo: "GRATUITO", ordem: 0 }
+const gratuito = { ...comum, id: 2, nome: "Gratuito", valorCentavos: 0, tipo: "GRATUITO", ordem: 1000 }
 const livre = { ...comum, id: 3, nome: "Livre", valorCentavos: 1, tipo: "VALOR_LIVRE", ordem: 9 }
 
 const ultimaEscrita = () => fetchApi.mock.calls.filter(([, i]) => i?.method).at(-1)!
@@ -71,6 +71,17 @@ describe("PlanosPage", () => {
     expect(path).toBe("/api/admin/planos/2")
     expect(init.method).toBe("PATCH")
     expect(JSON.parse(init.body).descricao).toBe("Nova desc")
+  })
+
+  it("plano tecnico salva com descricao vazia", async () => {
+    render(<PlanosPage />)
+    await screen.findByRole("heading", { name: "Livre" })
+    const cartao = screen.getByRole("heading", { name: "Livre" }).closest("div.border") as HTMLElement
+    await userEvent.click(cartao.querySelector("button")!)
+    await userEvent.clear(screen.getByLabelText("Descrição"))
+    await userEvent.click(screen.getByRole("button", { name: "Salvar" }))
+    await waitFor(() => expect(ultimaEscrita()).toBeTruthy())
+    expect(JSON.parse(ultimaEscrita()[1].body)).toEqual({ nome: "Livre", descricao: "" })
   })
 
   it("desativar usa PATCH {ativo:false}", async () => {

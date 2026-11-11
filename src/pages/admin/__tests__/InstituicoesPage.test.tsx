@@ -1,4 +1,4 @@
-import { render, screen, waitFor, fireEvent } from "@testing-library/react"
+import { render, screen, waitFor, fireEvent, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { PastoralApiError } from "@/lib/api"
@@ -81,7 +81,16 @@ describe("InstituicoesPage", () => {
     }
   })
 
-  it("Remover logo so quando temLogo, e faz DELETE", async () => {
+  it("Remover logo pede confirmacao: cancelar nao remove", async () => {
+    render(<InstituicoesPage />)
+    await screen.findByText("Mar de Espanha")
+    await userEvent.click(screen.getAllByRole("button", { name: "Editar" })[0]!)
+    await userEvent.click(await screen.findByRole("button", { name: "Remover logo" }))
+    await userEvent.click(within(await screen.findByRole("dialog", { name: "Remover logo" })).getByRole("button", { name: "Cancelar" }))
+    expect(escritas()).toHaveLength(0)
+  })
+
+  it("Remover logo so quando temLogo, e faz DELETE depois de confirmar", async () => {
     render(<InstituicoesPage />)
     await screen.findByText("Mar de Espanha")
     const editar = screen.getAllByRole("button", { name: "Editar" })
@@ -90,6 +99,7 @@ describe("InstituicoesPage", () => {
     await userEvent.click(screen.getByRole("button", { name: "Cancelar" }))
     await userEvent.click(editar[0]!)
     await userEvent.click(await screen.findByRole("button", { name: "Remover logo" }))
+    await userEvent.click(within(await screen.findByRole("dialog", { name: "Remover logo" })).getByRole("button", { name: "Remover" }))
     await waitFor(() => expect(escritas()).toHaveLength(1))
     expect(escritas()[0]![0]).toBe("/api/admin/instituicoes/5/logo")
     expect(escritas()[0]![1].method).toBe("DELETE")

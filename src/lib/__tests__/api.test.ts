@@ -64,6 +64,21 @@ describe("apiFetch", () => {
     expect(error.httpStatus).toBe(400)
   })
 
+  it("monta campos a partir de erros[] do corpo", async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 400,
+      json: () =>
+        Promise.resolve({
+          codigo: "dados_invalidos",
+          mensagemPastoral: "Confira.",
+          erros: [{ campo: "nome", mensagem: "Já existe." }],
+        }),
+    })
+    const error = (await apiFetch("/api/x", { showToast: false }).catch((e) => e)) as PastoralApiError
+    expect(error.campos).toEqual({ nome: "Já existe." })
+  })
+
   it("sem mensagem pastoral nem erros, usa detail; sem codigo, unknown", async () => {
     globalThis.fetch = vi.fn().mockResolvedValue({
       ok: false,
