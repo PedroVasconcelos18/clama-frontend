@@ -4,6 +4,54 @@
  */
 
 export interface paths {
+    "/api/admin/documentos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listar_2"];
+        put?: never;
+        post: operations["criar_3"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/documentos/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["apagar"];
+        options?: never;
+        head?: never;
+        patch: operations["alterar_1"];
+        trace?: never;
+    };
+    "/api/admin/documentos/{id}/arquivo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["enviarArquivo"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/eventos-mp": {
         parameters: {
             query?: never;
@@ -11,7 +59,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["listar_3"];
+        get: operations["listar_5"];
         put?: never;
         post?: never;
         delete?: never;
@@ -107,7 +155,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["listar_2"];
+        get: operations["listar_4"];
         put?: never;
         post?: never;
         delete?: never;
@@ -130,6 +178,54 @@ export interface paths {
         options?: never;
         head?: never;
         patch: operations["corrigir"];
+        trace?: never;
+    };
+    "/api/admin/pedidos/{id}/gratuidade": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["gratuidade"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/pedidos/{id}/reenvio": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["reenvio"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/pedidos/{id}/regeneracao": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["regeneracao"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/admin/planos": {
@@ -164,7 +260,7 @@ export interface paths {
         patch: operations["alterarPlano"];
         trace?: never;
     };
-    "/api/admin/repasses": {
+    "/api/admin/prompts": {
         parameters: {
             query?: never;
             header?: never;
@@ -172,6 +268,70 @@ export interface paths {
             cookie?: never;
         };
         get: operations["listar_1"];
+        put?: never;
+        post: operations["criar_2"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/prompts/ativacao": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["voltarAoPadrao"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/prompts/previa": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["previa"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/prompts/{id}/ativacao": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ativar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/repasses": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listar_3"];
         put?: never;
         post?: never;
         delete?: never;
@@ -576,6 +736,20 @@ export interface components {
             nomeCompleto?: string;
             senha: string;
         };
+        DocumentoAdmin: {
+            ativo?: boolean;
+            /** Format: date-time */
+            atualizadoEm?: string;
+            /** Format: date-time */
+            criadoEm?: string;
+            fileId?: string | null;
+            /** Format: int64 */
+            id?: number;
+            mime?: string | null;
+            nome?: string;
+            /** Format: int64 */
+            tamanhoBytes?: number | null;
+        };
         EdicaoDaConta: {
             nomeCompleto?: string;
             nomeFormatoBlog?: string;
@@ -583,6 +757,19 @@ export interface components {
         ErroDeCampo: {
             campo?: string;
             mensagem?: string;
+        };
+        EstadoDoPedido: {
+            /** Format: date-time */
+            atualizadoEm?: string;
+            gratuito?: boolean;
+            /** Format: uuid */
+            id?: string;
+            jaEmAndamento?: boolean;
+            /** @enum {string} */
+            status?: "AGUARDANDO_PAGAMENTO" | "PAGO" | "GERANDO_ORACAO" | "ORACAO_GERADA" | "ENVIADA" | "AGUARDANDO_NOVA_TENTATIVA" | "ERRO";
+            ultimoErro?: string | null;
+            /** Format: int64 */
+            valorCentavos?: number;
         };
         EventoDoPedido: {
             /** Format: int64 */
@@ -656,6 +843,10 @@ export interface components {
             /** Format: int64 */
             valorCentavos?: number;
         };
+        MudancaDoDocumento: {
+            ativo?: boolean | null;
+            nome?: string | null;
+        };
         NovaInstituicao: {
             nome: string;
             /** Format: int32 */
@@ -663,6 +854,9 @@ export interface components {
         };
         NovaSenhaDoAdmin: {
             senha: string;
+        };
+        NovoDocumento: {
+            nome: string;
         };
         NovoPedido: {
             consentAceito: boolean;
@@ -790,6 +984,19 @@ export interface components {
             /** Format: int64 */
             valorCentavos?: number;
         };
+        PedidoDeExemplo: {
+            /** @enum {string|null} */
+            complexidade?: "SIMPLES" | "COM_VERSICULO" | "COM_PROFECIA_E_VERSICULOS" | null;
+            /** Format: int32 */
+            idade?: number | null;
+            nome?: string | null;
+            pedidoOracao?: string | null;
+            sexo?: string | null;
+            /** @enum {string|null} */
+            tipo?: "COMUM" | "GRATUITO" | "VALOR_LIVRE" | null;
+            /** Format: int64 */
+            versaoId?: number | null;
+        };
         PedidoDeLink: {
             /** Format: email */
             email: string;
@@ -836,6 +1043,11 @@ export interface components {
             /** Format: int64 */
             valorCentavos?: number;
         };
+        Previa: {
+            oracao?: string;
+            /** Format: int64 */
+            versaoId?: number | null;
+        };
         ProblemDetail: {
             /** @description identificador estavel do erro */
             codigo?: string;
@@ -851,6 +1063,13 @@ export interface components {
             title?: string;
             /** Format: uri */
             type?: string;
+        };
+        Prompt: {
+            comProfeciaEVersiculos: string;
+            comVersiculo: string;
+            gratuito: string;
+            simples: string;
+            sistema: string;
         };
         RedefinicaoDeSenhaPedido: {
             novaSenha: string;
@@ -946,6 +1165,17 @@ export interface components {
             /** @enum {string} */
             papel?: "CLIENTE" | "ADMIN" | "SUPERUSUARIO";
         };
+        VersaoDePrompt: {
+            ativo?: boolean;
+            conteudo?: components["schemas"]["Prompt"];
+            /** Format: date-time */
+            criadoEm?: string | null;
+            /** Format: int64 */
+            criadoPor?: number | null;
+            /** Format: int64 */
+            id?: number | null;
+            padrao?: boolean;
+        };
     };
     responses: never;
     parameters: never;
@@ -955,7 +1185,124 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    listar_3: {
+    listar_2: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["DocumentoAdmin"][];
+                };
+            };
+        };
+    };
+    criar_3: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NovoDocumento"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["DocumentoAdmin"];
+                };
+            };
+        };
+    };
+    apagar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    alterar_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MudancaDoDocumento"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["DocumentoAdmin"];
+                };
+            };
+        };
+    };
+    enviarArquivo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/pdf": string;
+                "text/plain": string;
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["DocumentoAdmin"];
+                };
+            };
+        };
+    };
+    listar_5: {
         parameters: {
             query?: {
                 status?: string;
@@ -1146,7 +1493,7 @@ export interface operations {
             };
         };
     };
-    listar_2: {
+    listar_4: {
         parameters: {
             query?: {
                 /** @description Um ou mais status separados por virgula. */
@@ -1231,6 +1578,72 @@ export interface operations {
             };
         };
     };
+    gratuidade: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["EstadoDoPedido"];
+                };
+            };
+        };
+    };
+    reenvio: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["EstadoDoPedido"];
+                };
+            };
+        };
+    };
+    regeneracao: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["EstadoDoPedido"];
+                };
+            };
+        };
+    };
     planos: {
         parameters: {
             query?: never;
@@ -1302,6 +1715,114 @@ export interface operations {
         };
     };
     listar_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["VersaoDePrompt"][];
+                };
+            };
+        };
+    };
+    criar_2: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Prompt"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["VersaoDePrompt"];
+                };
+            };
+        };
+    };
+    voltarAoPadrao: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    previa: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PedidoDeExemplo"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["Previa"];
+                };
+            };
+        };
+    };
+    ativar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["VersaoDePrompt"];
+                };
+            };
+        };
+    };
+    listar_3: {
         parameters: {
             query?: {
                 instituicaoId?: string;

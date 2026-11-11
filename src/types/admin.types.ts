@@ -30,46 +30,6 @@ export type AdminInstituicao = Omit<Required<components["schemas"]["InstituicaoA
   logoUrl: string | null
 }
 
-export interface AdminPromptTemplate {
-  id: string
-  nome: string
-  versao: number
-  system_prompt: string
-  instrucoes_por_complexidade: {
-    simples_gratuita?: string
-    simples?: string
-    com_versiculo?: string
-    com_profecia_e_versiculos?: string
-  }
-  ativo: boolean
-  created_at: string
-  updated_at: string
-}
-
-export interface PreviewResponse {
-  oracao_preview: string
-  template: {
-    id: string
-    nome: string
-    versao: number
-  }
-}
-
-export interface AdminDocumentoContexto {
-  id: string
-  nome: string
-  descricao: string
-  tipo_mime: string
-  tamanho_bytes: number
-  tamanho_formatado: string
-  anthropic_file_id: string | null
-  data_sincronizacao: string | null
-  ativo: boolean
-  esta_sincronizado: boolean
-  created_at: string
-  updated_at: string
-}
-
 // ---------------------------------------------------------------------------
 // Etapa 7: Freemium (onda 5)
 // ---------------------------------------------------------------------------
