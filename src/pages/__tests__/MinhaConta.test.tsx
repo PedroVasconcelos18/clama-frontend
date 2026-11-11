@@ -1,4 +1,5 @@
 import { render, screen, waitFor } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
 import { MemoryRouter } from "react-router-dom"
 import { afterEach, describe, expect, it, vi } from "vitest"
 
@@ -59,5 +60,29 @@ describe("MinhaConta — histórico", () => {
     expect(links[0]!.getAttribute("href")).toBe(`/confirmacao?pedido_id=${PENDENTE}`)
     expect(screen.queryByText(/WhatsApp|E-mail$/)).toBeNull() // sem canal (D5)
     await waitFor(() => expect(spy.mock.calls.map((c) => c[0])).toContain("/api/conta/pedidos"))
+  })
+
+  it("lista os comentários do blog e só apaga depois de confirmar", async () => {
+    let itens = [{ id: 5, conteudo: "amém, irmãos", postSlug: "p", postTitulo: "Um post", postUrl: "https://blog/p/", criadoEm: "2026-11-01T10:00:00Z" }]
+    const spy = mockApiFetch({
+      usuario: usuarioFixture,
+      outras: (path, init) => {
+        if (path === "/api/conta/comentarios/5" && init?.method === "DELETE") {
+          itens = []
+          return null
+        }
+        if (path.startsWith("/api/conta/comentarios"))
+          return { content: itens, page: { number: 0, size: 50, totalElements: itens.length, totalPages: 1 } }
+        return []
+      },
+    })
+    abrir()
+    expect(await screen.findByText("Seus comentários no blog")).toBeInTheDocument()
+    expect(screen.getByText("amém, irmãos")).toBeInTheDocument()
+    await userEvent.click(screen.getByRole("button", { name: "Apagar" }))
+    expect(spy.mock.calls.some(([, i]) => i?.method === "DELETE")).toBe(false)
+    await userEvent.click(await screen.findByRole("button", { name: "Apagar comentário" }))
+    await waitFor(() => expect(screen.queryByText("Seus comentários no blog")).toBeNull())
+    expect(spy.mock.calls.some(([p, i]) => p === "/api/conta/comentarios/5" && i?.method === "DELETE")).toBe(true)
   })
 })

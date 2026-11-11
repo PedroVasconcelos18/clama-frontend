@@ -1,0 +1,5 @@
+{
+  "priority": 10,
+  "request": { "method": "GET", "urlPath": "/wp-json/wp/v2/posts" },
+  "response": { "status": 200, "headers": { "Content-Type": "application/json" }, "jsonBody": [] }
+}

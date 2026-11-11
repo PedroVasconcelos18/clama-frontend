@@ -1,4 +1,4 @@
-import { test, expect, request } from "@playwright/test"
+import { test, expect } from "@playwright/test"
 
 /**
  * Gate de cutover (Story 6.5).
@@ -186,19 +186,6 @@ test.describe("Gate — segurança", () => {
     )
 
     expect(suspeitos).toEqual([])
-  })
-
-  test("o webhook rejeita requisição sem HMAC, com 401", async () => {
-    // AC7. E o que importa não é só o status: é que nada seja criado nem
-    // enfileirado — verificado no backend por teste próprio (Story 3.2).
-    const req = await request.newContext()
-    const resposta = await req.post("/api/webhooks/wordpress/", {
-      form: { evento_id: "gate", tipo: "post_publicado", wp_post_id: "1" },
-      maxRedirects: 0,
-    })
-
-    expect(resposta.status()).toBe(401)
-    await req.dispose()
   })
 })
 

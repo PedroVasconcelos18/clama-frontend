@@ -20,8 +20,8 @@ const selectClass =
   "mt-1 block bg-clama-night border border-clama-gold/30 text-clama-cream rounded-md h-9 px-2 text-sm"
 
 /**
- * Lista de usuários. Contagens de pedidos e comentários e bans voltam com as
- * ondas 4 e 6 (hoje o servidor não as tem). Escrita só para SUPERUSUARIO.
+ * Lista de usuários. Comentários e bans do blog ficam fora da lista de propósito (D11 da onda 6):
+ * aparecem na ficha (CustomerDetailDrawer) e em /admin/blog. Escrita só para SUPERUSUARIO.
  */
 export default function UsuariosPage() {
   const { fetchApi } = useApi()

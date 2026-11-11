@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { toast } from "sonner"
+import { AdminPager } from "@/components/admin/AdminPager"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -9,80 +10,56 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { LoadingSpinner } from "@/components/utility/LoadingSpinner"
+import { PastoralAlert } from "@/components/utility/PastoralAlert"
 import { useApi } from "@/hooks/useApi"
+import { usePaginaAdmin } from "@/hooks/useAdminList"
 import { tempoRelativo } from "@/lib/datetime"
-import type {
-  AdminCustomerBanido,
-  PaginatedAdminBanidos,
-} from "@/types/blog.types"
+import type { components } from "@/types/api-schema"
 
-const PAGE_SIZE = 20
+type Banimento = components["schemas"]["Item"]
 
+/** Banimentos ativos do blog (`/api/admin/blog/banimentos`); revogar é por `usuarioId`. */
 export default function BlogBannedPage() {
   const { fetchApi } = useApi()
-  const [page, setPage] = useState(1)
-  const [data, setData] = useState<PaginatedAdminBanidos | null>(null)
-  const [loading, setLoading] = useState(false)
+  const [offset, setOffset] = useState(0)
   const [reloadToken, setReloadToken] = useState(0)
-  const [unbanTarget, setUnbanTarget] =
-    useState<AdminCustomerBanido | null>(null)
-  const [actionInFlight, setActionInFlight] = useState(false)
+  const [alvo, setAlvo] = useState<Banimento | null>(null)
+  const [busy, setBusy] = useState(false)
 
-  useEffect(() => {
-    let cancelled = false
-    setLoading(true)
-    fetchApi<PaginatedAdminBanidos>(
-      `/api/blog/admin/banned-customers/?page=${page}&page_size=${PAGE_SIZE}`,
-    )
-      .then((response) => {
-        if (!cancelled) setData(response)
-      })
-      .catch(() => {
-        if (!cancelled) setData(null)
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false)
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [fetchApi, page, reloadToken])
+  const { data, loading, error } = usePaginaAdmin<Banimento>("/api/admin/blog/banimentos", {}, offset, reloadToken)
+  const total = data?.page.totalElements ?? 0
+  const banidos = data?.content ?? []
 
-  async function handleConfirmUnban() {
-    if (!unbanTarget) return
-    setActionInFlight(true)
+  async function revogar() {
+    if (!alvo) return
+    setBusy(true)
     try {
-      await fetchApi(
-        `/api/blog/admin/banned-customers/${unbanTarget.customer}/`,
-        { method: "DELETE" },
-      )
+      await fetchApi(`/api/admin/blog/banimentos/${alvo.usuarioId}`, { method: "DELETE" })
       toast.success("Banimento revogado.")
-      setUnbanTarget(null)
+      setAlvo(null)
       setReloadToken((n) => n + 1)
+    } catch {
+      /* fetchApi já avisou com o toast */
     } finally {
-      setActionInFlight(false)
+      setBusy(false)
     }
   }
-
-  const totalPages = data ? Math.ceil(data.count / PAGE_SIZE) : 0
-  const banidos = data?.results ?? []
 
   return (
     <div className="space-y-4 bg-clama-night-deep p-6 text-clama-cream">
       <header className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="font-serif text-2xl text-clama-gold">
-          Customers banidos
-        </h1>
-        <span className="text-sm text-clama-cream/60">
-          {data?.count ?? 0} ativos
-        </span>
+        <h1 className="font-serif text-2xl text-clama-gold">Usuários banidos</h1>
+        <span className="text-sm text-clama-cream/60">{total} ativos</span>
       </header>
+
+      {error && <PastoralAlert variant="error">{error}</PastoralAlert>}
 
       <div className="overflow-x-auto rounded-md border border-clama-gold/20">
         <table className="w-full text-left text-sm">
           <thead className="bg-clama-night text-clama-cream/70">
             <tr>
-              <th className="p-3">Customer</th>
+              <th className="p-3">Usuário</th>
               <th className="p-3">Motivo</th>
               <th className="p-3">Banido por</th>
               <th className="p-3">Quando</th>
@@ -92,41 +69,31 @@ export default function BlogBannedPage() {
           <tbody>
             {loading && (
               <tr>
-                <td className="p-3 text-clama-cream/60" colSpan={5}>
-                  Carregando…
+                <td className="p-3" colSpan={5}>
+                  <LoadingSpinner size={20} />
                 </td>
               </tr>
             )}
             {!loading && banidos.length === 0 && (
               <tr>
                 <td className="p-6 text-center text-clama-cream/60" colSpan={5}>
-                  Nenhum customer banido no momento.
+                  Nenhum usuário banido no momento.
                 </td>
               </tr>
             )}
             {banidos.map((b) => (
-              <tr key={b.id} className="border-t border-clama-gold/10">
+              <tr key={b.usuarioId} className="border-t border-clama-gold/10">
                 <td className="p-3">
-                  <div>{b.customer_nome}</div>
-                  <div className="text-xs text-clama-cream/50">
-                    {b.customer_email}
-                  </div>
+                  <div>{b.usuarioNome}</div>
+                  <div className="text-xs text-clama-cream/50">{b.usuarioEmail}</div>
                 </td>
                 <td className="max-w-[40ch] p-3 text-clama-cream/70">
                   <div className="line-clamp-3">{b.motivo}</div>
                 </td>
-                <td className="p-3 text-clama-cream/70">
-                  {b.banido_por_email}
-                </td>
-                <td className="p-3 text-clama-cream/70">
-                  {tempoRelativo(b.banido_em)}
-                </td>
+                <td className="p-3 text-clama-cream/70">{b.banidoPorEmail ?? "—"}</td>
+                <td className="p-3 text-clama-cream/70">{b.banidoEm ? tempoRelativo(b.banidoEm) : "—"}</td>
                 <td className="p-3 text-right">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setUnbanTarget(b)}
-                  >
+                  <Button variant="outline" size="sm" onClick={() => setAlvo(b)}>
                     Revogar
                   </Button>
                 </td>
@@ -136,53 +103,19 @@ export default function BlogBannedPage() {
         </table>
       </div>
 
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between">
-          <span className="text-sm text-clama-cream/60">
-            Página {page} de {totalPages}
-          </span>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={!data?.previous}
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-            >
-              Anterior
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={!data?.next}
-              onClick={() => setPage((p) => p + 1)}
-            >
-              Próxima
-            </Button>
-          </div>
-        </div>
-      )}
+      <AdminPager offset={offset} total={total} onChange={setOffset} />
 
-      <Dialog
-        open={unbanTarget !== null}
-        onOpenChange={(o) => !o && setUnbanTarget(null)}
-      >
+      <Dialog open={alvo !== null} onOpenChange={(o) => !o && !busy && setAlvo(null)}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Revogar banimento</DialogTitle>
-            <DialogDescription>
-              {unbanTarget?.customer_nome} vai voltar a poder comentar e curtir
-              posts.
-            </DialogDescription>
+            <DialogDescription>{alvo?.usuarioNome} vai voltar a poder comentar e curtir posts.</DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setUnbanTarget(null)}>
+            <Button variant="outline" onClick={() => setAlvo(null)}>
               Cancelar
             </Button>
-            <Button
-              variant="default"
-              disabled={actionInFlight}
-              onClick={handleConfirmUnban}
-            >
+            <Button variant="default" disabled={busy} onClick={revogar}>
               Revogar
             </Button>
           </DialogFooter>

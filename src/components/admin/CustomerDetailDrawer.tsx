@@ -7,6 +7,7 @@ import { formatarDataHora } from "@/lib/datetime"
 import { Button } from "@/components/ui/button"
 import { LoadingSpinner } from "@/components/utility/LoadingSpinner"
 import { CustomerAcesso } from "@/components/admin/CustomerAcesso"
+import { CustomerBlog } from "@/components/admin/CustomerBlog"
 import { PastoralAlert } from "@/components/utility/PastoralAlert"
 import { ROTULO_PAPEL, type UsuarioAdmin } from "@/types/usuario-admin"
 
@@ -18,8 +19,7 @@ interface Props {
 }
 
 /**
- * Detalhe do usuário. CPF, pedidos, comentários e moderação do blog voltam
- * com as ondas 4 e 6; por ora só o que a conta tem.
+ * Detalhe do usuário: o que a conta tem e a moderação do blog (comentários e banimento).
  */
 export function CustomerDetailDrawer({ usuarioId, onClose, onChanged }: Props) {
   const { fetchApi } = useApi()
@@ -109,6 +109,8 @@ export function CustomerDetailDrawer({ usuarioId, onClose, onChanged }: Props) {
                   }}
                 />
               )}
+
+              <CustomerBlog usuarioId={data.id} />
 
               <Section title="Linha do tempo">
                 <Field label="Cadastro" value={formatarDataHora(data.criadoEm)} />

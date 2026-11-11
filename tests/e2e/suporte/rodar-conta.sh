@@ -6,7 +6,7 @@
 #      MERCADOPAGO_SIMULADO=1 tests/e2e/suporte/rodar-conta.sh tests/e2e/pedido.spec.ts   (oração: tests/e2e/oracao.spec.ts)
 # Variáveis: CLAMA_API_DIR (padrão ../clama-api), SKIP_BUILD=1 para não recompilar o jar,
 #   MERCADOPAGO_SIMULADO=1 sobe um WireMock (mapeamentos em suporte/mercadopago) no lugar do Mercado Pago e outro (suporte/claude)
-#   no lugar da Claude, e roda a API
+#   no lugar da Claude e um terceiro (suporte/wordpress) no lugar do WordPress, e roda a API
 #   com os perfis local,test (o perfil test é o único que aceita mercadopago-url em http; a regra de produção não muda),
 #   API_PERFIS para trocar os perfis à mão.
 set -euo pipefail
@@ -64,12 +64,21 @@ if [ "${MERCADOPAGO_SIMULADO:-}" = "1" ]; then
   PIDS+=($!)
   esperar "http://localhost:$CLAUDE_WM_PORT/__admin/health" 30
   export CLAUDE_WIREMOCK_URL="http://localhost:$CLAUDE_WM_PORT"
+  # O WordPress também é simulado (suporte/wordpress: um post publicado, um protegido, o resto = lista vazia): o blog
+  # lê a API pública dele (WORDPRESS_API_URL) e o e2e nunca fala com o real.
+  WP_WM_PORT="$(livre)"
+  echo ">> WireMock (WordPress simulado) na porta $WP_WM_PORT"
+  "$JAVA_HOME/bin/java" -jar "$WIREMOCK_JAR" --port "$WP_WM_PORT" --root-dir "$FRONT_DIR/tests/e2e/suporte/wordpress" \
+    --disable-banner >"$TMP/wiremock-wordpress.log" 2>&1 &
+  PIDS+=($!)
+  esperar "http://localhost:$WP_WM_PORT/__admin/health" 30
   API_PERFIS="local,test"
   export WIREMOCK_URL="http://localhost:$WM_PORT"
   export MERCADOPAGO_WEBHOOK_SECRET="segredo-do-webhook-e2e"
   API_ENV=(CLAMA_PAGAMENTO_MERCADOPAGOURL="$WIREMOCK_URL" MERCADOPAGO_ACCESS_TOKEN="TEST-token-e2e"
     MERCADOPAGO_WEBHOOK_SECRET="$MERCADOPAGO_WEBHOOK_SECRET"
-    CLAMA_ORACAO_ANTHROPICURL="$CLAUDE_WIREMOCK_URL" ANTHROPIC_API_KEY="sk-ant-e2e-simulada")
+    CLAMA_ORACAO_ANTHROPICURL="$CLAUDE_WIREMOCK_URL" ANTHROPIC_API_KEY="sk-ant-e2e-simulada"
+    WORDPRESS_API_URL="http://localhost:$WP_WM_PORT")
 fi
 
 if [ "${SKIP_BUILD:-}" != "1" ]; then

@@ -1,5 +1,7 @@
-import { useEffect, useState } from "react"
+import { useState } from "react"
+import { useSearchParams } from "react-router-dom"
 import { toast } from "sonner"
+import { AdminPager } from "@/components/admin/AdminPager"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -12,143 +14,119 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { LoadingSpinner } from "@/components/utility/LoadingSpinner"
+import { PastoralAlert } from "@/components/utility/PastoralAlert"
 import { useApi } from "@/hooks/useApi"
+import { usePaginaAdmin } from "@/hooks/useAdminList"
 import { tempoRelativo } from "@/lib/datetime"
 import { cn } from "@/lib/utils"
-import type {
-  AdminComentario,
-  PaginatedAdminComentarios,
-} from "@/types/blog.types"
+import type { components } from "@/types/api-schema"
 
-type StatusFilter = "todos" | "suspeitos"
+type Comentario = components["schemas"]["ParaAdmin"]
 
-const PAGE_SIZE = 20
+/** O servidor recusa motivo com menos de 3 caracteres. */
+export const MOTIVO_MINIMO = 3
 
+/** Comentários do blog (`/api/admin/blog/comentarios`). Nunca mostra IP: a API nem o devolve. */
 export default function BlogCommentsPage() {
   const { fetchApi } = useApi()
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("todos")
-  const [postSlugFilter, setPostSlugFilter] = useState("")
-  const [page, setPage] = useState(1)
-  const [data, setData] = useState<PaginatedAdminComentarios | null>(null)
-  const [loading, setLoading] = useState(false)
+  const [searchParams] = useSearchParams()
+  const [suspeitos, setSuspeitos] = useState(false)
+  const [post, setPost] = useState("")
+  const [usuarioId, setUsuarioId] = useState(searchParams.get("usuarioId") ?? "")
+  const [offset, setOffset] = useState(0)
   const [reloadToken, setReloadToken] = useState(0)
-  const [deleteTarget, setDeleteTarget] = useState<AdminComentario | null>(null)
-  const [banTarget, setBanTarget] = useState<AdminComentario | null>(null)
-  const [banMotivo, setBanMotivo] = useState("")
-  const [actionInFlight, setActionInFlight] = useState(false)
+  const [apagar, setApagar] = useState<Comentario | null>(null)
+  const [banir, setBanir] = useState<Comentario | null>(null)
+  const [motivo, setMotivo] = useState("")
+  const [busy, setBusy] = useState(false)
 
-  useEffect(() => {
-    let cancelled = false
-    setLoading(true)
-    const params = new URLSearchParams()
-    params.set("page", String(page))
-    if (statusFilter === "suspeitos") params.set("status", "suspeitos")
-    if (postSlugFilter.trim()) params.set("post_espelho", postSlugFilter.trim())
-    params.set("page_size", String(PAGE_SIZE))
+  const { data, loading, error } = usePaginaAdmin<Comentario>(
+    "/api/admin/blog/comentarios",
+    { suspeitos: suspeitos ? "true" : "", post, usuarioId },
+    offset,
+    reloadToken,
+  )
+  const total = data?.page.totalElements ?? 0
+  const comentarios = data?.content ?? []
 
-    fetchApi<PaginatedAdminComentarios>(
-      `/api/blog/admin/comments/?${params.toString()}`,
-    )
-      .then((response) => {
-        if (!cancelled) setData(response)
-      })
-      .catch(() => {
-        if (!cancelled) setData(null)
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false)
-      })
-
-    return () => {
-      cancelled = true
-    }
-  }, [fetchApi, statusFilter, postSlugFilter, page, reloadToken])
-
-  function reload() {
-    setReloadToken((n) => n + 1)
+  const filtrar = (fn: () => void) => {
+    fn()
+    setOffset(0)
   }
 
-  function handleSelectFilter(next: StatusFilter) {
-    setStatusFilter(next)
-    setPage(1)
-  }
-
-  async function handleConfirmDelete() {
-    if (!deleteTarget) return
-    setActionInFlight(true)
+  async function confirmarApagar() {
+    if (!apagar) return
+    setBusy(true)
     try {
-      await fetchApi(`/api/blog/admin/comments/${deleteTarget.id}/`, {
-        method: "DELETE",
-      })
+      await fetchApi(`/api/admin/blog/comentarios/${apagar.id}`, { method: "DELETE" })
       toast.success("Comentário excluído.")
-      setDeleteTarget(null)
-      reload()
+      setApagar(null)
+      setReloadToken((n) => n + 1)
+    } catch {
+      /* fetchApi já avisou com o toast */
     } finally {
-      setActionInFlight(false)
+      setBusy(false)
     }
   }
 
-  async function handleConfirmBan() {
-    if (!banTarget) return
-    setActionInFlight(true)
+  async function confirmarBanir() {
+    if (!banir) return
+    setBusy(true)
     try {
-      await fetchApi(`/api/blog/admin/banned-customers/`, {
+      await fetchApi("/api/admin/blog/banimentos", {
         method: "POST",
-        body: JSON.stringify({
-          customer_id: banTarget.customer,
-          motivo: banMotivo.trim() || "Sem motivo informado",
-        }),
+        body: JSON.stringify({ usuarioId: banir.usuarioId, motivo: motivo.trim() }),
       })
-      toast.success("Customer banido do sistema de comentários.")
-      setBanTarget(null)
-      setBanMotivo("")
-      reload()
+      toast.success("Autor banido do sistema de comentários.")
+      setBanir(null)
+      setMotivo("")
+      setReloadToken((n) => n + 1)
+    } catch {
+      /* fetchApi já avisou com o toast */
     } finally {
-      setActionInFlight(false)
+      setBusy(false)
     }
   }
-
-  const totalPages = data ? Math.ceil(data.count / PAGE_SIZE) : 0
-  const comments = data?.results ?? []
 
   return (
     <div className="space-y-4 bg-clama-night-deep p-6 text-clama-cream">
       <header className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="font-serif text-2xl text-clama-gold">Comentários</h1>
-        <span className="text-sm text-clama-cream/60">
-          {data?.count ?? 0} total
-        </span>
+        <span className="text-sm text-clama-cream/60">{total} total</span>
       </header>
 
       <div className="flex flex-wrap items-center gap-2">
-        <div
-          className="flex gap-1"
-          role="tablist"
-          aria-label="Filtro de status"
-        >
-          {(["todos", "suspeitos"] as const).map((filter) => (
+        <div className="flex gap-1" role="tablist" aria-label="Filtro de status">
+          {([false, true] as const).map((s) => (
             <Button
-              key={filter}
-              variant={statusFilter === filter ? "gold" : "outline"}
+              key={String(s)}
+              variant={suspeitos === s ? "gold" : "outline"}
               size="sm"
               role="tab"
-              aria-selected={statusFilter === filter}
-              onClick={() => handleSelectFilter(filter)}
+              aria-selected={suspeitos === s}
+              onClick={() => filtrar(() => setSuspeitos(s))}
             >
-              {filter === "todos" ? "Todos" : "Suspeitos"}
+              {s ? "Suspeitos" : "Todos"}
             </Button>
           ))}
         </div>
         <Input
           placeholder="Filtrar por slug do post"
-          value={postSlugFilter}
-          onChange={(e) => {
-            setPostSlugFilter(e.target.value)
-            setPage(1)
-          }}
+          value={post}
+          onChange={(e) => filtrar(() => setPost(e.target.value))}
           className="max-w-xs"
         />
+        <Input
+          placeholder="ID do usuário"
+          inputMode="numeric"
+          value={usuarioId}
+          onChange={(e) => filtrar(() => setUsuarioId(e.target.value.replace(/\D/g, "")))}
+          className="max-w-[10rem]"
+        />
       </div>
+
+      {error && <PastoralAlert variant="error">{error}</PastoralAlert>}
 
       <div className="overflow-x-auto rounded-md border border-clama-gold/20">
         <table className="w-full text-left text-sm">
@@ -156,8 +134,7 @@ export default function BlogCommentsPage() {
             <tr>
               <th className="p-3">Comentário</th>
               <th className="p-3">Post</th>
-              <th className="p-3">Customer</th>
-              <th className="p-3">IP</th>
+              <th className="p-3">Autor</th>
               <th className="p-3">Data</th>
               <th className="p-3 text-right">Ações</th>
             </tr>
@@ -165,84 +142,57 @@ export default function BlogCommentsPage() {
           <tbody>
             {loading && (
               <tr>
-                <td className="p-3 text-clama-cream/60" colSpan={6}>
-                  Carregando…
+                <td className="p-3" colSpan={5}>
+                  <LoadingSpinner size={20} />
                 </td>
               </tr>
             )}
-            {!loading && comments.length === 0 && (
+            {!loading && comentarios.length === 0 && (
               <tr>
-                <td className="p-6 text-center text-clama-cream/60" colSpan={6}>
+                <td className="p-6 text-center text-clama-cream/60" colSpan={5}>
                   Nenhum comentário com esse filtro.
                 </td>
               </tr>
             )}
-            {comments.map((c) => (
-              <tr
-                key={c.id}
-                className={cn(
-                  "border-t border-clama-gold/10",
-                  c.is_suspeito && "bg-destructive/5",
-                )}
-              >
+            {comentarios.map((c) => (
+              <tr key={c.id} className={cn("border-t border-clama-gold/10", c.suspeito && "bg-destructive/5")}>
                 <td className="max-w-[28ch] p-3">
-                  <div className="line-clamp-3 text-clama-cream">
-                    {c.conteudo}
-                  </div>
-                  {c.is_suspeito && (
+                  <div className="line-clamp-3 text-clama-cream">{c.conteudo}</div>
+                  {c.suspeito && (
                     <span className="mt-1 inline-block rounded-full bg-destructive/20 px-2 py-0.5 text-xs text-destructive">
                       Suspeito
                     </span>
                   )}
                 </td>
                 <td className="p-3">
-                  {(() => {
-                    // Chaves do espelho são opcionais (o Django não as envia).
-                    const titulo = c.post_espelho_titulo || c.post_espelho_slug
-                    if (!titulo) return "—"
-                    const href =
-                      c.post_espelho_url ??
-                      (c.post_espelho_slug ? `/blog/${c.post_espelho_slug}` : null)
-                    return href ? (
-                      <a href={href} className="text-clama-gold hover:underline">
-                        {titulo}
-                      </a>
-                    ) : (
-                      titulo
-                    )
-                  })()}
+                  {c.postUrl ? (
+                    <a href={c.postUrl} className="text-clama-gold hover:underline">
+                      {c.postTitulo || c.postSlug}
+                    </a>
+                  ) : (
+                    c.postTitulo || c.postSlug || "—"
+                  )}
                 </td>
                 <td className="p-3 text-clama-cream/70">
-                  <div>{c.customer_nome}</div>
-                  <div className="text-xs text-clama-cream/50">
-                    {c.customer_email}
-                  </div>
+                  <div>{c.usuarioNome}</div>
+                  <div className="text-xs text-clama-cream/50">{c.usuarioEmail}</div>
                 </td>
-                <td className="p-3 text-xs text-clama-cream/50">
-                  {c.ip_address || "—"}
-                </td>
-                <td className="p-3 text-clama-cream/70">
-                  {tempoRelativo(c.created_at)}
-                </td>
+                <td className="p-3 text-clama-cream/70">{c.criadoEm ? tempoRelativo(c.criadoEm) : "—"}</td>
                 <td className="p-3 text-right">
                   <div className="inline-flex gap-1">
-                    {c.customer != null && (
+                    {c.usuarioId != null && (
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => {
-                          setBanTarget(c)
-                          setBanMotivo("")
+                          setBanir(c)
+                          setMotivo("")
                         }}
                       >
                         Banir
                       </Button>
                     )}
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => setDeleteTarget(c)}
-                    >
+                    <Button variant="destructive" size="sm" onClick={() => setApagar(c)}>
                       Excluir
                     </Button>
                   </div>
@@ -253,93 +203,57 @@ export default function BlogCommentsPage() {
         </table>
       </div>
 
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between">
-          <span className="text-sm text-clama-cream/60">
-            Página {page} de {totalPages}
-          </span>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={!data?.previous}
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-            >
-              Anterior
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={!data?.next}
-              onClick={() => setPage((p) => p + 1)}
-            >
-              Próxima
-            </Button>
-          </div>
-        </div>
-      )}
+      <AdminPager offset={offset} total={total} onChange={setOffset} />
 
-      <Dialog
-        open={deleteTarget !== null}
-        onOpenChange={(o) => !o && setDeleteTarget(null)}
-      >
+      <Dialog open={apagar !== null} onOpenChange={(o) => !o && !busy && setApagar(null)}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Excluir comentário</DialogTitle>
-            <DialogDescription>
-              O comentário some do post imediatamente. Não há undo.
-            </DialogDescription>
+            <DialogDescription>O comentário some do post imediatamente. Não há undo.</DialogDescription>
           </DialogHeader>
-          {deleteTarget && (
+          {apagar && (
             <p className="line-clamp-4 rounded-md border border-clama-gold/20 bg-clama-night-soft p-3 text-sm text-clama-night">
-              {deleteTarget.conteudo}
+              {apagar.conteudo}
             </p>
           )}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteTarget(null)}>
+            <Button variant="outline" onClick={() => setApagar(null)}>
               Cancelar
             </Button>
-            <Button
-              variant="destructive"
-              disabled={actionInFlight}
-              onClick={handleConfirmDelete}
-            >
+            <Button variant="destructive" disabled={busy} onClick={confirmarApagar}>
               Excluir
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      <Dialog
-        open={banTarget !== null}
-        onOpenChange={(o) => !o && setBanTarget(null)}
-      >
+      <Dialog open={banir !== null} onOpenChange={(o) => !o && !busy && setBanir(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Banir customer dos comentários</DialogTitle>
+            <DialogTitle>Banir autor dos comentários</DialogTitle>
             <DialogDescription>
-              {banTarget?.customer_nome} ({banTarget?.customer_email}) não vai
-              poder mais comentar nem dar like, mas continua podendo ler.
+              {banir?.usuarioNome} ({banir?.usuarioEmail}) não vai poder mais comentar nem curtir, mas continua podendo
+              ler.
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-2">
-            <Label htmlFor="ban-motivo">Motivo (registro interno)</Label>
+            <Label htmlFor="ban-motivo">Motivo (registro interno, obrigatório)</Label>
             <Textarea
               id="ban-motivo"
-              value={banMotivo}
-              onChange={(e) => setBanMotivo(e.target.value)}
+              value={motivo}
+              onChange={(e) => setMotivo(e.target.value)}
               rows={3}
               placeholder="Ofensa, spam, etc."
             />
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setBanTarget(null)}>
+            <Button variant="outline" onClick={() => setBanir(null)}>
               Cancelar
             </Button>
             <Button
               variant="destructive"
-              disabled={actionInFlight}
-              onClick={handleConfirmBan}
+              disabled={busy || motivo.trim().length < MOTIVO_MINIMO}
+              onClick={confirmarBanir}
             >
               Banir
             </Button>

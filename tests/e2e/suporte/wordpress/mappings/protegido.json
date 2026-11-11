@@ -1,0 +1,12 @@
+{
+  "priority": 1,
+  "request": { "method": "GET", "urlPath": "/wp-json/wp/v2/posts", "queryParameters": { "slug": { "equalTo": "post-protegido" } } },
+  "response": {
+    "status": 200,
+    "headers": { "Content-Type": "application/json" },
+    "jsonBody": [
+      { "id": 9002, "slug": "post-protegido", "title": { "rendered": "Post protegido" }, "link": "https://blog.exemplo/post-protegido/",
+        "date_gmt": "2026-11-01T12:30:00", "content": { "protected": true } }
+    ]
+  }
+}

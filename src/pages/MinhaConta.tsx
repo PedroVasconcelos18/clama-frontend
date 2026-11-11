@@ -15,6 +15,7 @@ import { useApi } from "@/hooks/useApi"
 import { PastoralApiError } from "@/lib/api"
 import LoadingSpinner from "@/components/utility/LoadingSpinner"
 import { PastoralAlert } from "@/components/utility/PastoralAlert"
+import { ComentariosDoBlog } from "@/components/clama/ComentariosDoBlog"
 import { PedidoSection } from "@/components/clama/PedidoSection"
 import { SiteHeader } from "@/components/clama/SiteHeader"
 import { buildWhatsAppShareUrl } from "@/components/clama/WhatsAppShareButton"
@@ -159,6 +160,7 @@ export default function MinhaConta() {
               <NovoPedidoTab />
             </div>
           )}
+          <ComentariosDoBlog />
         </main>
       </div>
     </div>

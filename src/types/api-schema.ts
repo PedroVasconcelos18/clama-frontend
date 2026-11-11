@@ -4,6 +4,70 @@
  */
 
 export interface paths {
+    "/api/admin/blog/banimentos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listar_3"];
+        put?: never;
+        post: operations["banir"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/blog/banimentos/{usuarioId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["revogar"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/blog/comentarios": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listar_9"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/blog/comentarios/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["apagar_2"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/documentos": {
         parameters: {
             query?: never;
@@ -59,7 +123,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["listar_6"];
+        get: operations["listar_8"];
         put?: never;
         post?: never;
         delete?: never;
@@ -107,7 +171,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["listar_5"];
+        get: operations["listar_7"];
         put?: never;
         post?: never;
         delete?: never;
@@ -203,7 +267,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["listar_4"];
+        get: operations["listar_6"];
         put?: never;
         post?: never;
         delete?: never;
@@ -379,7 +443,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["listar_3"];
+        get: operations["listar_5"];
         put?: never;
         post?: never;
         delete?: never;
@@ -527,6 +591,38 @@ export interface paths {
         put?: never;
         post: operations["redefinir"];
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/conta/comentarios": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listar_4"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/conta/comentarios/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["apagar_1"];
         options?: never;
         head?: never;
         patch?: never;
@@ -781,6 +877,11 @@ export interface components {
             /** @enum {string} */
             papel?: "CLIENTE" | "ADMIN" | "SUPERUSUARIO";
         };
+        Banir: {
+            motivo: string;
+            /** Format: int64 */
+            usuarioId: number;
+        };
         BloqueioAdmin: {
             cpfHmacCurto?: string;
             /** Format: date-time */
@@ -831,6 +932,16 @@ export interface components {
             email: string;
             nomeCompleto?: string;
             senha: string;
+        };
+        DaConta: {
+            conteudo?: string;
+            /** Format: date-time */
+            criadoEm?: string;
+            /** Format: int64 */
+            id?: number;
+            postSlug?: string;
+            postTitulo?: string;
+            postUrl?: string;
         };
         DocumentoAdmin: {
             ativo?: boolean;
@@ -919,6 +1030,16 @@ export interface components {
             logoUrl?: string;
             nome?: string;
         };
+        Item: {
+            /** Format: date-time */
+            banidoEm?: string;
+            banidoPorEmail?: string;
+            motivo?: string;
+            usuarioEmail?: string;
+            /** Format: int64 */
+            usuarioId?: number;
+            usuarioNome?: string;
+        };
         MensagemPastoral: {
             mensagemPastoral?: string;
         };
@@ -997,8 +1118,20 @@ export interface components {
             content: components["schemas"]["BloqueioAdmin"][];
             page: components["schemas"]["PageMetadata"];
         };
+        PagedModelDaConta: {
+            content: components["schemas"]["DaConta"][];
+            page: components["schemas"]["PageMetadata"];
+        };
         PagedModelEventoMpAdmin: {
             content: components["schemas"]["EventoMpAdmin"][];
+            page: components["schemas"]["PageMetadata"];
+        };
+        PagedModelItem: {
+            content: components["schemas"]["Item"][];
+            page: components["schemas"]["PageMetadata"];
+        };
+        PagedModelParaAdmin: {
+            content: components["schemas"]["ParaAdmin"][];
             page: components["schemas"]["PageMetadata"];
         };
         PagedModelPedidoAdminItem: {
@@ -1012,6 +1145,21 @@ export interface components {
         PagedModelUsuarioAdminItem: {
             content: components["schemas"]["UsuarioAdminItem"][];
             page: components["schemas"]["PageMetadata"];
+        };
+        ParaAdmin: {
+            conteudo?: string;
+            /** Format: date-time */
+            criadoEm?: string;
+            /** Format: int64 */
+            id?: number;
+            postSlug?: string;
+            postTitulo?: string;
+            postUrl?: string;
+            suspeito?: boolean;
+            usuarioEmail?: string;
+            /** Format: int64 */
+            usuarioId?: number;
+            usuarioNome?: string;
         };
         PedidoAdminDetalhe: {
             /** Format: date-time */
@@ -1296,6 +1444,128 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    listar_3: {
+        parameters: {
+            query?: {
+                usuarioId?: number;
+                /** @description Zero-based page index (0..N) */
+                page?: number;
+                /** @description The size of the page to be returned */
+                size?: number;
+                /** @description Sorting criteria in the format: property,(asc|desc). Default sort order is ascending. Multiple sort criteria are supported. */
+                sort?: string[];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PagedModelItem"];
+                };
+            };
+        };
+    };
+    banir: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Banir"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["Item"];
+                };
+            };
+        };
+    };
+    revogar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                usuarioId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    listar_9: {
+        parameters: {
+            query?: {
+                suspeitos?: boolean;
+                post?: string;
+                usuarioId?: number;
+                /** @description Zero-based page index (0..N) */
+                page?: number;
+                /** @description The size of the page to be returned */
+                size?: number;
+                /** @description Sorting criteria in the format: property,(asc|desc). Default sort order is ascending. Multiple sort criteria are supported. */
+                sort?: string[];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PagedModelParaAdmin"];
+                };
+            };
+        };
+    };
+    apagar_2: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     listar_2: {
         parameters: {
             query?: never;
@@ -1413,7 +1683,7 @@ export interface operations {
             };
         };
     };
-    listar_6: {
+    listar_8: {
         parameters: {
             query?: {
                 status?: string;
@@ -1485,7 +1755,7 @@ export interface operations {
             };
         };
     };
-    listar_5: {
+    listar_7: {
         parameters: {
             query?: {
                 /** @description Zero-based page index (0..N) */
@@ -1675,7 +1945,7 @@ export interface operations {
             };
         };
     };
-    listar_4: {
+    listar_6: {
         parameters: {
             query?: {
                 /** @description Um ou mais status separados por virgula. */
@@ -2004,7 +2274,7 @@ export interface operations {
             };
         };
     };
-    listar_3: {
+    listar_5: {
         parameters: {
             query?: {
                 instituicaoId?: string;
@@ -2316,6 +2586,53 @@ export interface operations {
                 content: {
                     "*/*": components["schemas"]["MensagemPastoral"];
                 };
+            };
+        };
+    };
+    listar_4: {
+        parameters: {
+            query?: {
+                /** @description Zero-based page index (0..N) */
+                page?: number;
+                /** @description The size of the page to be returned */
+                size?: number;
+                /** @description Sorting criteria in the format: property,(asc|desc). Default sort order is ascending. Multiple sort criteria are supported. */
+                sort?: string[];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PagedModelDaConta"];
+                };
+            };
+        };
+    };
+    apagar_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

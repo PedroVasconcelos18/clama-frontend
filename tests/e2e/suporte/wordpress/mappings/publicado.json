@@ -1,0 +1,12 @@
+{
+  "priority": 1,
+  "request": { "method": "GET", "urlPath": "/wp-json/wp/v2/posts", "queryParameters": { "slug": { "equalTo": "post-de-teste" } } },
+  "response": {
+    "status": 200,
+    "headers": { "Content-Type": "application/json" },
+    "jsonBody": [
+      { "id": 9001, "slug": "post-de-teste", "title": { "rendered": "Post de teste" }, "link": "https://blog.exemplo/post-de-teste/",
+        "date_gmt": "2026-11-01T12:30:00", "content": { "protected": false } }
+    ]
+  }
+}
