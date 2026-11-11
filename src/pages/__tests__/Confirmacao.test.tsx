@@ -118,4 +118,32 @@ describe("Confirmacao", () => {
     expect(await screen.findByText(/Pedido não encontrado/)).toBeInTheDocument()
     await waitFor(() => expect(spy).not.toHaveBeenCalled())
   })
+
+  it("falha no polling dobra o intervalo (5 s → 10 s → 20 s) e, após 3 falhas sem status, mostra o erro", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    const gets = () => chamadas("GET", `/api/pedidos/${ID}`)
+    spy.mockRejectedValue(new PastoralApiError("Erro", "network_error", "Tivemos um soluço na conexão.", 0))
+    abrir()
+    await waitFor(() => expect(gets()).toBe(1))
+    expect(screen.queryByText("Tivemos um soluço na conexão.")).toBeNull()
+    await act(() => vi.advanceTimersByTimeAsync(5000))
+    expect(gets()).toBe(1) // não tentou de novo em 5 s
+    await act(() => vi.advanceTimersByTimeAsync(5000))
+    expect(gets()).toBe(2) // 10 s
+    await act(() => vi.advanceTimersByTimeAsync(20000))
+    expect(gets()).toBe(3) // 20 s
+    expect(await screen.findByText("Tivemos um soluço na conexão.")).toBeInTheDocument()
+  })
+
+  it("429 espera 60 s antes de consultar de novo", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    const gets = () => chamadas("GET", `/api/pedidos/${ID}`)
+    spy.mockRejectedValueOnce(new PastoralApiError("Erro", "limite", "Calma.", 429))
+    abrir()
+    await waitFor(() => expect(gets()).toBe(1))
+    await act(() => vi.advanceTimersByTimeAsync(59000))
+    expect(gets()).toBe(1)
+    await act(() => vi.advanceTimersByTimeAsync(1000))
+    expect(gets()).toBe(2)
+  })
 })

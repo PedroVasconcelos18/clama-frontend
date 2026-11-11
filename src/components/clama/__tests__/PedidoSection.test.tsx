@@ -257,75 +257,82 @@ describe("PedidoSection", () => {
       expect(Object.keys(corpos)).toEqual(["/api/pedidos"]); // o Pix é da confirmação
     });
 
-    it("logado pago: enviar de novo reusa o pedido criado (estado e rascunho), sem POST novo", async () => {
+    const enviarDeNovo = () => userEvent.click(screen.getByRole("button", { name: /Levar meu clamor/i }));
+    const primeiroEnvio = async () => {
       await enviarLogadoPago();
       await waitFor(() => expect(navigateMock).toHaveBeenCalledTimes(1));
-      await userEvent.click(screen.getByRole("button", { name: /Levar meu clamor/i }));
+      expect(criados).toBe(1);
+    };
+
+    it("logado pago: enviar de novo com os mesmos dados reusa o pedido, sem POST novo", async () => {
+      await primeiroEnvio();
+      await enviarDeNovo();
       await waitFor(() => expect(navigateMock).toHaveBeenCalledTimes(2));
       expect(navigateMock).toHaveBeenLastCalledWith(`/confirmacao?pedido_id=${ID}`);
       expect(criados).toBe(1);
-      expect(localStorage.getItem("clama:form-draft")).toContain(ID);
     });
 
-    it("rascunho com pedido aguardando pagamento: novo envio vai direto à confirmação", async () => {
-      localStorage.setItem(
-        "clama:form-draft",
-        JSON.stringify({
-          versao: 2,
-          valor: {
-            formData: {},
-            offering: { selectedPlanId: 2, valorLivre: null, valorLivreActive: false, gratuito: false },
-            canal: "EMAIL",
-            pedido: { id: ID, valorCentavos: 999, usuarioId: usuarioFixture.id },
-          },
-        }),
-      );
-      mockApiFetch({ usuario: usuarioFixture, outras });
-      renderWithRouter(<PedidoSection />);
-      await preencherLogado();
-      await userEvent.click(screen.getByRole("button", { name: /Levar meu clamor/i }));
-      await waitFor(() => expect(navigateMock).toHaveBeenCalledWith(`/confirmacao?pedido_id=${ID}`));
-      expect(criados).toBe(0);
+    it("mesmo valor e mesmo dono, mas outro CPF: cria um pedido novo", async () => {
+      await primeiroEnvio();
+      await userEvent.clear(campo("cpf_cnpj"));
+      await userEvent.type(campo("cpf_cnpj"), "111.444.777-35");
+      await enviarDeNovo();
+      await waitFor(() => expect(criados).toBe(2));
     });
 
-    it("rascunho com pedido já pago: cria um pedido novo", async () => {
+    it("mesmo valor e mesmo dono, mas outra instituição: cria um pedido novo", async () => {
+      await primeiroEnvio();
+      await userEvent.selectOptions(await screen.findByRole("combobox", { name: "Instituição" }), "7");
+      await enviarDeNovo();
+      await waitFor(() => expect(criados).toBe(2));
+      expect(corpos["/api/pedidos"]).toMatchObject({ instituicao: 7 });
+    });
+
+    it("pedido já pago: cria um pedido novo", async () => {
+      await primeiroEnvio();
       statusDoPedido = "PAGO";
-      localStorage.setItem(
-        "clama:form-draft",
-        JSON.stringify({
-          versao: 2,
-          valor: {
-            formData: {},
-            offering: { selectedPlanId: 2, valorLivre: null, valorLivreActive: false, gratuito: false },
-            canal: "EMAIL",
-            pedido: { id: ID, valorCentavos: 999, usuarioId: usuarioFixture.id },
-          },
-        }),
-      );
-      mockApiFetch({ usuario: usuarioFixture, outras });
-      renderWithRouter(<PedidoSection />);
-      await preencherLogado();
-      await userEvent.click(screen.getByRole("button", { name: /Levar meu clamor/i }));
-      await waitFor(() => expect(criados).toBe(1));
+      await enviarDeNovo();
+      await waitFor(() => expect(criados).toBe(2));
     });
 
-    it("rascunho com pedido de outra pessoa (mesmo navegador): cria um pedido novo", async () => {
-      localStorage.setItem(
-        "clama:form-draft",
-        JSON.stringify({
-          versao: 2,
-          valor: {
-            formData: {},
-            offering: { selectedPlanId: 2, valorLivre: null, valorLivreActive: false, gratuito: false },
-            pedido: { id: ID, valorCentavos: 999, usuarioId: null },
-          },
-        }),
-      );
-      mockApiFetch({ usuario: usuarioFixture, outras });
+    it("depois de 24 h (prazo do Pix) não reusa", async () => {
+      await primeiroEnvio();
+      const agora = Date.now();
+      vi.spyOn(Date, "now").mockReturnValue(agora + 24 * 3600_000 + 1000);
+      await enviarDeNovo();
+      await waitFor(() => expect(criados).toBe(2));
+    });
+
+    it("o rascunho guarda só id, assinatura e data: nem CPF nem nome em claro", async () => {
+      await primeiroEnvio();
+      const rascunho = localStorage.getItem("clama:form-draft") ?? "";
+      expect(rascunho).toContain(ID);
+      expect(rascunho).not.toContain("52998224725");
+      expect(rascunho).not.toContain("529.982.247-25");
+      expect(rascunho).not.toContain("Pedro");
+      expect(rascunho).not.toContain("fiel@example.com");
+      const { valor } = JSON.parse(rascunho);
+      expect(Object.keys(valor.pedido).sort()).toEqual(["assinatura", "criadoEm", "id"]);
+      expect(valor.pedido.assinatura).toMatch(/^[0-9a-f]{64}$/);
+      expect(valor.formData).toEqual({});
+    });
+
+    it("o rascunho sobrevive a recarregar: mesmos dados vão direto à confirmação", async () => {
+      const { unmount } = await (async () => {
+        mockApiFetch({ usuario: usuarioFixture, outras });
+        const r = renderWithRouter(<PedidoSection />);
+        await preencherLogado();
+        await userEvent.click(screen.getByRole("radio", { name: /Plano 2|Mais escolhido/ }));
+        await enviarDeNovo();
+        await waitFor(() => expect(criados).toBe(1));
+        return r;
+      })();
+      unmount();
       renderWithRouter(<PedidoSection />);
       await preencherLogado();
-      await userEvent.click(screen.getByRole("button", { name: /Levar meu clamor/i }));
-      await waitFor(() => expect(criados).toBe(1));
+      await enviarDeNovo(); // o plano 2 continua marcado pelo rascunho
+      await waitFor(() => expect(navigateMock).toHaveBeenCalledTimes(2));
+      expect(criados).toBe(1);
     });
 
     it("erro da criação mostra a mensagem pastoral do servidor", async () => {

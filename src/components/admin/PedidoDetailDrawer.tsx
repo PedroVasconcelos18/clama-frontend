@@ -96,6 +96,7 @@ export function PedidoDetailDrawer({ pedidoId, onClose, onChanged }: PedidoDetai
           <Button
             variant="ghost"
             size="icon"
+            aria-label="Fechar"
             onClick={onClose}
             className="text-clama-cream/60 hover:text-clama-cream hover:bg-clama-gold/10"
           >

@@ -22,6 +22,8 @@ const POLL_INTERVAL_MS = 5000;
 // ~15 min: enquanto aguarda o pagamento Pix e a oração, seguimos consultando o status.
 const MAX_POLL_ATTEMPTS = 180;
 const TERMINAIS: (StatusPedido | undefined)[] = ["ENVIADA", "ERRO"];
+const MAX_INTERVALO_MS = 60_000;
+const FALHAS_PARA_AVISAR = 3;
 
 interface StatusInfo {
   title: string;
@@ -105,10 +107,14 @@ export default function Confirmacao() {
     pedidoId ? null : "Pedido não encontrado. Retorne à página inicial e tente novamente.",
   );
 
+  const [aviso, setAviso] = useState<string | null>(null);
+  // Erro definitivo (sem id, 404) ou, antes do primeiro status, falhas seguidas.
+  const erroNaTela = error ?? (pedido ? null : aviso);
+
   const status = pedido?.status;
   const oracaoGerada = pedido?.oracaoGerada ?? "";
   const pixQrCode = pix?.copiaECola ?? null;
-  const isLoading = !pedido && !error;
+  const isLoading = !pedido && !erroNaTela;
 
   const copiarPix = async () => {
     if (!pixQrCode) return;
@@ -145,34 +151,48 @@ export default function Confirmacao() {
     void pedirPix();
   }, [status, pedirPix]);
 
+  // Polling com backoff: 5 s enquanto responde; cada falha dobra o intervalo (teto de 60 s)
+  // e o 429 vai direto ao teto. Sem nenhum status ainda, 3 falhas seguidas viram aviso na tela
+  // (a consulta continua e o aviso some quando o status chega).
   useEffect(() => {
     if (!pedidoId) return;
+    let ativo = true;
     let attempts = 0;
-    let intervalo: number | null = null;
-    const parar = () => {
-      if (intervalo !== null) window.clearInterval(intervalo);
-      intervalo = null;
-    };
+    let falhas = 0;
+    let temStatus = false;
+    let intervalo = POLL_INTERVAL_MS;
+    let timer: number | undefined;
 
     const poll = async () => {
+      attempts += 1;
       try {
         const data = await apiFetch<StatusPublico>(`/api/pedidos/${pedidoId}`, { showToast: false });
+        if (!ativo) return;
         setPedido(data);
-        if (TERMINAIS.includes(data.status)) parar();
+        setAviso(null);
+        temStatus = true;
+        falhas = 0;
+        intervalo = POLL_INTERVAL_MS;
+        if (TERMINAIS.includes(data.status)) return;
       } catch (err) {
-        if ((err as PastoralApiError).httpStatus === 404) {
-          setError((err as PastoralApiError).pastoralMessage);
-          parar();
+        if (!ativo) return;
+        const e = err as PastoralApiError;
+        if (e.httpStatus === 404) {
+          setError(e.pastoralMessage);
+          return;
         }
-        // Outras falhas (rede, limite): a próxima rodada tenta de novo.
+        falhas += 1;
+        intervalo = e.httpStatus === 429 ? MAX_INTERVALO_MS : Math.min(intervalo * 2, MAX_INTERVALO_MS);
+        if (!temStatus && falhas >= FALHAS_PARA_AVISAR) setAviso(e.pastoralMessage);
       }
-      attempts += 1;
-      if (attempts >= MAX_POLL_ATTEMPTS) parar();
+      if (ativo && attempts < MAX_POLL_ATTEMPTS) timer = window.setTimeout(poll, intervalo);
     };
 
     void poll();
-    intervalo = window.setInterval(poll, POLL_INTERVAL_MS);
-    return parar;
+    return () => {
+      ativo = false;
+      window.clearTimeout(timer);
+    };
   }, [pedidoId]);
 
   const statusInfo = getStatusMessage(status, pedido?.mensagemPastoral);
@@ -182,9 +202,9 @@ export default function Confirmacao() {
       <StickyNav />
 
       <main className="max-w-[480px] mx-auto px-6 py-12 text-center">
-        {error && (
+        {erroNaTela && (
           <div className="mb-8">
-            <PastoralAlert variant="error">{error}</PastoralAlert>
+            <PastoralAlert variant="error">{erroNaTela}</PastoralAlert>
             <div className="mt-6">
               <Link to="/">
                 <button className="bg-white text-clama-night border-[1.5px] border-clama-night py-[0.85rem] px-8 text-[0.95rem] font-semibold font-sans rounded-full hover:bg-[#f9f5ff] transition-colors">
@@ -195,7 +215,7 @@ export default function Confirmacao() {
           </div>
         )}
 
-        {!error && (
+        {!erroNaTela && (
           <>
             {/* Icon */}
             <div className="w-20 h-20 bg-[#fffbee] border-[3px] border-clama-gold rounded-full flex items-center justify-center mx-auto mb-6">

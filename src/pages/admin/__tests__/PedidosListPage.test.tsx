@@ -1,6 +1,6 @@
 import { render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
-import { MemoryRouter } from "react-router-dom"
+import { MemoryRouter, useLocation } from "react-router-dom"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import PedidosListPage from "../PedidosListPage"
 import { formatCurrency } from "@/lib/formatters"
@@ -19,10 +19,16 @@ const item = {
 }
 const pagina = { content: [item], page: { number: 0, size: 20, totalElements: 45, totalPages: 3 } }
 
+function Url() {
+  const { search } = useLocation()
+  return <output data-testid="url">{search}</output>
+}
+
 function abrir(url = "/admin/pedidos") {
   return render(
     <MemoryRouter initialEntries={[url]}>
       <PedidosListPage />
+      <Url />
     </MemoryRouter>,
   )
 }
@@ -81,5 +87,11 @@ describe("PedidosListPage", () => {
   it("?id= (link do alerta ao admin) abre o detalhe do pedido", async () => {
     abrir(`/admin/pedidos?id=${ID}`)
     await waitFor(() => expect(fetchApi).toHaveBeenCalledWith(`/api/admin/pedidos/${ID}`))
+  })
+
+  it("fechar o detalhe aberto por ?id= limpa o id da URL", async () => {
+    abrir(`/admin/pedidos?id=${ID}`)
+    await userEvent.click(await screen.findByRole("button", { name: "Fechar" }))
+    await waitFor(() => expect(screen.getByTestId("url").textContent).toBe(""))
   })
 })

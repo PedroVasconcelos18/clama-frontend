@@ -22,7 +22,7 @@ const TH = "px-4 py-3 text-left text-xs font-medium text-clama-cream/60 uppercas
 
 /** Pedidos (PagedModel, mais novo primeiro). `?id=` abre o detalhe: é o link do alerta ao admin (D11). */
 export default function PedidosListPage() {
-  const [searchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [q, setQ] = useState("")
   const [qBusca, setQBusca] = useState("") // q com debounce
   const [status, setStatus] = useState("")
@@ -189,7 +189,15 @@ export default function PedidosListPage() {
 
       <PedidoDetailDrawer
         pedidoId={selectedPedidoId}
-        onClose={() => setSelectedPedidoId(null)}
+        onClose={() => {
+          setSelectedPedidoId(null)
+          // o ?id= do link do alerta sai da URL: recarregar não reabre o detalhe
+          if (searchParams.has("id")) {
+            const resto = new URLSearchParams(searchParams)
+            resto.delete("id")
+            setSearchParams(resto, { replace: true })
+          }
+        }}
         onChanged={() => setReloadToken((n) => n + 1)}
       />
     </div>

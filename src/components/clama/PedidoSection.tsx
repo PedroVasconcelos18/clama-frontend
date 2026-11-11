@@ -31,8 +31,12 @@ import { Button } from "@/components/ui/button";
 interface FormDraftState {
   formData: Partial<PedidoFormData>;
   offering: OfferingState;
-  /** Pedido pago já criado: um novo envio com o mesmo valor o reusa (nunca recria). */
-  pedido?: { id: string; valorCentavos: number; usuarioId?: number | null } | null;
+  /**
+   * Pedido pago já criado. Sem dado pessoal: a assinatura é o SHA-256 do conteúdo
+   * enviado (dados, valor, plano, instituição e dono). Um novo envio idêntico,
+   * em até 24 h, reusa o pedido em vez de recriá-lo.
+   */
+  pedido?: { id: string; assinatura: string; criadoEm: number } | null;
 }
 
 // Versão 2: ids de plano passaram de UUID (string) para number (onda 3).
@@ -48,6 +52,16 @@ const INITIAL_DRAFT: FormDraftState = {
   },
   pedido: null,
 };
+
+// Mesmo prazo do Pix (D16): depois disso o envio cria outro pedido.
+const REUSO_MS = 24 * 60 * 60 * 1000;
+
+/** SHA-256 em hex do conteúdo (sem PII em claro no rascunho); sem `crypto.subtle`, não há reuso. */
+async function assinaturaDe(conteudo: unknown): Promise<string> {
+  if (!globalThis.crypto?.subtle) return "";
+  const hash = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(JSON.stringify(conteudo)));
+  return Array.from(new Uint8Array(hash), (b) => b.toString(16).padStart(2, "0")).join("");
+}
 
 // 400 `dados_invalidos` traz a explicação em `erros` (a pastoral é genérica).
 const mensagemDoErro = (err: unknown) => {
@@ -79,9 +93,10 @@ export interface PedidoSectionProps {
  *  | Logado     | POST /api/pedidos/gratuito     | POST /api/pedidos            |
  *  | Anônimo    | POST /api/freemium/pedidos/    | POST /api/doacoes            |
  *
- * O pago guarda o id criado (estado + rascunho) e vai para a confirmação, que
- * pede o Pix. Um novo envio com o mesmo valor, enquanto o pedido aguarda
- * pagamento, volta para a confirmação dele em vez de criar outro.
+ * O pago guarda o id criado (estado + rascunho, com a assinatura do conteúdo e
+ * sem dado pessoal) e vai para a confirmação, que pede o Pix. Um novo envio
+ * idêntico, em até 24 h e com o pedido ainda aguardando pagamento, volta para a
+ * confirmação dele em vez de criar outro.
  *
  * Anônimo usa o `PrayerFormGratuito` (Turnstile invisível + fingerprint +
  * consent). O grátis anônimo é double opt-in por e-mail (mostra `SubmittedView`).
@@ -255,11 +270,12 @@ export const PedidoSection = forwardRef<HTMLElement, PedidoSectionProps>(
 
   const irParaConfirmacao = (id: string) => navigate(`/confirmacao?pedido_id=${id}`);
 
-  // Pedido pago já criado com este valor, pela mesma pessoa (ou sem conta), ainda aguardando pagamento: reusa.
-  // Já pago (ou sumiu): cria outro. Falha de rede sobe (melhor do que duplicar).
-  const pedidoReaproveitavel = async (valor: number): Promise<string | null> => {
+  // Pedido pago com exatamente o mesmo conteúdo, criado há menos de 24 h e ainda aguardando
+  // pagamento: reusa. Qualquer diferença, já pago ou sumido: cria outro. Falha de rede sobe.
+  const pedidoReaproveitavel = async (assinatura: string): Promise<string | null> => {
     const salvo = draft.pedido;
-    if (!salvo || salvo.valorCentavos !== valor || (salvo.usuarioId ?? null) !== (usuario?.id ?? null)) return null;
+    if (!salvo || !assinatura || salvo.assinatura !== assinatura) return null;
+    if (!(Date.now() - salvo.criadoEm < REUSO_MS)) return null;
     try {
       const atual = await apiFetch<StatusPublico>(`/api/pedidos/${salvo.id}`, { showToast: false });
       return atual.status === "AGUARDANDO_PAGAMENTO" ? salvo.id : null;
@@ -269,16 +285,17 @@ export const PedidoSection = forwardRef<HTMLElement, PedidoSectionProps>(
     }
   };
 
-  // Pago (logado ou anônimo): reusa ou cria, grava o id no rascunho e vai à confirmação.
-  const enviarPago = async (criar: (valor: number) => Promise<PedidoCriado>) => {
+  // Pago (logado ou anônimo): reusa ou cria e vai à confirmação. O rascunho fica só com a
+  // oferta e {id, assinatura, criadoEm}: nada de CPF ou nome no localStorage.
+  const enviarPago = async (conteudo: object, criar: () => Promise<PedidoCriado>) => {
     setIsSubmitting(true);
     setSubmitError(null);
     try {
-      const valor = valorCentavosDaOferta();
-      let id = await pedidoReaproveitavel(valor);
+      const assinatura = await assinaturaDe({ conteudo, usuarioId: usuario?.id ?? null });
+      let id = await pedidoReaproveitavel(assinatura);
       if (!id) {
-        id = (await criar(valor)).id!;
-        salvarAgora({ ...draft, pedido: { id, valorCentavos: valor, usuarioId: usuario?.id ?? null } });
+        id = (await criar()).id!;
+        salvarAgora({ ...draft, formData: {}, pedido: { id, assinatura, criadoEm: Date.now() } });
       }
       irParaConfirmacao(id);
     } catch (err) {
@@ -312,17 +329,14 @@ export const PedidoSection = forwardRef<HTMLElement, PedidoSectionProps>(
       return;
     }
 
-    await enviarPago((valor) =>
-      fetchApi<PedidoCriado>("/api/pedidos", {
-        method: "POST",
-        body: JSON.stringify({
-          ...corpoDoPedido(formData),
-          valorCentavos: valor,
-          plano: draft.offering.selectedPlanId ?? undefined,
-          instituicao: instituicaoId ?? undefined,
-        }),
-        showToast: false,
-      }),
+    const corpo = {
+      ...corpoDoPedido(formData),
+      valorCentavos: valorCentavosDaOferta(),
+      plano: draft.offering.selectedPlanId ?? undefined,
+      instituicao: instituicaoId ?? undefined,
+    };
+    await enviarPago(corpo, () =>
+      fetchApi<PedidoCriado>("/api/pedidos", { method: "POST", body: JSON.stringify(corpo), showToast: false }),
     );
   };
 
@@ -359,7 +373,11 @@ export const PedidoSection = forwardRef<HTMLElement, PedidoSectionProps>(
     }
 
     // Livre anônimo (pago): reusar evita gastar de novo o token do Turnstile.
-    await enviarPago((valor) => criarDoacaoAnonima(data, valor, instituicaoId));
+    const valor = valorCentavosDaOferta();
+    await enviarPago(
+      { ...corpoDoPedido(data), valorCentavos: valor, instituicao: instituicaoId ?? undefined },
+      () => criarDoacaoAnonima(data, valor, instituicaoId),
+    );
   };
 
   const handleRetryLoadPlanos = () => {
