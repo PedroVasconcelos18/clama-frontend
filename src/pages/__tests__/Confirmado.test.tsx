@@ -24,10 +24,11 @@ describe("Confirmado (/confirmado)", () => {
         name: /Sua oração está sendo preparada/i,
       }),
     ).toBeInTheDocument();
-    // Dois e-mails: primeiro "defina sua senha", depois a oração (nada de "credenciais").
-    const texto = screen.getByText(/dois e-mails/i).textContent ?? "";
-    expect(texto).toMatch(/defina sua senha/);
-    expect(texto.indexOf("defina sua senha")).toBeLessThan(texto.indexOf("sua oração"));
+    // Neutro: vale com ou sem conta nova (nada de "dois e-mails" nem "credenciais").
+    const texto = screen.getByText(/chega no seu e-mail/i).textContent ?? "";
+    expect(texto).toMatch(/primeira vez/);
+    expect(texto).toMatch(/criar sua senha/);
+    expect(screen.queryByText(/dois e-mails/i)).toBeNull();
     expect(screen.queryByText(/credenciais/i)).toBeNull();
   });
 

@@ -5,6 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { toast } from "sonner"
 
 import { useSessao } from "@/contexts/SessaoContext"
+import { lerTokenETirarDaUrl } from "@/lib/tokenDaUrl"
 import { apiFetch, PastoralApiError } from "@/lib/api"
 import { redefinirSenhaSchema, type RedefinirSenhaFormData } from "@/lib/schemas/customer"
 
@@ -13,17 +14,6 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { PastoralAlert } from "@/components/utility/PastoralAlert"
 import { LoadingSpinner } from "@/components/utility/LoadingSpinner"
-
-/** Lê o token da URL e já o tira de lá, para não ficar no histórico nem no Referer. */
-function lerTokenETirarDaUrl(): string {
-  const url = new URL(window.location.href)
-  const token = url.searchParams.get("token") ?? ""
-  if (token) {
-    url.searchParams.delete("token")
-    window.history.replaceState(window.history.state, "", url.pathname + url.search + url.hash)
-  }
-  return token
-}
 
 /**
  * Redefinir (`/redefinir-senha`) e definir (`/definir-senha`) senha: a mesma tela

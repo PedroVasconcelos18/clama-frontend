@@ -56,7 +56,7 @@ function getStatusMessage(status: StatusPedido | undefined, pastoralMessage?: st
     case "CONFIRMACAO_EXPIRADA":
       return {
         title: "O link de confirmação venceu",
-        message: "Passaram-se mais de 24 horas sem a confirmação. Faça um novo pedido na página inicial.",
+        message: "O link de confirmação vale 24 horas e o pedido expirou, depois de 48 horas, sem a confirmação. Faça um novo pedido na página inicial.",
         isComplete: true,
         isError: false,
         isWaiting: false,

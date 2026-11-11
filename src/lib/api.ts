@@ -9,7 +9,7 @@ export class PastoralApiError extends Error {
   httpStatus: number
   /**
    * Campos do corpo fora do envelope do problema (ex.: `redirect` em 409
-   * user_ja_possui_conta). `codigo`, `mensagemPastoral` e `erros` têm
+   * conta_existente). `codigo`, `mensagemPastoral` e `erros` têm
    * tratamento próprio.
    */
   extra: Record<string, unknown>

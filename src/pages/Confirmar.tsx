@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { useCallback, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 
 import { StickyNav } from "@/components/clama/StickyNav";
 import { Footer } from "@/components/clama/Footer";
@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import LoadingSpinner from "@/components/utility/LoadingSpinner";
 import PastoralAlert from "@/components/utility/PastoralAlert";
 import { PastoralApiError } from "@/lib/api";
+import { lerTokenETirarDaUrl } from "@/lib/tokenDaUrl";
 import { confirmarPedidoGratuito } from "@/lib/api/freemium";
 
 /**
@@ -16,14 +17,10 @@ import { confirmarPedidoGratuito } from "@/lib/api/freemium";
  * corporativos que fazem GET pre-fetch nos links inbound.
  */
 export default function Confirmar() {
-  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  // O token é uma credencial: fica só em memória e sai da barra de endereço (e do histórico) na hora, para não
-  // vazar em log de CDN, em Referer ou no histórico. `useState` guarda o valor da primeira renderização.
-  const [token] = useState(() => (searchParams.get("token") ?? "").trim());
-  useEffect(() => {
-    if (window.location.search) window.history.replaceState(window.history.state, "", window.location.pathname);
-  }, []);
+  // O token é uma credencial: vem no fragmento (#token=, que não chega ao servidor), fica só em memória e sai da
+  // barra de endereço na hora. `useState` guarda o valor da primeira renderização.
+  const [token] = useState(lerTokenETirarDaUrl);
 
   const [submitting, setSubmitting] = useState(false);
   const [erro, setErro] = useState<string | null>(null);

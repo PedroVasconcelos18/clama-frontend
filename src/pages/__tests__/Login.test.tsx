@@ -115,6 +115,25 @@ describe("Login (/login)", () => {
     expect((screen.getByRole("button", { name: /Entrar/i }) as HTMLButtonElement).disabled).toBe(true)
   })
 
+  it("com flash message do router state, Esqueci minha senha vem destacado", () => {
+    mockApiFetch({})
+    render(
+      <MemoryRouter initialEntries={[{ pathname: "/login", state: { flashMessage: "Você já tem conta. Entre." } }]}>
+        <SessaoProvider>
+          <Login />
+        </SessaoProvider>
+      </MemoryRouter>,
+    )
+    expect(screen.getByText("Você já tem conta. Entre.")).toBeTruthy()
+    expect(screen.getByText(/Esqueci minha senha/i).className).toContain("bg-clama-gold")
+  })
+
+  it("sem flash message, Esqueci minha senha é um link discreto", () => {
+    mockApiFetch({})
+    renderLogin("/login")
+    expect(screen.getByText(/Esqueci minha senha/i).className).not.toContain("bg-clama-gold")
+  })
+
   it("Esqueci minha senha pede o link em /api/auth/esqueci-senha", async () => {
     const spy = mockApiFetch({ outras: () => ({}) })
 

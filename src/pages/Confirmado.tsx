@@ -58,9 +58,9 @@ export default function Confirmado() {
         </h1>
 
         <p className="font-sans text-[#666] text-[0.95rem] leading-relaxed mb-8">
-          Você vai receber dois e-mails em alguns minutos: primeiro o de
-          "defina sua senha", para acessar sua conta, e depois a sua oração.
-          Enquanto aguarda, respire e se coloque em silêncio.
+          Sua oração chega no seu e-mail em instantes. Se for a sua primeira
+          vez, você também recebe um e-mail para criar sua senha. Enquanto
+          aguarda, respire e se coloque em silêncio.
         </p>
 
         <div className="border border-[#e0d8f0] rounded-xl p-5 bg-clama-cream mb-8">

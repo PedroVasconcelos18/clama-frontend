@@ -35,7 +35,7 @@ async function entrar(page: Page, rota: string, email: string, senha = SENHA) {
 
 function linkDoEmail(para: string): string | null {
   const log = readFileSync(process.env.API_LOG!, "utf8")
-  const m = log.match(new RegExp(`E-mail local para ${para}[\\s\\S]*?(http\\S*/redefinir-senha\\?token=[\\w-]+)`))
+  const m = log.match(new RegExp(`E-mail local para ${para}[\\s\\S]*?(http\\S*/redefinir-senha#token=[\\w-]+)`))
   return m ? m[1] : null
 }
 

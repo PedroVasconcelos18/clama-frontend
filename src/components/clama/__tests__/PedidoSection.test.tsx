@@ -491,6 +491,8 @@ describe("PedidoSection", () => {
       ["pedido_em_andamento", "Você já tem um pedido aguardando confirmação. Confira seu e-mail."],
       ["freemium_ja_usado", "Você já recebeu sua oração gratuita."],
       ["captcha_invalido", "Verificação anti-robô falhou."],
+      ["email_descartavel", "Use um e-mail que você acessa de verdade."],
+      ["freemium_indisponivel", "A oração gratuita está indisponível agora."],
     ])("anônimo gratuito, %s: mostra o texto, não navega e reinicia o Turnstile", async (codigo, texto) => {
       await preencherAnonimoGratuito();
       falhaNaCriacao = new PastoralApiError("Erro", codigo, texto, 409);

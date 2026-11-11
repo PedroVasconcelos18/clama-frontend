@@ -40,7 +40,7 @@ describe("RedefinirSenha / DefinirSenha", () => {
   beforeEach(() => {
     navigateMock.mockClear()
     toastSuccessMock.mockClear()
-    window.history.replaceState(null, "", "/redefinir-senha?token=abc123&x=1")
+    window.history.replaceState(null, "", "/redefinir-senha?x=1#token=abc123")
   })
   afterEach(() => {
     vi.restoreAllMocks()
@@ -51,7 +51,15 @@ describe("RedefinirSenha / DefinirSenha", () => {
     mockApiFetch({})
     renderPage()
     expect(window.location.search).toBe("?x=1")
-    expect(window.location.search).not.toContain("token")
+    expect(window.location.hash).toBe("")
+    expect(window.location.href).not.toContain("abc123")
+  })
+
+  it("link antigo com ?token= continua valendo e e limpo da URL", () => {
+    window.history.replaceState(null, "", "/redefinir-senha?token=abc123&x=1")
+    mockApiFetch({})
+    renderPage()
+    expect(window.location.search).toBe("?x=1")
   })
 
   it("poe <meta name=referrer content=no-referrer> enquanto a pagina esta montada", () => {

@@ -28,7 +28,7 @@ function emailsPara(destino: string): string[] {
 
 function linkNosEmails(destino: string, caminho: string): string | null {
   for (const e of emailsPara(destino)) {
-    const m = e.match(new RegExp(`(http\\S*${caminho}\\?token=[\\w-]+)`))
+    const m = e.match(new RegExp(`(http\\S*${caminho}#token=[\\w-]+)`))
     if (m) return m[1]
   }
   return null
@@ -77,10 +77,10 @@ test("1 e 2: pedido gratuito sem telefone mostra 'Confira seu e-mail' e a API n�
 
 test("3: o link do e-mail tira o token da URL, confirma, e a oração chega (ENVIADA)", async ({ page }) => {
   await page.goto(linkDeConfirmacao)
-  await expect.poll(() => new URL(page.url()).searchParams.has("token")).toBe(false)
+  await expect.poll(() => new URL(page.url()).hash.includes("token")).toBe(false)
   await page.getByRole("button", { name: "Confirmar minha oração" }).click()
   await expect(page).toHaveURL(/\/confirmado\?pedido_id=[0-9a-f-]{36}$/)
-  await expect(page.getByText(/dois e-mails/)).toContainText("defina sua senha")
+  await expect(page.getByText(/chega no seu e-mail/)).toContainText("criar sua senha")
   await page.getByRole("link", { name: "Acompanhar minha oração" }).click()
   await expect(page).toHaveURL(/\/confirmacao\?pedido_id=/)
   await expect(page.getByRole("heading", { name: "Sua oração já está aí!" })).toBeVisible({ timeout: 40_000 })
@@ -90,7 +90,7 @@ test("3: o link do e-mail tira o token da URL, confirma, e a oração chega (ENV
 test("4: só agora existe o link 'definir senha'; ele cria a senha e o login funciona", async ({ page }) => {
   await expect.poll(() => linkNosEmails(PESSOA.email, "/definir-senha"), { timeout: 20_000 }).not.toBeNull()
   await page.goto(linkNosEmails(PESSOA.email, "/definir-senha")!)
-  await expect.poll(() => new URL(page.url()).searchParams.has("token")).toBe(false)
+  await expect.poll(() => new URL(page.url()).hash.includes("token")).toBe(false)
   await page.getByLabel("Nova senha", { exact: true }).fill(NOVA_SENHA)
   await page.getByLabel("Confirmar nova senha").fill(NOVA_SENHA)
   await page.getByRole("button", { name: "Definir senha" }).click()

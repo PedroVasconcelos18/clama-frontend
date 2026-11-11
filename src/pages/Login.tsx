@@ -59,7 +59,7 @@ export default function Login() {
   // `next` pode vir de querystring OU de location.state (preferindo state).
   // Default `/conta` — após login o usuário cai na área dele (histórico
   // de pedidos + CTA novo pedido). Páginas que precisam de auth no meio
-  // do fluxo (LP redirect por gate user_ja_possui_conta) sobrescrevem
+  // do fluxo (LP redirect por gate conta_existente) sobrescrevem
   // via `state.next` ou query `?next=`.
   const next = validateNextPath(
     locationState?.next ?? searchParams.get("next"),

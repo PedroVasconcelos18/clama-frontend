@@ -21,6 +21,7 @@ vi.mock("react-router-dom", async () => {
 });
 
 function renderAt(path: string) {
+  window.history.replaceState(null, "", path); // o token é lido de window.location
   return render(
     <MemoryRouter initialEntries={[path]}>
       <SessaoProvider>
@@ -36,8 +37,8 @@ describe("Confirmar (/confirmar)", () => {
     vi.restoreAllMocks();
   });
 
-  it("renderiza CTA principal quando token está presente na query string", () => {
-    renderAt("/confirmar?token=abc-token-123");
+  it("renderiza CTA principal quando token está presente no fragmento", () => {
+    renderAt("/confirmar#token=abc-token-123");
 
     expect(
       screen.getByRole("heading", { name: /Confirme sua oração/i }),
@@ -70,7 +71,7 @@ describe("Confirmar (/confirmar)", () => {
         status: "PAGO",
       });
 
-    renderAt("/confirmar?token=tk-1");
+    renderAt("/confirmar#token=tk-1");
 
     fireEvent.click(
       screen.getByRole("button", { name: /Confirmar minha oração/i }),
@@ -95,7 +96,7 @@ describe("Confirmar (/confirmar)", () => {
       ),
     );
 
-    renderAt("/confirmar?token=tk-expirado");
+    renderAt("/confirmar#token=tk-expirado");
 
     fireEvent.click(
       screen.getByRole("button", { name: /Confirmar minha oração/i }),
@@ -119,7 +120,7 @@ describe("Confirmar (/confirmar)", () => {
       ),
     );
 
-    renderAt("/confirmar?token=tk-bl");
+    renderAt("/confirmar#token=tk-bl");
 
     fireEvent.click(
       screen.getByRole("button", { name: /Confirmar minha oração/i }),
@@ -136,24 +137,34 @@ describe("Confirmar (/confirmar)", () => {
     vi.spyOn(freemiumApi, "confirmarPedidoGratuito").mockRejectedValue(
       new PastoralApiError("Erro", "link_invalido", "Esse link não é mais válido.", 400),
     );
-    renderAt("/confirmar?token=tk-usado");
+    renderAt("/confirmar#token=tk-usado");
     fireEvent.click(screen.getByRole("button", { name: /Confirmar minha oração/i }));
     expect(await screen.findByText("Esse link não é mais válido.")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Confirmar minha oração/i })).toBeEnabled();
   });
 
   it("tira o token da barra de endereço ao abrir e ainda confirma com ele (só em memória)", async () => {
-    window.history.replaceState(null, "", "/confirmar?token=tk-secreto");
     const apiSpy = vi
       .spyOn(freemiumApi, "confirmarPedidoGratuito")
       .mockResolvedValue({ id: "uuid-1", status: "PAGO" });
-    renderAt("/confirmar?token=tk-secreto");
+    renderAt("/confirmar#token=tk-secreto");
 
-    expect(window.location.search).toBe("");
+    expect(window.location.hash).toBe("");
     expect(window.location.href).not.toContain("tk-secreto");
 
     fireEvent.click(screen.getByRole("button", { name: /Confirmar minha oração/i }));
     await waitFor(() => expect(apiSpy).toHaveBeenCalledWith("tk-secreto"));
+  });
+
+  it("link antigo com ?token= continua valendo e também é limpo da barra", async () => {
+    const apiSpy = vi
+      .spyOn(freemiumApi, "confirmarPedidoGratuito")
+      .mockResolvedValue({ id: "uuid-1", status: "PAGO" });
+    renderAt("/confirmar?token=tk-antigo");
+
+    expect(window.location.search).toBe("");
+    fireEvent.click(screen.getByRole("button", { name: /Confirmar minha oração/i }));
+    await waitFor(() => expect(apiSpy).toHaveBeenCalledWith("tk-antigo"));
   });
 
   it("o POST vai a /api/freemium/confirmacao com o token no corpo", async () => {
