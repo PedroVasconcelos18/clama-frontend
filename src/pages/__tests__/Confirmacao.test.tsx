@@ -212,4 +212,23 @@ describe("Confirmacao", () => {
     await act(() => vi.advanceTimersByTimeAsync(1000))
     expect(gets()).toBe(2)
   })
+
+  it("depois de 180 consultas sem status final: mensagem calma e 'Atualizar' reinicia o polling", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    status.status = "GERANDO_ORACAO"
+    const gets = () => chamadas("GET", `/api/pedidos/${ID}`)
+    abrir()
+    await waitFor(() => expect(gets()).toBe(1))
+    expect(screen.getByText("Atualizando status...")).toBeInTheDocument()
+    await act(() => vi.advanceTimersByTimeAsync(179 * 5000))
+    expect(gets()).toBe(180)
+    expect(await screen.findByText(/ainda está sendo preparada e chegará no seu e-mail/)).toBeInTheDocument()
+    expect(screen.queryByText("Atualizando status...")).toBeNull()
+    await act(() => vi.advanceTimersByTimeAsync(30_000))
+    expect(gets()).toBe(180) // parou
+
+    await userEvent.click(screen.getByRole("button", { name: "Atualizar" }))
+    await waitFor(() => expect(gets()).toBe(181))
+    expect(screen.getByText("Atualizando status...")).toBeInTheDocument()
+  })
 })

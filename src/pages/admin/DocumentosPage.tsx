@@ -12,7 +12,7 @@ import type { components } from "@/types/api-schema"
 
 type Documento = components["schemas"]["DocumentoAdmin"]
 
-const MAX_BYTES = 100 * 1024 * 1024
+const MAX_BYTES = 32 * 1024 * 1024
 const TIPOS: Record<string, string> = { "application/pdf": "PDF", "text/plain": "TXT" }
 
 const msg = (e: unknown) => (e instanceof PastoralApiError ? e.pastoralMessage : "Algo não saiu como o esperado. Tente novamente.")
@@ -29,7 +29,7 @@ function tipoDe(f: File): string | null {
 
 function validar(f: File): string | null {
   if (!tipoDe(f)) return "Envie um arquivo PDF ou TXT."
-  if (f.size > MAX_BYTES) return "O arquivo passa de 100 MB."
+  if (f.size > MAX_BYTES) return "O arquivo passa de 32 MB."
   return null
 }
 
@@ -163,7 +163,7 @@ export default function DocumentosPage() {
         <DialogContent className="bg-clama-night-deep border-clama-gold/20 text-clama-cream">
           <DialogHeader>
             <DialogTitle className="text-clama-gold">Novo documento</DialogTitle>
-            <DialogDescription className="text-clama-cream/60">PDF ou TXT, até 100 MB.</DialogDescription>
+            <DialogDescription className="text-clama-cream/60">PDF ou TXT, até 32 MB.</DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
             <Label htmlFor="doc-nome">Nome</Label>

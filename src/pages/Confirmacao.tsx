@@ -108,6 +108,9 @@ export default function Confirmacao() {
   );
 
   const [aviso, setAviso] = useState<string | null>(null);
+  // O polling bateu o teto sem status final; o "Atualizar" incrementa `rodada` e reinicia a consulta.
+  const [esgotado, setEsgotado] = useState(false);
+  const [rodada, setRodada] = useState(0);
   // Erro definitivo (sem id, 404) ou, antes do primeiro status, falhas seguidas.
   const erroNaTela = error ?? (pedido ? null : aviso);
 
@@ -172,6 +175,7 @@ export default function Confirmacao() {
   // (a consulta continua e o aviso some quando o status chega).
   useEffect(() => {
     if (!pedidoId) return;
+    setEsgotado(false);
     let ativo = true;
     let attempts = 0;
     let falhas = 0;
@@ -201,7 +205,9 @@ export default function Confirmacao() {
         intervalo = e.httpStatus === 429 ? MAX_INTERVALO_MS : Math.min(intervalo * 2, MAX_INTERVALO_MS);
         if (!temStatus && falhas >= FALHAS_PARA_AVISAR) setAviso(e.pastoralMessage);
       }
-      if (ativo && attempts < MAX_POLL_ATTEMPTS) timer = window.setTimeout(poll, intervalo);
+      if (!ativo) return;
+      if (attempts < MAX_POLL_ATTEMPTS) timer = window.setTimeout(poll, intervalo);
+      else setEsgotado(true);
     };
 
     void poll();
@@ -209,7 +215,7 @@ export default function Confirmacao() {
       ativo = false;
       window.clearTimeout(timer);
     };
-  }, [pedidoId]);
+  }, [pedidoId, rodada]);
 
   const statusInfo = getStatusMessage(status, pedido?.mensagemPastoral);
 
@@ -378,10 +384,25 @@ export default function Confirmacao() {
 
             {/* Loading indicator for polling */}
             {!statusInfo.isComplete && !statusInfo.isError && !isLoading && (
-              <div className="flex items-center justify-center gap-2 text-[#aaa] text-sm mb-6">
-                <LoadingSpinner size={16} />
-                <span>Atualizando status...</span>
-              </div>
+              esgotado ? (
+                <div className="mb-6">
+                  <p className="font-sans text-[#666] text-sm mb-3">
+                    Sua oração ainda está sendo preparada e chegará no seu e-mail. Você pode fechar esta página.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setRodada((r) => r + 1)}
+                    className="bg-white text-clama-night border-[1.5px] border-clama-night py-[0.6rem] px-6 text-[0.9rem] font-semibold font-sans rounded-full hover:bg-[#f9f5ff] transition-colors"
+                  >
+                    Atualizar
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center justify-center gap-2 text-[#aaa] text-sm mb-6">
+                  <LoadingSpinner size={16} />
+                  <span>Atualizando status...</span>
+                </div>
+              )
             )}
 
             {/* Contact button for errors */}

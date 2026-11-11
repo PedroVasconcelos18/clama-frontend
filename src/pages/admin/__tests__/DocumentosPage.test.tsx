@@ -49,14 +49,14 @@ describe("DocumentosPage", () => {
     expect(escritas()).toHaveLength(0)
   })
 
-  it("barra arquivo acima de 100 MB no cliente", async () => {
+  it("barra arquivo acima de 32 MB no cliente", async () => {
     render(<DocumentosPage />)
     await abrirNovo()
     const grande = pdf()
-    Object.defineProperty(grande, "size", { value: 100 * 1024 * 1024 + 1 })
+    Object.defineProperty(grande, "size", { value: 32 * 1024 * 1024 + 1 })
     fireEvent.change(arquivo(), { target: { files: [grande] } })
     await userEvent.click(screen.getByRole("button", { name: "Enviar" }))
-    expect(await screen.findByText(/passa de 100 MB/)).toBeTruthy()
+    expect(await screen.findByText(/passa de 32 MB/)).toBeTruthy()
     expect(escritas()).toHaveLength(0)
   })
 
@@ -89,6 +89,16 @@ describe("DocumentosPage", () => {
     render(<DocumentosPage />)
     await userEvent.click(await screen.findByRole("button", { name: "Ativar" }))
     await waitFor(() => expect(toast.error).toHaveBeenCalledWith("O arquivo sumiu da Anthropic."))
+  })
+
+  it("ativar o sexto documento (409 limite_documentos_ativos) mostra a mensagem pastoral", async () => {
+    fetchApi.mockImplementation(async (_p: string, init?: RequestInit) => {
+      if (init?.method) throw erro(409, "limite_documentos_ativos", "Já há 5 documentos ativos. Desative um antes.")
+      return [doc]
+    })
+    render(<DocumentosPage />)
+    await userEvent.click(await screen.findByRole("button", { name: "Ativar" }))
+    await waitFor(() => expect(toast.error).toHaveBeenCalledWith("Já há 5 documentos ativos. Desative um antes."))
   })
 
   it("renomear chama PATCH {nome}", async () => {
