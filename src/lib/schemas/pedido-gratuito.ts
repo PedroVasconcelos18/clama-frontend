@@ -6,8 +6,8 @@ import { isValidCpfOrCnpj } from "@/lib/validators/cpfCnpj";
  *
  * Mudanças em relação ao v1:
  * - Removidos `otp_token` e `otp_codigo` (fluxo OTP via WhatsApp foi descontinuado).
- * - Adicionados `turnstile_token` (CAPTCHA Cloudflare Turnstile invisível)
- *   e `device_hash` (FingerprintJS visitorId).
+ * - Adicionado `turnstile_token` (CAPTCHA Cloudflare Turnstile invisível).
+ *   Sem `device_hash`: a impressão digital do aparelho saiu na onda 5.
  * - Telefone opcional desde a onda 4 (D5).
  *
  * Mantém validação de CPF/CNPJ por dígito verificador (mesma do schema pago).
@@ -39,8 +39,7 @@ const telefoneOpcional = z
 
 /**
  * Schema do form completo do pedido gratuito (submissão única).
- * O cliente envia ao backend após o Turnstile resolver e o FingerprintJS
- * popular o `device_hash`.
+ * O cliente envia ao backend após o Turnstile resolver.
  */
 export const pedidoGratuitoSchema = z.object({
   nome: z
@@ -69,10 +68,6 @@ export const pedidoGratuitoSchema = z.object({
   turnstile_token: z
     .string()
     .min(1, "Verificação anti-robô obrigatória. Aguarde alguns segundos."),
-  device_hash: z
-    .string()
-    .min(10, "Identificação do dispositivo incompleta. Recarregue a página.")
-    .max(128, "Identificação do dispositivo inválida."),
 });
 
 export type PedidoGratuitoInput = z.input<typeof pedidoGratuitoSchema>;

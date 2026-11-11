@@ -1,83 +1,36 @@
 import { apiFetch } from "@/lib/api";
+import { corpoDoPedido } from "@/lib/api/doacoes";
 import type { PedidoGratuitoData } from "@/lib/schemas/pedido-gratuito";
+import type { components } from "@/types/api-schema";
+
+type S = components["schemas"];
+export type PedidoFreemiumCriado = S["PedidoFreemiumCriado"];
+export type PedidoConfirmado = S["PedidoConfirmado"];
 
 /**
- * Wrappers do fluxo freemium (Landing pública) — versão pós-renegociação 2026-05-08
- * + hardening wave 2 (P-V2 wave 2).
+ * Fluxo freemium (Landing pública), com confirmação por e-mail:
  *
- * Fluxo atual (double opt-in):
- *   1. `criarPedidoGratuito` — submete o pedido com CAPTCHA + device_hash
- *      opcional; backend cria Pedido em `AGUARDANDO_CONFIRMACAO_EMAIL` e
- *      envia e-mail com link `${FRONTEND_BASE_URL}/confirmar?token=X`.
- *   2. Usuário clica no link do e-mail → frontend abre
- *      `/confirmar` (página intermediária com botão).
- *   3. Usuário clica "Confirmar minha oração" → `confirmarPedidoGratuito`
- *      faz POST `/api/freemium/confirmar/` → backend executa a saga →
- *      navega pra `/confirmado?pedido_id=X`.
+ *   1. `criarPedidoGratuito`: `POST /api/freemium/pedidos` (CSRF + Turnstile). O pedido nasce em
+ *      `AGUARDANDO_CONFIRMACAO_EMAIL` e a pessoa recebe o link `/confirmar?token=...`. Nenhuma conta
+ *      nem e-mail de senha sai antes da confirmação.
+ *   2. `/confirmar` mostra um botão; só o clique chama `confirmarPedidoGratuito`
+ *      (`POST /api/freemium/confirmacao`), o que protege o token de pré-leitura por scanners de e-mail.
  *
- * P-V2 wave 2 desacoplou GET de POST — só o POST consome o token. Antes,
- * mail scanners corporativos faziam GET pre-fetch e queimavam o token
- * antes do usuário ver o e-mail.
- *
- * `apiFetch` cuida de extrair `pastoral_message` em erros e lança
- * `PastoralApiError`. Aqui passamos `showToast: false` porque os componentes
- * controlam exibição (toast vs banner inline).
+ * Erros chegam como `PastoralApiError` (`code` em português: `conta_existente`, `pedido_em_andamento`,
+ * `freemium_ja_usado`, `link_invalido`, `link_expirado`...). `showToast: false`: quem chama decide a exibição.
  */
-
-export interface CriarPedidoGratuitoResponse {
-  pedido_id: string;
-  status: string;
-}
-
-export async function criarPedidoGratuito(
-  payload: PedidoGratuitoData,
-): Promise<CriarPedidoGratuitoResponse> {
-  // O schema já coage `idade` pra number obrigatório, então sempre vai junto.
-  // `pedido_oracao` é omitido quando vazio. CPF chega já só com dígitos pelo
-  // `transform` do schema.
-  const cleaned: Record<string, unknown> = {
-    nome: payload.nome,
-    email: payload.email,
-    cpf_cnpj: payload.cpf_cnpj,
-    telefone: payload.telefone,
-    sexo: payload.sexo,
-    idade: payload.idade,
-    consent_aceito: payload.consent_aceito,
-    turnstile_token: payload.turnstile_token,
-    device_hash: payload.device_hash,
-  };
-  if (payload.pedido_oracao) {
-    cleaned.pedido_oracao = payload.pedido_oracao;
-  }
-
-  return apiFetch<CriarPedidoGratuitoResponse>("/api/freemium/pedidos/", {
+export function criarPedidoGratuito(dados: PedidoGratuitoData): Promise<PedidoFreemiumCriado> {
+  return apiFetch<PedidoFreemiumCriado>("/api/freemium/pedidos", {
     method: "POST",
-    body: JSON.stringify(cleaned),
+    body: JSON.stringify({ ...corpoDoPedido(dados), turnstileToken: dados.turnstile_token }),
     showToast: false,
   });
 }
 
-export interface ConfirmarPedidoGratuitoResponse {
-  pedido_id: string;
-  status: string;
-}
-
-/**
- * Confirma um pedido gratuito por token (POST `/api/freemium/confirmar/`).
- *
- * P-V2 wave 2: chamado pela página `/confirmar` quando o
- * usuário clica em "Confirmar minha oração". Esta é a ÚNICA forma de
- * consumir o token — o GET correspondente apenas redireciona pra cá.
- */
-export async function confirmarPedidoGratuito(
-  token: string,
-): Promise<ConfirmarPedidoGratuitoResponse> {
-  return apiFetch<ConfirmarPedidoGratuitoResponse>(
-    "/api/freemium/confirmar/",
-    {
-      method: "POST",
-      body: JSON.stringify({ token }),
-      showToast: false,
-    },
-  );
+export function confirmarPedidoGratuito(token: string): Promise<PedidoConfirmado> {
+  return apiFetch<PedidoConfirmado>("/api/freemium/confirmacao", {
+    method: "POST",
+    body: JSON.stringify({ token }),
+    showToast: false,
+  });
 }

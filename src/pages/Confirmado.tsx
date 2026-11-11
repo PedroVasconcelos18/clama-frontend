@@ -6,8 +6,8 @@ import PastoralAlert from "@/components/utility/PastoralAlert";
 
 /**
  * Página /confirmado — sucesso pós-confirmação do double opt-in.
- * O backend já rodou a saga (criar User, blacklist, transitar status,
- * disparar `gerar_oracao_task`) antes de redirecionar pra cá. A página
+ * O backend já rodou a saga (conta, bloqueio, status e geração da oração)
+ * antes de a página `/confirmar` navegar pra cá. A página
  * só apresenta o estado e linka pra `/confirmacao?pedido_id=X` (polling).
  */
 export default function Confirmado() {
@@ -58,8 +58,9 @@ export default function Confirmado() {
         </h1>
 
         <p className="font-sans text-[#666] text-[0.95rem] leading-relaxed mb-8">
-          Vamos te enviar a oração e suas credenciais por e-mail em alguns
-          minutos. Enquanto aguarda, respire e se coloque em silêncio.
+          Você vai receber dois e-mails em alguns minutos: primeiro o de
+          "defina sua senha", para acessar sua conta, e depois a sua oração.
+          Enquanto aguarda, respire e se coloque em silêncio.
         </p>
 
         <div className="border border-[#e0d8f0] rounded-xl p-5 bg-clama-cream mb-8">

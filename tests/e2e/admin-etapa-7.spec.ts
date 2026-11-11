@@ -30,8 +30,7 @@ const BANIDO = {
   banido_em: "2026-11-01T10:00:00Z", banido_por_email: "pedro@clama.me", revogado_em: null,
 }
 const BLOQUEIO = {
-  id: "b1", created_at: "2026-11-01T10:00:00Z", cpf_hash_curto: "cafe1234", email_hash_curto: "beef5678",
-  tem_telefone: true, tem_device: false, tem_ip: true,
+  id: 1, criadoEm: "2026-11-01T10:00:00Z", cpfHmacCurto: "cafe12345678…", emailHmacCurto: "beef56781234…", temIp: true,
 }
 
 // rotas da API sem mock: o teste falha (afterEach) em vez de passar em cima de um 200 inventado
@@ -77,7 +76,7 @@ async function preparar(page: Page) {
     if (path === "/api/admin/usuarios/7") return json(USUARIO)
     if (path === "/api/blog/admin/comments/") return json(pagina([COMENTARIO]))
     if (path === "/api/blog/admin/banned-customers/") return json(pagina([BANIDO]))
-    if (path === "/api/admin/freemium/bloqueios/") return json(pagina([BLOQUEIO]))
+    if (path === "/api/admin/freemium/bloqueios") return json(paginaUsuarios([BLOQUEIO]))
     desconhecidas.push(`leitura GET ${path}`)
     return json({ detail: "sem mock" }, 500)
   })
@@ -135,7 +134,7 @@ test.describe("Admin, etapa 7 (API mockada)", () => {
   test("Freemium lista e desbloquear pede confirmacao", async ({ page }) => {
     const { escritas } = await preparar(page)
     await page.goto("/admin/freemium")
-    await expect(page.getByText("beef5678")).toBeVisible()
+    await expect(page.getByText("beef56781234…")).toBeVisible()
     await page.getByRole("button", { name: "Desbloquear" }).click()
     await expect(page.getByText("Desbloquear freemium?")).toBeVisible()
     expect(escritas()).toHaveLength(0)

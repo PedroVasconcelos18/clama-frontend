@@ -64,7 +64,7 @@ async function doar(request: APIRequestContext, cpfCnpj: string, email: string, 
     headers,
     data: {
       nome: "Maria Oração", email, cpfCnpj, pedidoOracao, valorCentavos: 100, consentAceito: true,
-      turnstileToken: "token-e2e", deviceHash: "abcdef1234567890",
+      turnstileToken: "token-e2e",
     },
   })
   expect(r.status(), await r.text()).toBe(201)

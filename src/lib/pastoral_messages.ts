@@ -139,19 +139,6 @@ export const MSG_TELEFONE_INVALIDO =
   "Confira seu telefone com DDD — vamos enviar a oração por aqui.";
 
 // =============================================================================
-// FREEMIUM (gate user-existence + pedido pendente)
-// =============================================================================
-
-/** User já tem conta criada (gate user-existence) — orienta pra fazer login. */
-export const MSG_FREEMIUM_USER_JA_POSSUI_CONTA =
-  "Você já tem conta com a gente. Faça login pra fazer um novo pedido.";
-
-/** Pedido pendente aguardando confirmação por email — orienta a verificar email. */
-export const MSG_FREEMIUM_PEDIDO_EM_ANDAMENTO =
-  "Você já tem um pedido aguardando confirmação. Confira seu e-mail " +
-  "para finalizar — se não achar, olha na aba de spam.";
-
-// =============================================================================
 // CUSTOMER AUTH
 // =============================================================================
 

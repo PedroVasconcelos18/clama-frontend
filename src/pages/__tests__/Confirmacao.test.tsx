@@ -69,6 +69,23 @@ describe("Confirmacao", () => {
     expect(chamadas("POST", `/api/pedidos/${ID}/pix`)).toBe(0)
   })
 
+  it("aguardando confirmação do e-mail: pede para confirmar, não pede Pix e segue consultando", async () => {
+    status.status = "AGUARDANDO_CONFIRMACAO_EMAIL"
+    abrir()
+    expect(await screen.findByText("Confirme seu e-mail")).toBeInTheDocument()
+    expect(screen.getByText(/O link vale 24 horas/)).toBeInTheDocument()
+    expect(chamadas("POST", `/api/pedidos/${ID}/pix`)).toBe(0)
+    expect(screen.getByText("Atualizando status...")).toBeInTheDocument()
+  })
+
+  it("confirmação expirada: avisa, para de consultar e não pede Pix", async () => {
+    status.status = "CONFIRMACAO_EXPIRADA"
+    abrir()
+    expect(await screen.findByText("O link de confirmação venceu")).toBeInTheDocument()
+    expect(chamadas("POST", `/api/pedidos/${ID}/pix`)).toBe(0)
+    expect(screen.queryByText("Atualizando status...")).toBeNull()
+  })
+
   it("faz polling a cada 5 s e troca a tela quando o pagamento cai, sem pedir outro Pix", async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true })
     abrir()

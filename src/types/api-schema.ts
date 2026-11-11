@@ -59,7 +59,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["listar_5"];
+        get: operations["listar_6"];
         put?: never;
         post?: never;
         delete?: never;
@@ -95,6 +95,54 @@ export interface paths {
         put?: never;
         post: operations["reprocessar"];
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/freemium/bloqueios": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listar_5"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/freemium/bloqueios/busca": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["buscar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/freemium/bloqueios/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["excluir_1"];
         options?: never;
         head?: never;
         patch?: never;
@@ -548,6 +596,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/freemium/confirmacao": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["confirmar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/freemium/pedidos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["submeter"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/instituicoes": {
         parameters: {
             query?: never;
@@ -701,6 +781,19 @@ export interface components {
             /** @enum {string} */
             papel?: "CLIENTE" | "ADMIN" | "SUPERUSUARIO";
         };
+        BloqueioAdmin: {
+            cpfHmacCurto?: string;
+            /** Format: date-time */
+            criadoEm?: string;
+            emailHmacCurto?: string;
+            /** Format: int64 */
+            id?: number;
+            temIp?: boolean;
+        };
+        Busca: {
+            cpfCnpj?: string;
+            email?: string;
+        };
         CobrancaDoPedido: {
             /** Format: date-time */
             canceladaEm?: string;
@@ -715,6 +808,9 @@ export interface components {
             /** Format: date-time */
             pagaEm?: string;
             status?: string;
+        };
+        Confirmar: {
+            token: string;
         };
         CorrecaoDoPedido: {
             /** Format: email */
@@ -766,7 +862,7 @@ export interface components {
             id?: string;
             jaEmAndamento?: boolean;
             /** @enum {string} */
-            status?: "AGUARDANDO_PAGAMENTO" | "PAGO" | "GERANDO_ORACAO" | "ORACAO_GERADA" | "ENVIADA" | "AGUARDANDO_NOVA_TENTATIVA" | "ERRO";
+            status?: "AGUARDANDO_PAGAMENTO" | "PAGO" | "GERANDO_ORACAO" | "ORACAO_GERADA" | "ENVIADA" | "AGUARDANDO_NOVA_TENTATIVA" | "ERRO" | "AGUARDANDO_CONFIRMACAO_EMAIL" | "CONFIRMACAO_EXPIRADA";
             ultimoErro?: string | null;
             /** Format: int64 */
             valorCentavos?: number;
@@ -861,7 +957,6 @@ export interface components {
         NovoPedido: {
             consentAceito: boolean;
             cpfCnpj: string;
-            deviceHash?: string;
             /** Format: email */
             email: string;
             /** Format: int32 */
@@ -897,6 +992,10 @@ export interface components {
             totalElements: number;
             /** Format: int64 */
             totalPages: number;
+        };
+        PagedModelBloqueioAdmin: {
+            content: components["schemas"]["BloqueioAdmin"][];
+            page: components["schemas"]["PageMetadata"];
         };
         PagedModelEventoMpAdmin: {
             content: components["schemas"]["EventoMpAdmin"][];
@@ -935,7 +1034,7 @@ export interface components {
             repasse?: components["schemas"]["RepasseDoPedido"];
             sexo?: string | null;
             /** @enum {string} */
-            status?: "AGUARDANDO_PAGAMENTO" | "PAGO" | "GERANDO_ORACAO" | "ORACAO_GERADA" | "ENVIADA" | "AGUARDANDO_NOVA_TENTATIVA" | "ERRO";
+            status?: "AGUARDANDO_PAGAMENTO" | "PAGO" | "GERANDO_ORACAO" | "ORACAO_GERADA" | "ENVIADA" | "AGUARDANDO_NOVA_TENTATIVA" | "ERRO" | "AGUARDANDO_CONFIRMACAO_EMAIL" | "CONFIRMACAO_EXPIRADA";
             telefone?: string | null;
             /** Format: int32 */
             tentativas?: number;
@@ -955,9 +1054,15 @@ export interface components {
             nome?: string;
             plano?: string;
             /** @enum {string} */
-            status?: "AGUARDANDO_PAGAMENTO" | "PAGO" | "GERANDO_ORACAO" | "ORACAO_GERADA" | "ENVIADA" | "AGUARDANDO_NOVA_TENTATIVA" | "ERRO";
+            status?: "AGUARDANDO_PAGAMENTO" | "PAGO" | "GERANDO_ORACAO" | "ORACAO_GERADA" | "ENVIADA" | "AGUARDANDO_NOVA_TENTATIVA" | "ERRO" | "AGUARDANDO_CONFIRMACAO_EMAIL" | "CONFIRMACAO_EXPIRADA";
             /** Format: int64 */
             valorCentavos?: number;
+        };
+        PedidoConfirmado: {
+            /** Format: uuid */
+            id?: string;
+            /** @enum {string} */
+            status?: "AGUARDANDO_PAGAMENTO" | "PAGO" | "GERANDO_ORACAO" | "ORACAO_GERADA" | "ENVIADA" | "AGUARDANDO_NOVA_TENTATIVA" | "ERRO" | "AGUARDANDO_CONFIRMACAO_EMAIL" | "CONFIRMACAO_EXPIRADA";
         };
         PedidoCriado: {
             /** Format: date-time */
@@ -967,7 +1072,7 @@ export interface components {
             /** Format: int64 */
             instituicao?: number;
             /** @enum {string} */
-            status?: "AGUARDANDO_PAGAMENTO" | "PAGO" | "GERANDO_ORACAO" | "ORACAO_GERADA" | "ENVIADA" | "AGUARDANDO_NOVA_TENTATIVA" | "ERRO";
+            status?: "AGUARDANDO_PAGAMENTO" | "PAGO" | "GERANDO_ORACAO" | "ORACAO_GERADA" | "ENVIADA" | "AGUARDANDO_NOVA_TENTATIVA" | "ERRO" | "AGUARDANDO_CONFIRMACAO_EMAIL" | "CONFIRMACAO_EXPIRADA";
             /** Format: int64 */
             valorCentavos?: number;
         };
@@ -980,7 +1085,7 @@ export interface components {
             oracaoGerada?: string;
             plano?: string;
             /** @enum {string} */
-            status?: "AGUARDANDO_PAGAMENTO" | "PAGO" | "GERANDO_ORACAO" | "ORACAO_GERADA" | "ENVIADA" | "AGUARDANDO_NOVA_TENTATIVA" | "ERRO";
+            status?: "AGUARDANDO_PAGAMENTO" | "PAGO" | "GERANDO_ORACAO" | "ORACAO_GERADA" | "ENVIADA" | "AGUARDANDO_NOVA_TENTATIVA" | "ERRO" | "AGUARDANDO_CONFIRMACAO_EMAIL" | "CONFIRMACAO_EXPIRADA";
             /** Format: int64 */
             valorCentavos?: number;
         };
@@ -1000,6 +1105,12 @@ export interface components {
         PedidoDeLink: {
             /** Format: email */
             email: string;
+        };
+        PedidoFreemiumCriado: {
+            /** Format: uuid */
+            id?: string;
+            /** @enum {string} */
+            status?: "AGUARDANDO_PAGAMENTO" | "PAGO" | "GERANDO_ORACAO" | "ORACAO_GERADA" | "ENVIADA" | "AGUARDANDO_NOVA_TENTATIVA" | "ERRO" | "AGUARDANDO_CONFIRMACAO_EMAIL" | "CONFIRMACAO_EXPIRADA";
         };
         PixDoPedido: {
             copiaECola?: string;
@@ -1131,7 +1242,7 @@ export interface components {
             oracaoGerada?: string;
             plano?: string;
             /** @enum {string} */
-            status?: "AGUARDANDO_PAGAMENTO" | "PAGO" | "GERANDO_ORACAO" | "ORACAO_GERADA" | "ENVIADA" | "AGUARDANDO_NOVA_TENTATIVA" | "ERRO";
+            status?: "AGUARDANDO_PAGAMENTO" | "PAGO" | "GERANDO_ORACAO" | "ORACAO_GERADA" | "ENVIADA" | "AGUARDANDO_NOVA_TENTATIVA" | "ERRO" | "AGUARDANDO_CONFIRMACAO_EMAIL" | "CONFIRMACAO_EXPIRADA";
             /** Format: int64 */
             valorCentavos?: number;
         };
@@ -1302,7 +1413,7 @@ export interface operations {
             };
         };
     };
-    listar_5: {
+    listar_6: {
         parameters: {
             query?: {
                 status?: string;
@@ -1371,6 +1482,77 @@ export interface operations {
                 content: {
                     "*/*": components["schemas"]["EventoReprocessado"];
                 };
+            };
+        };
+    };
+    listar_5: {
+        parameters: {
+            query?: {
+                /** @description Zero-based page index (0..N) */
+                page?: number;
+                /** @description The size of the page to be returned */
+                size?: number;
+                /** @description Sorting criteria in the format: property,(asc|desc). Default sort order is ascending. Multiple sort criteria are supported. */
+                sort?: string[];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PagedModelBloqueioAdmin"];
+                };
+            };
+        };
+    };
+    buscar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Busca"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["BloqueioAdmin"][];
+                };
+            };
+        };
+    };
+    excluir_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -2228,6 +2410,54 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["PedidoCriado"];
+                };
+            };
+        };
+    };
+    confirmar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Confirmar"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PedidoConfirmado"];
+                };
+            };
+        };
+    };
+    submeter: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NovoPedido"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PedidoFreemiumCriado"];
                 };
             };
         };

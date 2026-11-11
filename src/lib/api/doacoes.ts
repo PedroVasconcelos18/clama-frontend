@@ -40,7 +40,6 @@ export async function criarDoacaoAnonima(
     valorCentavos,
     instituicao: instituicao ?? undefined,
     turnstileToken: dados.turnstile_token,
-    deviceHash: dados.device_hash,
   };
   return apiFetch<PedidoCriado>("/api/doacoes", {
     method: "POST",

@@ -24,9 +24,11 @@ describe("Confirmado (/confirmado)", () => {
         name: /Sua oração está sendo preparada/i,
       }),
     ).toBeInTheDocument();
-    expect(
-      screen.getByText(/Vamos te enviar a oração e suas credenciais/i),
-    ).toBeInTheDocument();
+    // Dois e-mails: primeiro "defina sua senha", depois a oração (nada de "credenciais").
+    const texto = screen.getByText(/dois e-mails/i).textContent ?? "";
+    expect(texto).toMatch(/defina sua senha/);
+    expect(texto.indexOf("defina sua senha")).toBeLessThan(texto.indexOf("sua oração"));
+    expect(screen.queryByText(/credenciais/i)).toBeNull();
   });
 
   it("CTA aponta pra página de polling /confirmacao com o pedido_id", () => {

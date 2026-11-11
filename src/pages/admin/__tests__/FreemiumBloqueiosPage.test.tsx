@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react"
+import { render, screen, waitFor, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import FreemiumBloqueiosPage from "../FreemiumBloqueiosPage"
@@ -8,113 +8,96 @@ vi.mock("@/hooks/useApi", () => ({ useApi: () => ({ fetchApi }) }))
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }))
 
 const bloqueio = {
-  id: "b1", created_at: "2026-11-01T10:00:00Z", cpf_hash_curto: "aaaaaaaaaaaa…",
-  email_hash_curto: "bbbbbbbbbbbb…", tem_telefone: true, tem_device: false, tem_ip: true,
+  id: 11, criadoEm: "2026-11-01T10:00:00Z", emailHmacCurto: "bbbbbbbbbbbb…",
+  cpfHmacCurto: "aaaaaaaaaaaa…", temIp: true,
 }
-const token = {
-  id: "t1", token_curto: "abcd1234…", pedido_id: "12345678-aaaa-bbbb-cccc-1234567890ab",
-  created_at: "2026-11-01T10:00:00Z", expires_at: "2026-11-02T10:00:00Z", used_at: null,
-}
+const achado = { ...bloqueio, id: 12, emailHmacCurto: "cccccccccccc…", cpfHmacCurto: "dddddddddddd…", temIp: false }
 
 describe("FreemiumBloqueiosPage", () => {
   beforeEach(() => {
     fetchApi.mockReset()
     fetchApi.mockImplementation((url: string, init?: { method?: string }) => {
-      if (url.includes("/buscar/")) return Promise.resolve([bloqueio])
-      if (init?.method === "DELETE") return Promise.resolve({})
-      if (url.startsWith("/api/admin/freemium/tokens/"))
-        return Promise.resolve({ count: 1, next: null, previous: null, results: [token] })
-      return Promise.resolve({ count: 45, next: null, previous: null, results: [bloqueio] })
+      if (url.endsWith("/busca")) return Promise.resolve([achado])
+      if (init?.method === "DELETE") return Promise.resolve(undefined)
+      return Promise.resolve({ content: [bloqueio], page: { size: 20, number: 0, totalElements: 45, totalPages: 3 } })
     })
   })
 
-  it("renderiza a lista com hashes truncados", async () => {
+  it("lista os bloqueios do PagedModel com hashes truncados e sem a aba de tokens", async () => {
     render(<FreemiumBloqueiosPage />)
     expect(await screen.findByText("bbbbbbbbbbbb…")).toBeTruthy()
+    expect(screen.getByText("aaaaaaaaaaaa…")).toBeTruthy()
+    expect(screen.getByText(/Todos os bloqueios \(45\)/)).toBeTruthy()
+    expect(fetchApi).toHaveBeenCalledWith("/api/admin/freemium/bloqueios?page=0&size=20")
+    expect(screen.queryByRole("tab")).toBeNull()
+    expect(screen.queryByText(/Telefone|Dispositivo/)).toBeNull()
   })
 
-  it("paginacao envia limit e offset", async () => {
+  it("paginação pede page e size", async () => {
     render(<FreemiumBloqueiosPage />)
     await userEvent.click(await screen.findByRole("button", { name: /Próxima/ }))
-    await waitFor(() =>
-      expect(fetchApi).toHaveBeenLastCalledWith("/api/admin/freemium/bloqueios/?limit=20&offset=20"),
-    )
+    await waitFor(() => expect(fetchApi).toHaveBeenLastCalledWith("/api/admin/freemium/bloqueios?page=1&size=20"))
   })
 
-  it("busca usa POST com o corpo e nunca poe o valor na URL", async () => {
+  it("busca por e-mail e CPF usa POST com o corpo e nunca põe o valor na URL", async () => {
     render(<FreemiumBloqueiosPage />)
     await userEvent.type(await screen.findByLabelText("E-mail"), "ana@x.com")
-    await userEvent.type(screen.getByLabelText("Telefone"), "11999998888")
+    await userEvent.type(screen.getByLabelText("CPF/CNPJ"), "529.982.247-25")
     await userEvent.click(screen.getByRole("button", { name: /Buscar bloqueio/ }))
     await waitFor(() =>
-      expect(fetchApi).toHaveBeenCalledWith("/api/admin/freemium/bloqueios/buscar/", {
+      expect(fetchApi).toHaveBeenCalledWith("/api/admin/freemium/bloqueios/busca", {
         method: "POST",
-        body: JSON.stringify({ email: "ana@x.com", telefone: "11999998888" }),
+        body: JSON.stringify({ email: "ana@x.com", cpfCnpj: "529.982.247-25" }),
       }),
     )
+    expect(await screen.findByText("cccccccccccc…")).toBeTruthy()
     for (const [url] of fetchApi.mock.calls) {
       expect(url).not.toContain("ana")
-      expect(url).not.toContain("1199999")
+      expect(url).not.toContain("529")
     }
   })
 
-  it("Desbloquear pede confirmacao antes do DELETE", async () => {
+  it("busca vazia não chama a API", async () => {
+    render(<FreemiumBloqueiosPage />)
+    await screen.findByText("bbbbbbbbbbbb…")
+    const n = fetchApi.mock.calls.length
+    await userEvent.click(screen.getByRole("button", { name: /Buscar bloqueio/ }))
+    expect(fetchApi.mock.calls.length).toBe(n)
+  })
+
+  it("resultado vazio da busca mostra o aviso", async () => {
+    fetchApi.mockImplementation((url: string) =>
+      Promise.resolve(
+        url.endsWith("/busca") ? [] : { content: [], page: { size: 20, number: 0, totalElements: 0, totalPages: 0 } },
+      ),
+    )
+    render(<FreemiumBloqueiosPage />)
+    await userEvent.type(await screen.findByLabelText("E-mail"), "ninguem@x.com")
+    await userEvent.click(screen.getByRole("button", { name: /Buscar bloqueio/ }))
+    expect(await screen.findByText(/Nenhum bloqueio encontrado/)).toBeTruthy()
+  })
+
+  it("Desbloquear pede confirmação antes do DELETE e recarrega a lista", async () => {
     render(<FreemiumBloqueiosPage />)
     await userEvent.click((await screen.findAllByRole("button", { name: /Desbloquear/ }))[0]!)
     const dialog = await screen.findByRole("dialog")
     expect(dialog.textContent).toMatch(/oração gratuita/)
     expect(fetchApi.mock.calls.some(([, i]) => i?.method === "DELETE")).toBe(false)
-    await userEvent.click(screen.getByRole("button", { name: "Confirmar desbloqueio" }))
+    const listagens = fetchApi.mock.calls.length
+    await userEvent.click(within(dialog).getByRole("button", { name: "Confirmar desbloqueio" }))
     await waitFor(() =>
-      expect(fetchApi).toHaveBeenCalledWith("/api/admin/freemium/bloqueios/b1/", {
+      expect(fetchApi).toHaveBeenCalledWith("/api/admin/freemium/bloqueios/11", {
         method: "DELETE",
         showToast: false,
       }),
     )
+    await waitFor(() => expect(fetchApi.mock.calls.length).toBeGreaterThan(listagens + 1))
   })
 
-  it("aba de tokens lista tokens truncados", async () => {
+  it("Cancelar no diálogo não chama o DELETE", async () => {
     render(<FreemiumBloqueiosPage />)
-    await userEvent.click(screen.getByRole("tab", { name: "Tokens de confirmação" }))
-    expect(await screen.findByText("abcd1234…")).toBeTruthy()
-  })
-
-  it("tokens: coluna de estado e busca por pedido via query", async () => {
-    fetchApi.mockImplementation(() => {
-      const vivo = new Date(Date.now() + 3600e3).toISOString()
-      return Promise.resolve({
-        count: 3, next: null, previous: null,
-        results: [
-          { ...token, id: "a", token_curto: "usado000…", used_at: "2026-11-01T11:00:00Z" },
-          { ...token, id: "b", token_curto: "velho000…" },
-          { ...token, id: "c", token_curto: "novo0000…", expires_at: vivo },
-        ],
-      })
-    })
-    render(<FreemiumBloqueiosPage />)
-    await userEvent.click(screen.getByRole("tab", { name: "Tokens de confirmação" }))
-    await screen.findByText("usado000…")
-    expect(screen.getByText("usado")).toBeTruthy()
-    expect(screen.getByText("expirado")).toBeTruthy()
-    expect(screen.getByText("válido")).toBeTruthy()
-
-    const uuid = "12345678-1234-1234-1234-1234567890ab"
-    await userEvent.type(screen.getByLabelText("Id do pedido"), uuid)
-    await userEvent.click(screen.getByRole("button", { name: /Buscar token/ }))
-    await waitFor(() =>
-      expect(fetchApi).toHaveBeenLastCalledWith(
-        `/api/admin/freemium/tokens/?limit=20&offset=0&pedido=${uuid}`,
-      ),
-    )
-  })
-
-  it("tokens: pedido malformado nao chama a API", async () => {
-    render(<FreemiumBloqueiosPage />)
-    await userEvent.click(screen.getByRole("tab", { name: "Tokens de confirmação" }))
-    await screen.findByText("abcd1234…")
-    const n = fetchApi.mock.calls.length
-    await userEvent.type(screen.getByLabelText("Id do pedido"), "abc")
-    await userEvent.click(screen.getByRole("button", { name: /Buscar token/ }))
-    expect(fetchApi.mock.calls.length).toBe(n)
+    await userEvent.click((await screen.findAllByRole("button", { name: /Desbloquear/ }))[0]!)
+    await userEvent.click(await screen.findByRole("button", { name: "Cancelar" }))
+    expect(fetchApi.mock.calls.some(([, i]) => i?.method === "DELETE")).toBe(false)
   })
 })

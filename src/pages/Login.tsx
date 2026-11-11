@@ -22,7 +22,7 @@ import { LoadingSpinner } from "@/components/utility/LoadingSpinner"
 import { ForgotPasswordModal } from "@/components/customer/ForgotPasswordModal"
 
 interface LoginLocationState {
-  /** Mensagem one-shot vinda de outra página (ex.: gate user_ja_possui_conta da LP). */
+  /** Mensagem one-shot vinda de outra página (ex.: gate conta_existente da LP). */
   flashMessage?: string
   /** Override de `next` quando o redirect veio de `location.state` (ex.: LP /). */
   next?: string
@@ -39,7 +39,7 @@ export default function Login() {
   const [forgotOpen, setForgotOpen] = useState(false)
 
   // Flash message vinda de outro componente (ex.: LP redirecionando após
-  // 409 user_ja_possui_conta). Lemos UMA VEZ na montagem e limpamos o
+  // 409 conta_existente). Lemos UMA VEZ na montagem e limpamos o
   // state pra não persistir em refreshes / navegações posteriores.
   const locationState = (location.state as LoginLocationState | null) ?? null
   const [flashMessage] = useState<string | null>(
@@ -183,7 +183,11 @@ export default function Login() {
               <button
                 type="button"
                 onClick={() => setForgotOpen(true)}
-                className="text-clama-gold/80 hover:text-clama-gold text-sm underline underline-offset-4 transition-colors"
+                className={
+                  flashMessage
+                    ? "text-clama-night bg-clama-gold hover:opacity-90 text-sm font-semibold rounded-full px-4 py-1.5 transition-opacity"
+                    : "text-clama-gold/80 hover:text-clama-gold text-sm underline underline-offset-4 transition-colors"
+                }
               >
                 Esqueci minha senha
               </button>

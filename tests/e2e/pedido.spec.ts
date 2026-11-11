@@ -115,7 +115,6 @@ test("doação anônima: QR na confirmação, webhook do MP e a tela mostra o pe
   await trigger.click()
   await page.getByRole("option", { name: new RegExp(INSTITUICAO) }).click()
   await expect(campo(page, "turnstile_token")).not.toHaveValue("")
-  await expect(campo(page, "device_hash")).not.toHaveValue("")
   await page.getByRole("button", { name: "Contribuir e receber minha oração" }).click()
 
   pedidoDaDoadora = await pedidoDaUrl(page)

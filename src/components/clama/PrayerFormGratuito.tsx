@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -9,7 +9,6 @@ import {
   type PedidoGratuitoInput,
 } from "@/lib/schemas/pedido-gratuito";
 import { Turnstile, getTurnstileSiteKey, type TurnstileInstance } from "@/lib/captcha/turnstile";
-import { obterDeviceHash } from "@/lib/fingerprint";
 
 import {
   Form,
@@ -79,40 +78,11 @@ export function PrayerFormGratuito({
       pedido_oracao: "",
       consent_aceito: false,
       turnstile_token: "",
-      device_hash: "",
     },
   });
 
-  // Captcha + fingerprint vivem em hidden fields do RHF (validáveis via Zod)
-  // mas também temos refs locais pra UX (mostrar erro inline antes do submit).
+  // O captcha vive num hidden field do RHF (validável via Zod); o erro inline aparece antes do submit.
   const [captchaError, setCaptchaError] = useState<string | null>(null);
-  const fingerprintRequested = useRef(false);
-
-  // FingerprintJS roda uma vez no mount e popula o `device_hash` hidden.
-  // `trigger(["device_hash"])` revalida APENAS o hidden field — necessário
-  // porque hidden fields setados programaticamente não disparam o ciclo
-  // natural "field touched → form re-validated", mantendo `isValid=false`.
-  // Validar só o campo hidden (em vez de `trigger()` no form inteiro) evita
-  // marcar todos os campos visíveis com erro logo no carregamento.
-  //
-  // NÃO usamos cleanup com flag `cancelled`: em React StrictMode (dev) o
-  // useEffect roda 2x (mount → cleanup → mount). Se a primeira promise
-  // tivesse capturado um `cancelled` que vira true no cleanup #1, o
-  // `setValue` nunca executava porque o segundo mount fazia early-return
-  // pelo ref. `setValue` é seguro pós-unmount (RHF não toca React state
-  // externo), então não precisamos abortar.
-  useEffect(() => {
-    if (fingerprintRequested.current) return;
-    fingerprintRequested.current = true;
-
-    obterDeviceHash().then((hash) => {
-      form.setValue("device_hash", hash, {
-        shouldValidate: true,
-        shouldTouch: true,
-      });
-      form.trigger("device_hash");
-    });
-  }, [form]);
 
   // DEV-only: o widget Turnstile invisible às vezes não emite o callback
   // `onSuccess` em ambiente local (rede chiando, iframe da Cloudflare
@@ -453,7 +423,6 @@ export function PrayerFormGratuito({
 
         {/* Hidden inputs pra manter os campos no RHF (sem renderizar UI extra). */}
         <input type="hidden" {...form.register("turnstile_token")} />
-        <input type="hidden" {...form.register("device_hash")} />
 
         {/* DEV-only: mostra por que o submit está bloqueado */}
         {import.meta.env.DEV && !form.formState.isValid && (

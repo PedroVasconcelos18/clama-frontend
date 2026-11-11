@@ -21,7 +21,7 @@ import LoadingSpinner from "@/components/utility/LoadingSpinner";
 const POLL_INTERVAL_MS = 5000;
 // ~15 min: enquanto aguarda o pagamento Pix e a oração, seguimos consultando o status.
 const MAX_POLL_ATTEMPTS = 180;
-const TERMINAIS: (StatusPedido | undefined)[] = ["ENVIADA", "ERRO"];
+const TERMINAIS: (StatusPedido | undefined)[] = ["ENVIADA", "ERRO", "CONFIRMACAO_EXPIRADA"];
 const MAX_INTERVALO_MS = 60_000;
 const FALHAS_PARA_AVISAR = 3;
 
@@ -41,6 +41,23 @@ function getStatusMessage(status: StatusPedido | undefined, pastoralMessage?: st
         message:
           "Escaneie o QR code ou copie o código Pix abaixo. Assim que o pagamento cair, sua oração começa a ser preparada — esta tela atualiza sozinha.",
         isComplete: false,
+        isError: false,
+        isWaiting: false,
+      };
+    case "AGUARDANDO_CONFIRMACAO_EMAIL":
+      return {
+        title: "Confirme seu e-mail",
+        message:
+          "Mandamos um link de confirmação para o seu e-mail. Clique nele para receber sua oração. O link vale 24 horas.",
+        isComplete: false,
+        isError: false,
+        isWaiting: false,
+      };
+    case "CONFIRMACAO_EXPIRADA":
+      return {
+        title: "O link de confirmação venceu",
+        message: "Passaram-se mais de 24 horas sem a confirmação. Faça um novo pedido na página inicial.",
+        isComplete: true,
         isError: false,
         isWaiting: false,
       };

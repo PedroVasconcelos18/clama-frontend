@@ -10,7 +10,7 @@ import { formatCurrency } from "@/lib/formatters";
 import { SessaoProvider } from "@/contexts/SessaoContext";
 import { PastoralApiError } from "@/lib/api";
 
-// Anti-robô e fingerprint resolvem na hora (o real depende da rede).
+// O anti-robô resolve na hora (o real depende da rede).
 const { resetTurnstile } = vi.hoisted(() => ({ resetTurnstile: vi.fn() }));
 vi.mock("@/lib/captcha/turnstile", async () => {
   const { forwardRef, useEffect, useImperativeHandle } = await import("react");
@@ -61,7 +61,6 @@ vi.mock("@/components/clama/InstituicaoSelect", () => ({
     </select>
   ),
 }));
-vi.mock("@/lib/fingerprint", () => ({ obterDeviceHash: () => Promise.resolve("hash-do-aparelho") }));
 
 const navigateMock = vi.fn();
 vi.mock("react-router-dom", async () => {
@@ -406,10 +405,10 @@ describe("PedidoSection", () => {
         valorCentavos: 100,
         instituicao: 7,
         turnstileToken: "token-turnstile",
-        deviceHash: "hash-do-aparelho",
         consentAceito: true,
       });
       expect(corpos["/api/doacoes"]).not.toHaveProperty("telefone");
+      expect(corpos["/api/doacoes"]).not.toHaveProperty("deviceHash");
       expect(resetTurnstile).not.toHaveBeenCalled(); // deu certo: o widget segue como está
     });
 
@@ -433,6 +432,73 @@ describe("PedidoSection", () => {
       await userEvent.click(screen.getByRole("button", { name: /Contribuir e receber/i }));
       await waitFor(() => expect(navigateMock).toHaveBeenCalledWith(`/confirmacao?pedido_id=${ID}`));
       expect(corpos["/api/doacoes"]).toMatchObject({ turnstileToken: "token-novo" });
+    });
+
+    async function preencherAnonimoGratuito() {
+      mockApiFetch({ outras });
+      renderWithRouter(<PedidoSection />);
+      expect(await screen.findByText("Telefone (opcional)")).toBeInTheDocument();
+      await userEvent.click(screen.getByRole("radio", { name: /Gratuito/ }));
+      await userEvent.type(campo("nome"), "Maria Gratuita");
+      await userEvent.type(campo("email"), "maria@example.com");
+      await userEvent.type(campo("cpf_cnpj"), CPF);
+      await userEvent.type(campo("idade"), "40");
+      await userEvent.selectOptions(campo("sexo"), "nao_informado");
+      await userEvent.click(screen.getByRole("checkbox"));
+    }
+    const enviarAnonimoGratuito = () =>
+      userEvent.click(screen.getByRole("button", { name: /Receber minha oração gratuita/i }));
+
+    it("anônimo gratuito: POST /api/freemium/pedidos sem deviceHash nem telefone e mostra 'Confira seu e-mail'", async () => {
+      await preencherAnonimoGratuito();
+      await enviarAnonimoGratuito();
+      expect(await screen.findByText("Confira seu e-mail")).toBeInTheDocument();
+      expect(screen.getByText("maria@example.com")).toBeInTheDocument();
+      expect(Object.keys(corpos)).toEqual(["/api/freemium/pedidos"]);
+      const corpo = corpos["/api/freemium/pedidos"]!;
+      expect(corpo).toMatchObject({
+        nome: "Maria Gratuita",
+        email: "maria@example.com",
+        cpfCnpj: "52998224725",
+        turnstileToken: "token-turnstile",
+        consentAceito: true,
+      });
+      expect(corpo).not.toHaveProperty("deviceHash");
+      expect(corpo).not.toHaveProperty("telefone");
+      expect(navigateMock).not.toHaveBeenCalled();
+    });
+
+    it("anônimo gratuito, conta_existente: vai ao /login com a mensagem", async () => {
+      await preencherAnonimoGratuito();
+      falhaNaCriacao = new PastoralApiError(
+        "Conflict",
+        "conta_existente",
+        "Você já tem conta com a gente. Faça login pra fazer um novo pedido.",
+        409,
+      );
+      await enviarAnonimoGratuito();
+      await waitFor(() =>
+        expect(navigateMock).toHaveBeenCalledWith("/login", {
+          state: {
+            flashMessage: "Você já tem conta com a gente. Faça login pra fazer um novo pedido.",
+            next: "/",
+          },
+        }),
+      );
+    });
+
+    it.each([
+      ["pedido_em_andamento", "Você já tem um pedido aguardando confirmação. Confira seu e-mail."],
+      ["freemium_ja_usado", "Você já recebeu sua oração gratuita."],
+      ["captcha_invalido", "Verificação anti-robô falhou."],
+    ])("anônimo gratuito, %s: mostra o texto, não navega e reinicia o Turnstile", async (codigo, texto) => {
+      await preencherAnonimoGratuito();
+      falhaNaCriacao = new PastoralApiError("Erro", codigo, texto, 409);
+      await enviarAnonimoGratuito();
+      expect(await screen.findByText(texto)).toBeInTheDocument();
+      expect(navigateMock).not.toHaveBeenCalled();
+      expect(resetTurnstile).toHaveBeenCalledTimes(1);
+      expect(screen.queryByText("Confira seu e-mail")).toBeNull();
     });
   });
 });

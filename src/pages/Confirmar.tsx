@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 
 import { StickyNav } from "@/components/clama/StickyNav";
@@ -10,7 +10,7 @@ import { PastoralApiError } from "@/lib/api";
 import { confirmarPedidoGratuito } from "@/lib/api/freemium";
 
 /**
- * Página /confirmar — tela intermediária do double opt-in (P-V2 wave 2).
+ * Página /confirmar — tela intermediária do double opt-in.
  * O usuário chega aqui via clique no link do e-mail. O token só é consumido
  * por POST explícito (clique humano), o que blinda contra mail scanners
  * corporativos que fazem GET pre-fetch nos links inbound.
@@ -18,7 +18,12 @@ import { confirmarPedidoGratuito } from "@/lib/api/freemium";
 export default function Confirmar() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const token = (searchParams.get("token") ?? "").trim();
+  // O token é uma credencial: fica só em memória e sai da barra de endereço (e do histórico) na hora, para não
+  // vazar em log de CDN, em Referer ou no histórico. `useState` guarda o valor da primeira renderização.
+  const [token] = useState(() => (searchParams.get("token") ?? "").trim());
+  useEffect(() => {
+    if (window.location.search) window.history.replaceState(window.history.state, "", window.location.pathname);
+  }, []);
 
   const [submitting, setSubmitting] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
@@ -29,7 +34,7 @@ export default function Confirmar() {
     setSubmitting(true);
     try {
       const res = await confirmarPedidoGratuito(token);
-      navigate(`/confirmado?pedido_id=${res.pedido_id}`);
+      navigate(`/confirmado?pedido_id=${res.id}`, { replace: true });
     } catch (err) {
       if (err instanceof PastoralApiError) {
         setErro(err.pastoralMessage);

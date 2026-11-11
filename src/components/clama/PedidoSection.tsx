@@ -17,7 +17,7 @@ import type { PedidoCriado, StatusPublico } from "@/types/pedido-status.types";
 
 import { PrayerForm } from "@/components/clama/PrayerForm";
 import { PrayerFormGratuito } from "@/components/clama/PrayerFormGratuito";
-import { SubmittedView } from "@/components/clama/PedidoSectionGratuito";
+import { SubmittedView } from "@/components/clama/SubmittedView";
 import { InstituicaoSelect } from "@/components/clama/InstituicaoSelect";
 import {
   OfferingCards,
@@ -91,14 +91,14 @@ export interface PedidoSectionProps {
  *  |            | Gratuito                       | Livre (pago)                 |
  *  |------------|--------------------------------|------------------------------|
  *  | Logado     | POST /api/pedidos/gratuito     | POST /api/pedidos            |
- *  | Anônimo    | POST /api/freemium/pedidos/    | POST /api/doacoes            |
+ *  | Anônimo    | POST /api/freemium/pedidos     | POST /api/doacoes            |
  *
  * O pago guarda o id criado (estado + rascunho, com a assinatura do conteúdo e
  * sem dado pessoal) e vai para a confirmação, que pede o Pix. Um novo envio
  * idêntico, em até 24 h e com o pedido ainda aguardando pagamento, volta para a
  * confirmação dele em vez de criar outro.
  *
- * Anônimo usa o `PrayerFormGratuito` (Turnstile invisível + fingerprint +
+ * Anônimo usa o `PrayerFormGratuito` (Turnstile invisível +
  * consent). O grátis anônimo é double opt-in por e-mail (mostra `SubmittedView`).
  */
 export const PedidoSection = forwardRef<HTMLElement, PedidoSectionProps>(
@@ -342,7 +342,7 @@ export const PedidoSection = forwardRef<HTMLElement, PedidoSectionProps>(
     );
   };
 
-  // ---- ANÔNIMO: PrayerFormGratuito (apiFetch + Turnstile/fingerprint) ----
+  // ---- ANÔNIMO: PrayerFormGratuito (apiFetch + Turnstile) ----
   // Devolve false se o envio falhou: o PrayerFormGratuito reinicia o Turnstile (o token é de uso único).
   const handleAnonSubmit = async (data: PedidoGratuitoData): Promise<boolean> => {
     if (!ofertaValida()) return true; // nada foi enviado: o token segue válido
@@ -361,14 +361,12 @@ export const PedidoSection = forwardRef<HTMLElement, PedidoSectionProps>(
         const msg =
           error?.pastoralMessage ??
           "Algo não saiu como o esperado. Tente novamente.";
-        if (error?.code === "user_ja_possui_conta") {
-          const redirect =
-            (typeof error.extra?.redirect === "string" &&
-              error.extra.redirect) ||
-            "/login";
-          navigate(redirect, { state: { flashMessage: msg, next: "/" } });
+        // Já tem conta (mesmo sem senha): o login mostra a mensagem e destaca "Esqueci minha senha".
+        if (error?.code === "conta_existente") {
+          navigate("/login", { state: { flashMessage: msg, next: "/" } });
           return true;
         }
+        // Demais (pedido_em_andamento, freemium_ja_usado, captcha_invalido, ...): mostra o texto e mantém o form.
         setSubmitError(msg);
         toast.error(msg);
         setIsSubmitting(false);

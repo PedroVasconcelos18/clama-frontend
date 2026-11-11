@@ -9,6 +9,8 @@ export const PEDIDO_STATUS: { value: StatusPedido; label: string }[] = [
   { value: "ENVIADA", label: "Enviada" },
   { value: "AGUARDANDO_NOVA_TENTATIVA", label: "Aguardando nova tentativa" },
   { value: "ERRO", label: "Erro" },
+  { value: "AGUARDANDO_CONFIRMACAO_EMAIL", label: "Aguardando confirmação do e-mail" },
+  { value: "CONFIRMACAO_EXPIRADA", label: "Confirmação expirada" },
 ]
 
 export const rotuloDoStatus = (s?: string) => PEDIDO_STATUS.find((o) => o.value === s)?.label ?? s ?? "—"
@@ -21,4 +23,6 @@ export const PEDIDO_STATUS_COLORS: Record<string, string> = {
   ENVIADA: "bg-green-500/20 text-green-400",
   AGUARDANDO_NOVA_TENTATIVA: "bg-yellow-500/20 text-yellow-400",
   ERRO: "bg-red-500/20 text-red-400",
+  AGUARDANDO_CONFIRMACAO_EMAIL: "bg-yellow-500/20 text-yellow-400",
+  CONFIRMACAO_EXPIRADA: "bg-gray-500/20 text-gray-400",
 }

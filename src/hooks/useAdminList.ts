@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { useApi } from "@/hooks/useApi"
-import type { PagedModel, PaginatedResponse } from "@/types/admin.types"
+import type { PagedModel } from "@/types/admin.types"
 
 export const PAGE_SIZE = 20
 
@@ -36,14 +36,6 @@ function comFiltros(path: string, base: Record<string, string>, filters: Record<
   const params = new URLSearchParams(base)
   for (const [k, v] of Object.entries(filters)) if (v.trim()) params.set(k, v.trim())
   return `${path}?${params.toString()}`
-}
-
-/** Lista admin no contrato antigo (limit/offset); só o freemium (onda 5) ainda usa. */
-export function useAdminList<T>(path: string, filters: Record<string, string>, offset: number, reloadToken = 0) {
-  return useLista<PaginatedResponse<T>>(
-    comFiltros(path, { limit: String(PAGE_SIZE), offset: String(offset) }, filters),
-    reloadToken,
-  )
 }
 
 /** Lista admin em `PagedModel` (page/size). `offset` em itens, como o `AdminPager`. */
