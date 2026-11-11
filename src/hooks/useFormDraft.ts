@@ -4,7 +4,8 @@ export function useFormDraft<T>(
   key: string,
   initialValue: T,
   onSaved?: () => void,
-  debounceMs = 800
+  debounceMs = 800,
+  { versao = 1, valido }: { versao?: number; valido?: (valor: T) => boolean } = {},
 ): {
   value: T;
   setValue: React.Dispatch<React.SetStateAction<T>>;
@@ -14,7 +15,15 @@ export function useFormDraft<T>(
   const [value, setValue] = useState<T>(() => {
     try {
       const stored = localStorage.getItem(key);
-      return stored ? (JSON.parse(stored) as T) : initialValue;
+      if (!stored) return initialValue;
+      // Formato { versao, valor }. Versão diferente (ou rascunho sem envelope)
+      // ou valor inválido: descarta em silêncio.
+      const parsed = JSON.parse(stored) as { versao?: number; valor?: T } | null;
+      if (parsed?.versao === versao && parsed.valor !== undefined && (!valido || valido(parsed.valor))) {
+        return parsed.valor;
+      }
+      localStorage.removeItem(key);
+      return initialValue;
     } catch {
       return initialValue;
     }
@@ -37,7 +46,7 @@ export function useFormDraft<T>(
     }
 
     timeoutRef.current = window.setTimeout(() => {
-      localStorage.setItem(key, JSON.stringify(value));
+      localStorage.setItem(key, JSON.stringify({ versao, valor: value }));
       onSaved?.();
     }, debounceMs);
 
@@ -46,7 +55,7 @@ export function useFormDraft<T>(
         clearTimeout(timeoutRef.current);
       }
     };
-  }, [key, value, debounceMs, onSaved]);
+  }, [key, value, debounceMs, onSaved, versao]);
 
   const clearDraft = useCallback(() => {
     localStorage.removeItem(key);

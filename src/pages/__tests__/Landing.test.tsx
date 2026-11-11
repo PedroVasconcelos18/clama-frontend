@@ -36,8 +36,8 @@ describe("Landing", () => {
     }) as unknown as typeof IntersectionObserver;
 
     mockApiFetch({ outras: () => [
-      { id: "p1", nome: "Plano 1", valor_centavos: 199, ordem: 1 },
-      { id: "p2", nome: "Plano 2", valor_centavos: 999, ordem: 2 },
+      { id: 1, nome: "Plano 1", descricao: "d1", valorCentavos: 199, complexidade: "SIMPLES", ordem: 1 },
+      { id: 2, nome: "Plano 2", descricao: "d2", valorCentavos: 999, complexidade: "COM_VERSICULO", ordem: 2 },
     ] });
   });
 

@@ -1,13 +1,13 @@
 import { useState } from "react";
 import { cn } from "@/lib/utils";
-import { reaisToInt } from "@/lib/formatters";
+import { formatCurrency, reaisToInt } from "@/lib/formatters";
 import { Input } from "@/components/ui/input";
 import { type Plan } from "@/types/plano.types";
 
 export type CanalEntrega = "EMAIL" | "WHATSAPP";
 
 export interface OfferingState {
-  selectedPlanId: string | null;
+  selectedPlanId: number | null;
   valorLivre: number | null; // em centavos; null enquanto o input está vazio/inválido
   valorLivreActive: boolean; // modo "Livre" escolhido (independe de ter valor válido)
   gratuito: boolean;
@@ -15,7 +15,7 @@ export interface OfferingState {
 
 interface OfferingCardsProps {
   planos: Plan[];
-  selectedPlanId: string | null;
+  selectedPlanId: number | null;
   valorLivre: number | null;
   /** Modo "Livre" ativo — controla seleção do card e visibilidade do input. */
   valorLivreActive: boolean;
@@ -58,7 +58,7 @@ export function OfferingCards({
     valorLivre ? String(valorLivre / 100) : ""
   );
 
-  const handlePlanSelect = (planId: string) => {
+  const handlePlanSelect = (planId: number) => {
     onChange({
       selectedPlanId: planId,
       valorLivre: null,
@@ -145,7 +145,7 @@ export function OfferingCards({
               )}
 
               <div className={cn("text-[1.4rem] font-bold", valorTexto)}>
-                {plano.valor_reais_str}
+                {formatCurrency(plano.valorCentavos)}
               </div>
               <div
                 className={cn(

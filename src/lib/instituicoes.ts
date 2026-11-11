@@ -1,6 +1,6 @@
 export const LOGO_FALLBACK_PATH = "/instituicoes/_fallback.svg";
 
-/** Fonte da logo: a data-URI vinda do backend, ou o fallback estático. */
-export function logoSrc(logo: string | null | undefined): string {
-  return logo && logo.length > 0 ? logo : LOGO_FALLBACK_PATH;
+/** Fonte da logo: o `logoUrl` da API, ou o fallback estático quando é null. */
+export function logoSrc(logoUrl: string | null | undefined): string {
+  return logoUrl && logoUrl.length > 0 ? logoUrl : LOGO_FALLBACK_PATH;
 }

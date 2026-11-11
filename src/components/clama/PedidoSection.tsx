@@ -39,6 +39,9 @@ interface FormDraftState {
   canal: CanalEntrega;
 }
 
+// Versão 2: ids de plano passaram de UUID (string) para number (onda 3).
+const DRAFT_VERSAO = 2;
+
 const INITIAL_DRAFT: FormDraftState = {
   formData: {},
   offering: {
@@ -107,7 +110,7 @@ export const PedidoSection = forwardRef<HTMLElement, PedidoSectionProps>(
   // carregar apenas deixa o dropdown vazio (só "Sem instituição").
   const [instituicoes, setInstituicoes] = useState<Instituicao[]>([]);
   const [isLoadingInstituicoes, setIsLoadingInstituicoes] = useState(true);
-  const [instituicaoId, setInstituicaoId] = useState<string | null>(null);
+  const [instituicaoId, setInstituicaoId] = useState<number | null>(null);
 
   const handleDraftSaved = useCallback(() => {
     toast.info("Seu rascunho está seguro.", { duration: 2500 });
@@ -117,6 +120,15 @@ export const PedidoSection = forwardRef<HTMLElement, PedidoSectionProps>(
     "clama:form-draft",
     INITIAL_DRAFT,
     handleDraftSaved,
+    800,
+    {
+      versao: DRAFT_VERSAO,
+      // Id de plano agora é number; rascunho com UUID antigo é descartado.
+      valido: (d) => {
+        const id = d.offering?.selectedPlanId;
+        return id === null || id === undefined || typeof id === "number";
+      },
+    },
   );
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -143,7 +155,7 @@ export const PedidoSection = forwardRef<HTMLElement, PedidoSectionProps>(
       try {
         setIsLoadingPlanos(true);
         setPlanosError(null);
-        const data = await apiFetch<Plan[]>("/api/planos/");
+        const data = await apiFetch<Plan[]>("/api/planos");
         setPlanos(data);
 
         // Só semeia se o usuário ainda não escolheu nada.
@@ -191,7 +203,7 @@ export const PedidoSection = forwardRef<HTMLElement, PedidoSectionProps>(
     const loadInstituicoes = async () => {
       try {
         setIsLoadingInstituicoes(true);
-        const data = await apiFetch<Instituicao[]>("/api/instituicoes/");
+        const data = await apiFetch<Instituicao[]>("/api/instituicoes");
         setInstituicoes(data);
       } catch {
         // Instituição é opcional: falha aqui não bloqueia o pedido.
@@ -232,7 +244,7 @@ export const PedidoSection = forwardRef<HTMLElement, PedidoSectionProps>(
       const selectedPlan = planos.find(
         (p) => p.id === draft.offering.selectedPlanId,
       );
-      return selectedPlan?.valor_centavos ?? 0;
+      return selectedPlan?.valorCentavos ?? 0;
     }
     return draft.offering.valorLivre ?? 0;
   };
@@ -356,7 +368,7 @@ export const PedidoSection = forwardRef<HTMLElement, PedidoSectionProps>(
   const handleRetryLoadPlanos = () => {
     setPlanosError(null);
     setIsLoadingPlanos(true);
-    apiFetch<Plan[]>("/api/planos/")
+    apiFetch<Plan[]>("/api/planos")
       .then((data) => {
         setPlanos(data);
       })

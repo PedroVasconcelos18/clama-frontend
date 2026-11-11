@@ -4,6 +4,86 @@
  */
 
 export interface paths {
+    "/api/admin/instituicoes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["instituicoes"];
+        put?: never;
+        post: operations["criarInstituicao"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/instituicoes/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["alterarInstituicao"];
+        trace?: never;
+    };
+    "/api/admin/instituicoes/{id}/logo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["trocarLogo"];
+        post?: never;
+        delete: operations["removerLogo"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/planos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["planos"];
+        put?: never;
+        post: operations["criarPlano"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/planos/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["alterarPlano"];
+        trace?: never;
+    };
     "/api/admin/usuarios": {
         parameters: {
             query?: never;
@@ -164,6 +244,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/instituicoes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["instituicoes_1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/instituicoes/{id}/logo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["logo"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/planos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["planos_1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -191,11 +319,59 @@ export interface components {
             campo?: string;
             mensagem?: string;
         };
+        InstituicaoAdmin: {
+            ativo?: boolean;
+            /** Format: int64 */
+            id?: number;
+            logoUrl?: string;
+            nome?: string;
+            /** Format: int32 */
+            ordem?: number;
+            temLogo?: boolean;
+        };
+        InstituicaoPublica: {
+            /** Format: int64 */
+            id?: number;
+            logoUrl?: string;
+            nome?: string;
+        };
         MensagemPastoral: {
             mensagemPastoral?: string;
         };
+        MudancaDeInstituicao: {
+            ativo?: boolean;
+            nome?: string;
+            /** Format: int32 */
+            ordem?: number;
+        };
+        MudancaDePlano: {
+            ativo?: boolean;
+            /** @enum {string} */
+            complexidade?: "SIMPLES" | "COM_VERSICULO" | "COM_PROFECIA_E_VERSICULOS";
+            descricao?: string;
+            nome?: string;
+            /** Format: int32 */
+            ordem?: number;
+            /** Format: int64 */
+            valorCentavos?: number;
+        };
+        NovaInstituicao: {
+            nome: string;
+            /** Format: int32 */
+            ordem?: number;
+        };
         NovaSenhaDoAdmin: {
             senha: string;
+        };
+        NovoPlano: {
+            /** @enum {string} */
+            complexidade?: "SIMPLES" | "COM_VERSICULO" | "COM_PROFECIA_E_VERSICULOS";
+            descricao?: string;
+            nome: string;
+            /** Format: int32 */
+            ordem?: number;
+            /** Format: int64 */
+            valorCentavos: number;
         };
         PageMetadata: {
             /** Format: int64 */
@@ -214,6 +390,33 @@ export interface components {
         PedidoDeLink: {
             /** Format: email */
             email: string;
+        };
+        PlanoAdmin: {
+            ativo?: boolean;
+            /** @enum {string} */
+            complexidade?: "SIMPLES" | "COM_VERSICULO" | "COM_PROFECIA_E_VERSICULOS";
+            descricao?: string;
+            /** Format: int64 */
+            id?: number;
+            nome?: string;
+            /** Format: int32 */
+            ordem?: number;
+            /** @enum {string} */
+            tipo?: "COMUM" | "GRATUITO" | "VALOR_LIVRE";
+            /** Format: int64 */
+            valorCentavos?: number;
+        };
+        PlanoPublico: {
+            /** @enum {string} */
+            complexidade?: "SIMPLES" | "COM_VERSICULO" | "COM_PROFECIA_E_VERSICULOS";
+            descricao?: string;
+            /** Format: int64 */
+            id?: number;
+            nome?: string;
+            /** Format: int32 */
+            ordem?: number;
+            /** Format: int64 */
+            valorCentavos?: number;
         };
         ProblemDetail: {
             /** @description identificador estavel do erro */
@@ -271,6 +474,195 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    instituicoes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["InstituicaoAdmin"][];
+                };
+            };
+        };
+    };
+    criarInstituicao: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NovaInstituicao"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["InstituicaoAdmin"];
+                };
+            };
+        };
+    };
+    alterarInstituicao: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MudancaDeInstituicao"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["InstituicaoAdmin"];
+                };
+            };
+        };
+    };
+    trocarLogo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    /** Format: binary */
+                    logo?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["InstituicaoAdmin"];
+                };
+            };
+        };
+    };
+    removerLogo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    planos: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PlanoAdmin"][];
+                };
+            };
+        };
+    };
+    criarPlano: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NovoPlano"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PlanoAdmin"];
+                };
+            };
+        };
+    };
+    alterarPlano: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MudancaDePlano"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PlanoAdmin"];
+                };
+            };
+        };
+    };
     listar: {
         parameters: {
             query?: {
@@ -573,6 +965,68 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["MensagemPastoral"];
+                };
+            };
+        };
+    };
+    instituicoes_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["InstituicaoPublica"][];
+                };
+            };
+        };
+    };
+    logo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": string;
+                };
+            };
+        };
+    };
+    planos_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PlanoPublico"][];
                 };
             };
         };

@@ -7,15 +7,15 @@ import type { Instituicao } from "@/types/instituicao.types";
 
 export interface InstituicaoSelectProps {
   instituicoes: Instituicao[];
-  value: string | null;
-  onChange: (id: string | null) => void;
+  value: number | null;
+  onChange: (id: number | null) => void;
   isLoading?: boolean;
   disabled?: boolean;
   id?: string;
 }
 
 // Valor sentinela do item "Sem instituição". O base-ui usa `null` como valor
-// de item; o componente traduz para/desde `string | null` na fronteira.
+// de item; o componente traduz para/desde `number | null` na fronteira.
 const SEM_INSTITUICAO_LABEL = "Sem instituição";
 
 function handleImgError(event: React.SyntheticEvent<HTMLImageElement>) {
@@ -26,10 +26,10 @@ function handleImgError(event: React.SyntheticEvent<HTMLImageElement>) {
   img.src = LOGO_FALLBACK_PATH;
 }
 
-function InstituicaoLogo({ logo }: { logo: string }) {
+function InstituicaoLogo({ logoUrl }: { logoUrl: string | null }) {
   return (
     <img
-      src={logoSrc(logo)}
+      src={logoSrc(logoUrl)}
       onError={handleImgError}
       width={20}
       height={20}
@@ -50,7 +50,7 @@ export function InstituicaoSelect({
   const isDisabled = disabled || isLoading;
 
   return (
-    <Select.Root<string | null>
+    <Select.Root<number | null>
       value={value}
       onValueChange={(next) => onChange(next)}
       disabled={isDisabled}
@@ -63,13 +63,13 @@ export function InstituicaoSelect({
         )}
       >
         <Select.Value className="flex min-w-0 flex-1 items-center gap-2">
-          {(selected: string | null) => {
+          {(selected: number | null) => {
             if (isLoading) {
               return (
                 <span className="truncate text-clama-cream/50">Carregando…</span>
               );
             }
-            const inst = selected
+            const inst = selected !== null
               ? instituicoes.find((item) => item.id === selected)
               : undefined;
             if (!inst) {
@@ -81,7 +81,7 @@ export function InstituicaoSelect({
             }
             return (
               <>
-                <InstituicaoLogo logo={inst.logo} />
+                <InstituicaoLogo logoUrl={inst.logoUrl} />
                 <span className="min-w-0 truncate">{inst.nome}</span>
               </>
             );
@@ -131,7 +131,7 @@ export function InstituicaoSelect({
                   )}
                 >
                   <span className="flex min-w-0 items-center gap-2">
-                    <InstituicaoLogo logo={inst.logo} />
+                    <InstituicaoLogo logoUrl={inst.logoUrl} />
                     <Select.ItemText className="min-w-0 truncate">
                       {inst.nome}
                     </Select.ItemText>

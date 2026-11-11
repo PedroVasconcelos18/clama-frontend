@@ -7,7 +7,7 @@ import { isValidCpfOrCnpj } from "@/lib/validators/cpfCnpj";
  * Espelha `pedido-gratuito.ts` (Turnstile + device_hash + consent + CPF/CNPJ
  * por dígito verificador + idade coerce) e ADICIONA:
  * - `valor_centavos`: valor da doação em centavos (mín. R$ 1,00 = 100).
- * - `instituicao`: UUID da instituição parceira (opcional; direciona o repasse).
+ * - `instituicao`: id numérico da instituição parceira (opcional; direciona o repasse).
  *
  * `valor_centavos` é preenchido programaticamente pelo componente (input em
  * reais → centavos via `reaisToInt`), então chega ao schema já como number.
@@ -63,8 +63,8 @@ export const doacaoSchema = z.object({
     .int("O valor precisa ser um número inteiro de centavos.")
     .min(100, "O valor mínimo para doação é R$ 1,00."),
   instituicao: z
-    .string()
-    .uuid("Instituição inválida.")
+    .number()
+    .int("Instituição inválida.")
     .nullable()
     .optional(),
   consent_aceito: z.boolean().refine((v) => v === true, {

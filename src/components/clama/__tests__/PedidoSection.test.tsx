@@ -5,6 +5,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 import { PedidoSection } from "../PedidoSection";
 import { mockApiFetch, usuarioFixture } from "@/test/sessao";
+import { formatCurrency } from "@/lib/formatters";
 import { SessaoProvider } from "@/contexts/SessaoContext";
 
 const navigateMock = vi.fn();
@@ -17,6 +18,10 @@ vi.mock("react-router-dom", async () => {
     useNavigate: () => navigateMock,
   };
 });
+
+// O Intl separa "R$" do número com U+00A0; casa qualquer espaço.
+const moeda = (centavos: number) =>
+  new RegExp(formatCurrency(centavos).replace(/[$]/g, "\\$").replace(/\s/g, "\\s"));
 
 function renderWithRouter(ui: React.ReactElement) {
   return render(
@@ -34,11 +39,11 @@ describe("PedidoSection", () => {
     localStorage.clear();
     navigateMock.mockClear();
     planos = [
-      { id: "p1", nome: "Plano 1", valor_centavos: 199, ordem: 1 },
-      { id: "p2", nome: "Plano 2", valor_centavos: 999, ordem: 2 },
-      { id: "p3", nome: "Plano 3", valor_centavos: 4999, ordem: 3 },
+      { id: 1, nome: "Plano 1", descricao: "d1", valorCentavos: 199, complexidade: "SIMPLES", ordem: 1 },
+      { id: 2, nome: "Plano 2", descricao: "d2", valorCentavos: 999, complexidade: "COM_VERSICULO", ordem: 2 },
+      { id: 3, nome: "Plano 3", descricao: "d3", valorCentavos: 4999, complexidade: "COM_PROFECIA_E_VERSICULOS", ordem: 3 },
     ];
-    mockApiFetch({ outras: () => planos });
+    mockApiFetch({ outras: (path) => (path === "/api/planos" ? planos : []) });
   });
 
   afterEach(() => {
@@ -95,7 +100,7 @@ describe("PedidoSection", () => {
     });
 
     it("autenticado: CTA é 'Levar meu clamor' (comportamento atual preservado)", async () => {
-      mockApiFetch({ usuario: usuarioFixture, outras: () => planos });
+      mockApiFetch({ usuario: usuarioFixture, outras: (path) => (path === "/api/planos" ? planos : []) });
       renderWithRouter(<PedidoSection />);
 
       await waitFor(() => {
@@ -108,6 +113,40 @@ describe("PedidoSection", () => {
       expect(
         screen.queryByRole("button", { name: /Entrar para fazer pedido/i }),
       ).toBeNull();
+    });
+  });
+
+  describe("vitrine com o catálogo novo", () => {
+    it("lê /api/planos e /api/instituicoes sem barra final e formata o valor com Intl", async () => {
+      const spy = mockApiFetch({
+        outras: (path) =>
+          path === "/api/planos"
+            ? planos
+            : [{ id: 3, nome: "Casa de Apoio", logoUrl: "/api/instituicoes/3/logo?v=abcd1234" }],
+      });
+      renderWithRouter(<PedidoSection />);
+
+      expect(await screen.findByText(moeda(999))).toBeInTheDocument();
+      expect(screen.getByText(moeda(4999))).toBeInTheDocument();
+      expect(screen.getByText("Mais escolhido")).toBeInTheDocument();
+      const caminhos = spy.mock.calls.map((c) => c[0]);
+      expect(caminhos).toContain("/api/planos");
+      expect(caminhos).toContain("/api/instituicoes");
+    });
+
+    it("descarta em silêncio o rascunho antigo com selectedPlanId UUID", async () => {
+      localStorage.setItem(
+        "clama:form-draft",
+        JSON.stringify({
+          formData: {},
+          offering: { selectedPlanId: "0b8f-uuid-antigo", valorLivre: null, valorLivreActive: false, gratuito: false },
+          canal: "EMAIL",
+        }),
+      );
+      renderWithRouter(<PedidoSection />);
+      await screen.findByText(moeda(999));
+      expect(screen.queryAllByRole("radio", { checked: true }).length).toBe(1); // o semeado (Livre), não o plano antigo
+      expect(localStorage.getItem("clama:form-draft") ?? "").not.toContain("uuid-antigo");
     });
   });
 });

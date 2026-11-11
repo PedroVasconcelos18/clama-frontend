@@ -1,9 +1,5 @@
-export interface Plan {
-  id: string;
-  nome: string;
-  valor_centavos: number;
-  valor_reais_str: string;
-  descricao: string;
-  complexidade: "simples" | "media" | "profunda";
-  ordem: number;
-}
+import type { components } from "@/types/api-schema";
+
+// Derivado do contrato gerado (`npm run generate:api-types`); o springdoc
+// marca tudo como opcional, mas a API sempre devolve todos os campos.
+export type Plan = Required<components["schemas"]["PlanoPublico"]>;

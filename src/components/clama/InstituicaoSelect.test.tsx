@@ -36,10 +36,10 @@ beforeAll(() => {
   }
 })
 
-const LOGO_CASA = "data:image/png;base64,AAAA"
+const LOGO_CASA = "/api/instituicoes/1/logo?v=abcd1234"
 const INSTITUICOES: Instituicao[] = [
-  { id: "inst-1", nome: "Casa de Apoio", logo: LOGO_CASA },
-  { id: "inst-2", nome: "Lar Esperança", logo: "" },
+  { id: 1, nome: "Casa de Apoio", logoUrl: LOGO_CASA },
+  { id: 2, nome: "Lar Esperança", logoUrl: null },
 ]
 
 describe("InstituicaoSelect", () => {
@@ -69,6 +69,9 @@ describe("InstituicaoSelect", () => {
     const logos = opcaoCasa.querySelectorAll("img")
     expect(logos.length).toBeGreaterThan(0)
     expect(logos[0]).toHaveAttribute("src", LOGO_CASA)
+    // logoUrl null cai no fallback estático.
+    const opcaoLar = screen.getByRole("option", { name: /Lar Esperança/i })
+    expect(opcaoLar.querySelector("img")).toHaveAttribute("src", "/instituicoes/_fallback.svg")
   })
 
   it("emite o id ao selecionar uma instituição", async () => {
@@ -88,7 +91,7 @@ describe("InstituicaoSelect", () => {
       await screen.findByRole("option", { name: /Lar Esperança/i }),
     )
 
-    expect(onChange).toHaveBeenCalledWith("inst-2")
+    expect(onChange).toHaveBeenCalledWith(2)
   })
 
   it("emite null ao selecionar 'Sem instituição'", async () => {
@@ -98,7 +101,7 @@ describe("InstituicaoSelect", () => {
     render(
       <InstituicaoSelect
         instituicoes={INSTITUICOES}
-        value="inst-1"
+        value={1}
         onChange={onChange}
       />,
     )
