@@ -68,6 +68,27 @@ describe("LgpdPage", () => {
     clique.mockRestore()
   })
 
+  it("exportar com clique duplo exporta uma vez só e revoga a URL depois do clique", async () => {
+    let liberar: (r: Response) => void = () => {}
+    const fetchReal = vi.fn().mockReturnValue(new Promise<Response>((res) => { liberar = res }))
+    vi.stubGlobal("fetch", fetchReal)
+    URL.createObjectURL = vi.fn(() => "blob:x")
+    URL.revokeObjectURL = vi.fn()
+    const clique = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {})
+    montar({ email: EMAIL })
+    await buscar()
+    const botao = screen.getByRole("button", { name: "Exportar dados (JSON)" }) as HTMLButtonElement
+    await userEvent.dblClick(botao)
+    expect(fetchReal).toHaveBeenCalledTimes(1)
+    expect(botao.disabled).toBe(true)
+    liberar(new Response("{}", { status: 200 }))
+    await waitFor(() => expect(clique).toHaveBeenCalledTimes(1))
+    await waitFor(() => expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:x"))
+    await waitFor(() => expect(botao.disabled).toBe(false))
+    vi.unstubAllGlobals()
+    clique.mockRestore()
+  })
+
   it("excluir só habilita com o e-mail igual e manda os ids da prévia", async () => {
     montar({ email: EMAIL })
     await buscar()

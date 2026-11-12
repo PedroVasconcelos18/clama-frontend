@@ -19,6 +19,7 @@ describe("TarefasPage", () => {
       if (url === "/api/admin/tarefas")
         return Promise.resolve([
           { ...base, nome: "boa", situacao: "ok", ultima: { inicio: "2026-11-01T13:00:00Z", ok: true, simulacao: false, manual: false, resumo: "3 instituições" } },
+          { ...base, nome: "purga", situacao: "ok", simulacaoConfigurada: true },
           { ...base, nome: "sumida", situacao: "nao_agendada", proximaExecucao: null },
           { ...base, nome: "lenta", situacao: "atrasada", rodandoAgora: true },
           { ...base, nome: "quebrada", situacao: "falhou", falhasSeguidas: 2, ultima: { inicio: "2026-11-01T13:00:00Z", ok: false, simulacao: false, manual: false, erro: "X" } },
@@ -64,6 +65,20 @@ describe("TarefasPage", () => {
     await userEvent.click(screen.getByRole("button", { name: "Rodar de verdade" }))
     expect(await screen.findByText("Essa tarefa já está na fila.")).toBeTruthy()
     expect(fetchApi).toHaveBeenCalledWith("/api/admin/tarefas/boa/execucoes", expect.objectContaining({ body: JSON.stringify({ simulacao: false }) }))
+  })
+
+  it("tarefa em modo simulado na configuração: só simula, com a nota, e o 409 mostra a mensagem", async () => {
+    post = () => Promise.reject(new PastoralApiError("Erro", "tarefa_em_modo_simulado", "Essa tarefa está em modo simulado na configuração.", 409))
+    render(<TarefasPage />)
+    await userEvent.click(within(await screen.findByRole("region", { name: "purga" })).getByRole("button", { name: "Rodar agora" }))
+    const caixa = screen.getByLabelText("Só simular") as HTMLInputElement
+    expect(caixa.checked).toBe(true)
+    expect(caixa.disabled).toBe(true)
+    expect(screen.getByText(/Modo simulado na configuração/)).toBeTruthy()
+    expect(screen.queryByRole("button", { name: "Rodar de verdade" })).toBeNull()
+    await userEvent.click(screen.getByRole("button", { name: "Simular" }))
+    expect(await screen.findByText("Essa tarefa está em modo simulado na configuração.")).toBeTruthy()
+    expect(fetchApi).toHaveBeenCalledWith("/api/admin/tarefas/purga/execucoes", expect.objectContaining({ body: JSON.stringify({ simulacao: true }) }))
   })
 
   it("histórico é paginado", async () => {

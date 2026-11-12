@@ -37,6 +37,7 @@ export default function TarefasPage() {
   const [historico, setHistorico] = useState<string | null>(null)
   const [offset, setOffset] = useState(0)
   const [alvo, setAlvo] = useState<string | null>(null)
+  const alvoSimulado = tarefas?.find((t) => t.nome === alvo)?.simulacaoConfigurada ?? false
   const [simular, setSimular] = useState(true)
   const [busy, setBusy] = useState(false)
   const [erroRodar, setErroRodar] = useState<string | null>(null)
@@ -67,10 +68,10 @@ export default function TarefasPage() {
     try {
       await fetchApi(`/api/admin/tarefas/${alvo}/execucoes`, {
         method: "POST",
-        body: JSON.stringify({ simulacao: simular }),
+        body: JSON.stringify({ simulacao: simular || alvoSimulado }),
         showToast: false,
       })
-      toast.success(simular ? "Simulação enfileirada." : "Execução enfileirada.")
+      toast.success(simular || alvoSimulado ? "Simulação enfileirada." : "Execução enfileirada.")
       setAlvo(null)
       recarregar()
       clearTimeout(releitura.current)
@@ -158,14 +159,15 @@ export default function TarefasPage() {
             </DialogDescription>
           </DialogHeader>
           <label className="flex items-center gap-2 text-sm text-clama-cream">
-            <input type="checkbox" checked={simular} onChange={(e) => setSimular(e.target.checked)} />
+            <input type="checkbox" checked={simular || alvoSimulado} disabled={alvoSimulado} onChange={(e) => setSimular(e.target.checked)} />
             Só simular
           </label>
+          {alvoSimulado && <p className="text-xs text-clama-cream/60">Modo simulado na configuração: só dá para simular.</p>}
           {erroRodar && <PastoralAlert variant="error">{erroRodar}</PastoralAlert>}
           <DialogFooter>
             <Button variant="outline" onClick={() => setAlvo(null)} disabled={busy}>Cancelar</Button>
             <Button onClick={rodar} disabled={busy}>
-              {busy ? "Enfileirando…" : simular ? "Simular" : "Rodar de verdade"}
+              {busy ? "Enfileirando…" : simular || alvoSimulado ? "Simular" : "Rodar de verdade"}
             </Button>
           </DialogFooter>
         </DialogContent>

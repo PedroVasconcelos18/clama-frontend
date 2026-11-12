@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useRef, useState } from "react"
 import { useLocation } from "react-router-dom"
 import { toast } from "sonner"
 
@@ -69,7 +69,12 @@ export default function LgpdPage() {
     }
   }
 
+  const exportando = useRef(false)
+
   async function exportar() {
+    if (exportando.current) return // clique duplo: so uma exportacao (e uma auditoria)
+    exportando.current = true
+    setBusy(true)
     setErro(null)
     try {
       // POST com download: fetch + Blob (um <a href> seria GET, e o e-mail iria para a URL)
@@ -91,9 +96,12 @@ export default function LgpdPage() {
       document.body.appendChild(a)
       a.click()
       a.remove()
-      URL.revokeObjectURL(url)
+      setTimeout(() => URL.revokeObjectURL(url), 0) // revogar na hora pode cancelar o download em alguns navegadores
     } catch {
       setErro("Não foi possível exportar.")
+    } finally {
+      exportando.current = false
+      setBusy(false)
     }
   }
 
@@ -201,7 +209,7 @@ export default function LgpdPage() {
           )}
           {!nada && (
             <div className="flex flex-wrap gap-2 pt-2">
-              <Button variant="outline" onClick={() => void exportar()}>Exportar dados (JSON)</Button>
+              <Button variant="outline" disabled={busy} onClick={() => void exportar()}>Exportar dados (JSON)</Button>
               {temConta && (
                 <Button variant="outline" onClick={() => abrir("blog")}>Apagar só o blog</Button>
               )}
