@@ -103,10 +103,6 @@ export function CustomerDetailDrawer({ usuarioId, onClose, onChanged }: Props) {
                     setRefresh((n) => n + 1)
                     onChanged?.()
                   }}
-                  onDeleted={() => {
-                    onChanged?.()
-                    onClose()
-                  }}
                 />
               )}
 

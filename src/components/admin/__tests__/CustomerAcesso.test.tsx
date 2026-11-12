@@ -8,6 +8,8 @@ import type { UsuarioAdmin } from "@/types/usuario-admin"
 const fetchApi = vi.fn()
 vi.mock("@/hooks/useApi", () => ({ useApi: () => ({ fetchApi }) }))
 vi.mock("@/contexts/SessaoContext", () => ({ useSessao: () => ({ usuario: { id: 1, papel: "SUPERUSUARIO" } }) }))
+const navigate = vi.fn()
+vi.mock("react-router-dom", async (orig) => ({ ...(await orig<typeof import("react-router-dom")>()), useNavigate: () => navigate }))
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }))
 
 const base = {
@@ -15,16 +17,15 @@ const base = {
 } as UsuarioAdmin
 
 const onChanged = vi.fn()
-const onDeleted = vi.fn()
 const montar = (c: Partial<UsuarioAdmin> = {}) =>
-  render(<CustomerAcesso customer={{ ...base, ...c }} onChanged={onChanged} onDeleted={onDeleted} />)
+  render(<CustomerAcesso customer={{ ...base, ...c }} onChanged={onChanged} />)
 const chamadas = () => fetchApi.mock.calls.filter(([, i]) => i?.method)
 
 describe("CustomerAcesso", () => {
   beforeEach(() => {
     fetchApi.mockReset().mockResolvedValue({})
     onChanged.mockReset()
-    onDeleted.mockReset()
+    navigate.mockReset()
     vi.mocked(toast.error).mockReset()
   })
 
@@ -55,22 +56,12 @@ describe("CustomerAcesso", () => {
     )
   })
 
-  it("excluir so habilita depois de digitar o e-mail", async () => {
+  it("nao ha mais Excluir usuario; o atalho LGPD leva o e-mail no state, nunca na URL", async () => {
     montar()
-    await userEvent.click(screen.getByRole("button", { name: "Excluir usuário" }))
-    const confirmar = (await screen.findAllByRole("button", { name: "Excluir usuário" })).at(-1)!
-    expect((confirmar as HTMLButtonElement).disabled).toBe(true)
-    await userEvent.type(screen.getByLabelText(/Digite/), "outro@x.com")
-    expect((confirmar as HTMLButtonElement).disabled).toBe(true)
-    await userEvent.clear(screen.getByLabelText(/Digite/))
-    await userEvent.type(screen.getByLabelText(/Digite/), "ana@exemplo.com")
-    expect((confirmar as HTMLButtonElement).disabled).toBe(false)
+    expect(screen.queryByRole("button", { name: "Excluir usuário" })).toBeNull()
+    await userEvent.click(screen.getByRole("button", { name: "Dados do titular (LGPD)" }))
+    expect(navigate).toHaveBeenCalledWith("/admin/lgpd", { state: { email: "Ana@Exemplo.com" } })
     expect(chamadas()).toHaveLength(0)
-    await userEvent.click(confirmar)
-    await waitFor(() =>
-      expect(fetchApi).toHaveBeenCalledWith("/api/admin/usuarios/7", { method: "DELETE", showToast: false }),
-    )
-    expect(onDeleted).toHaveBeenCalled()
   })
 
   it("403 do back aparece na tela e no toast", async () => {
@@ -116,7 +107,6 @@ describe("CustomerAcesso", () => {
 
   it("na propria conta os botoes de acesso ficam desabilitados", () => {
     montar({ id: 1, papel: "ADMIN" })
-    expect((screen.getByRole("button", { name: "Excluir usuário" }) as HTMLButtonElement).disabled).toBe(true)
     expect((screen.getByRole("button", { name: "Remover admin" }) as HTMLButtonElement).disabled).toBe(true)
   })
 

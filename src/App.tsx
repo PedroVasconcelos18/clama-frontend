@@ -28,6 +28,7 @@ import DocumentosPage from "@/pages/admin/DocumentosPage"
 import RepassesPage from "@/pages/admin/RepassesPage"
 import RelatoriosRepassePage from "@/pages/admin/RelatoriosRepassePage"
 import TarefasPage from "@/pages/admin/TarefasPage"
+import LgpdPage from "@/pages/admin/LgpdPage"
 import WebhooksPage from "@/pages/admin/WebhooksPage"
 import FreemiumBloqueiosPage from "@/pages/admin/FreemiumBloqueiosPage"
 
@@ -82,6 +83,7 @@ export default function App() {
           <Route path="repasses" element={<RepassesPage />} />
           <Route path="relatorios" element={<RelatoriosRepassePage />} />
           <Route path="tarefas" element={<TarefasPage />} />
+          <Route path="lgpd" element={<LgpdPage />} />
           <Route path="webhooks" element={<WebhooksPage />} />
           <Route path="freemium" element={<FreemiumBloqueiosPage />} />
           <Route

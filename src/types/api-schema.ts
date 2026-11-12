@@ -206,7 +206,7 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        delete: operations["excluir_1"];
+        delete: operations["excluir"];
         options?: never;
         head?: never;
         patch?: never;
@@ -255,6 +255,102 @@ export interface paths {
         put: operations["trocarLogo"];
         post?: never;
         delete: operations["removerLogo"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/lgpd/busca": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["buscarTitular"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/lgpd/exclusao": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["excluirTitular"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/lgpd/exclusao-do-blog": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["excluirBlogDoTitular"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/lgpd/exportacao": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["exportarTitular"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/metricas/oracao": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["resumo_1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/metricas/pedidos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["resumo"];
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -622,7 +718,7 @@ export interface paths {
         get: operations["detalhar"];
         put?: never;
         post?: never;
-        delete: operations["excluir"];
+        delete?: never;
         options?: never;
         head?: never;
         patch: operations["alterar"];
@@ -1027,6 +1123,19 @@ export interface components {
             /** Format: int64 */
             usuarioId: number;
         };
+        BlogApagado: {
+            /** Format: int64 */
+            comentarios?: number;
+            /** Format: int64 */
+            curtidas?: number;
+        };
+        BlogDaPrevia: {
+            banido?: boolean;
+            /** Format: int64 */
+            comentarios?: number;
+            /** Format: int64 */
+            curtidas?: number;
+        };
         BloqueioAdmin: {
             cpfHmacCurto?: string;
             /** Format: date-time */
@@ -1039,6 +1148,9 @@ export interface components {
         Busca: {
             cpfCnpj?: string;
             email?: string;
+        };
+        BuscaLgpd: {
+            email: string;
         };
         CobrancaDoPedido: {
             /** Format: date-time */
@@ -1057,6 +1169,11 @@ export interface components {
         };
         Confirmar: {
             token: string;
+        };
+        ContaDaPrevia: {
+            /** Format: int64 */
+            id?: number;
+            papel?: string;
         };
         CorrecaoDoPedido: {
             /** Format: email */
@@ -1101,6 +1218,12 @@ export interface components {
             nome?: string;
             /** Format: int64 */
             tamanhoBytes?: number | null;
+        };
+        Duracao: {
+            /** Format: double */
+            p50Ms?: number;
+            /** Format: double */
+            p90Ms?: number;
         };
         EdicaoDaConta: {
             nomeCompleto?: string;
@@ -1154,6 +1277,16 @@ export interface components {
             evento?: components["schemas"]["EventoMpAdmin"];
             resultado?: string;
         };
+        ExclusaoDoBlogLgpd: {
+            confirmacao: string;
+            email: string;
+        };
+        ExclusaoLgpd: {
+            confirmacao: string;
+            contaIds: number[];
+            email: string;
+            pedidoIds: string[];
+        };
         ExecucaoAdmin: {
             /** Format: int64 */
             autorId?: number;
@@ -1199,6 +1332,12 @@ export interface components {
             /** Format: int64 */
             usuarioId?: number;
             usuarioNome?: string;
+        };
+        Latencia: {
+            /** Format: double */
+            p50Segundos?: number;
+            /** Format: double */
+            p90Segundos?: number;
         };
         LinhaDoRelatorio: {
             /** Format: date */
@@ -1444,6 +1583,16 @@ export interface components {
             /** @enum {string} */
             status?: "AGUARDANDO_PAGAMENTO" | "PAGO" | "GERANDO_ORACAO" | "ORACAO_GERADA" | "ENVIADA" | "AGUARDANDO_NOVA_TENTATIVA" | "ERRO" | "AGUARDANDO_CONFIRMACAO_EMAIL" | "CONFIRMACAO_EXPIRADA";
         };
+        PedidosDaPrevia: {
+            /** Format: int32 */
+            aAnonimizar?: number;
+            /** Format: int32 */
+            aApagar?: number;
+            /** Format: int32 */
+            emProcessamento?: number;
+            /** Format: int32 */
+            total?: number;
+        };
         PixDoPedido: {
             copiaECola?: string;
             /** Format: date-time */
@@ -1486,6 +1635,13 @@ export interface components {
             /** Format: int64 */
             valorCentavos?: number;
         };
+        PorPlano: {
+            /** Format: int64 */
+            faturamentoCentavos?: number;
+            plano?: string;
+            /** Format: int64 */
+            quantidade?: number;
+        };
         Previa: {
             oracao?: string;
             /** Format: int64 */
@@ -1508,6 +1664,14 @@ export interface components {
             totalPendenteCentavos?: number;
             /** Format: int64 */
             totalRepasseCentavos?: number;
+        };
+        PreviaDoTitular: {
+            blog?: components["schemas"]["BlogDaPrevia"];
+            contaIds?: number[];
+            contas?: components["schemas"]["ContaDaPrevia"][];
+            freemiumBloqueado?: boolean;
+            pedidoIds?: string[];
+            pedidos?: components["schemas"]["PedidosDaPrevia"];
         };
         ProblemDetail: {
             /** @description identificador estavel do erro */
@@ -1540,6 +1704,8 @@ export interface components {
             instituicaoId: number;
             /** Format: int32 */
             quantidade: number;
+            /** Format: int64 */
+            totalCentavos: number;
         };
         Quitados: {
             /** Format: int32 */
@@ -1596,6 +1762,14 @@ export interface components {
         RespostaDoWebhook: {
             status?: string;
         };
+        ResultadoDaExclusao: {
+            /** Format: int32 */
+            contasExcluidas?: number;
+            /** Format: int32 */
+            pedidosAnonimizados?: number;
+            /** Format: int32 */
+            pedidosApagados?: number;
+        };
         Resumo: {
             /** Format: date */
             ate?: string;
@@ -1618,6 +1792,38 @@ export interface components {
             totalDoadoCentavos?: number;
             /** Format: int64 */
             totalRepasseCentavos?: number;
+        };
+        ResumoDaOracao: {
+            custoEstimadoUsd?: number;
+            duracao?: components["schemas"]["Duracao"];
+            /** Format: int64 */
+            geracoes?: number;
+            /** Format: int64 */
+            tokensCacheEscrita?: number;
+            /** Format: int64 */
+            tokensCacheLeitura?: number;
+            /** Format: int64 */
+            tokensEntrada?: number;
+            /** Format: int64 */
+            tokensSaida?: number;
+        };
+        ResumoDePedidos: {
+            /** Format: int64 */
+            criados?: number;
+            /** Format: int64 */
+            emErroAgora?: number;
+            /** Format: int64 */
+            enviados?: number;
+            /** Format: int64 */
+            faturamentoCentavos?: number;
+            /** Format: int64 */
+            gratuitos?: number;
+            latencia?: components["schemas"]["Latencia"];
+            /** Format: int64 */
+            pagos?: number;
+            porPlano?: components["schemas"]["PorPlano"][];
+            /** Format: int64 */
+            ticketMedioCentavos?: number;
         };
         StatusPublico: {
             /** Format: date-time */
@@ -2069,7 +2275,7 @@ export interface operations {
             };
         };
     };
-    excluir_1: {
+    excluir: {
         parameters: {
             query?: never;
             header?: never;
@@ -2205,6 +2411,154 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    buscarTitular: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BuscaLgpd"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PreviaDoTitular"];
+                };
+            };
+        };
+    };
+    excluirTitular: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExclusaoLgpd"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ResultadoDaExclusao"];
+                };
+            };
+        };
+    };
+    excluirBlogDoTitular: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExclusaoDoBlogLgpd"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["BlogApagado"];
+                };
+            };
+        };
+    };
+    exportarTitular: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BuscaLgpd"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    resumo_1: {
+        parameters: {
+            query?: {
+                /** @description Dia inicial AAAA-MM-DD (Sao Paulo). Padrao: dia 1 do mes. */
+                de?: string;
+                /** @description Dia final AAAA-MM-DD (Sao Paulo), inclusivo. Padrao: hoje. */
+                ate?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ResumoDaOracao"];
+                };
+            };
+        };
+    };
+    resumo: {
+        parameters: {
+            query?: {
+                /** @description Dia inicial AAAA-MM-DD (Sao Paulo). Padrao: dia 1 do mes. */
+                de?: string;
+                /** @description Dia final AAAA-MM-DD (Sao Paulo), inclusivo. Padrao: hoje. */
+                ate?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ResumoDePedidos"];
+                };
             };
         };
     };
@@ -2886,26 +3240,6 @@ export interface operations {
                 content: {
                     "*/*": components["schemas"]["UsuarioAdminItem"];
                 };
-            };
-        };
-    };
-    excluir: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description No Content */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
             };
         };
     };

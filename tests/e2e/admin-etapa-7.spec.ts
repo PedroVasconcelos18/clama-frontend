@@ -53,9 +53,7 @@ async function preparar(page: Page) {
 
     // a sessão do boot: o painel só abre para ADMIN/SUPERUSUARIO
     if (path === "/api/auth/eu") return json(SUPERUSUARIO)
-    const conhecidas: Record<string, string> = {
-      "DELETE /api/admin/usuarios/7": "",
-    }
+    const conhecidas: Record<string, string> = {}
     if (method !== "GET") {
       if (`${method} ${path}` in conhecidas) return route.fulfill({ status: 204 })
       desconhecidas.push(`escrita ${method} ${path}`)
@@ -63,6 +61,8 @@ async function preparar(page: Page) {
     }
     if (path === "/api/admin/usuarios") return json(paginaUsuarios([USUARIO]))
     if (path === "/api/admin/usuarios/7") return json(USUARIO)
+    // a ficha mostra o blog do usuário (onda 6): vazio
+    if (path === "/api/admin/blog/comentarios" || path === "/api/admin/blog/banimentos") return json(paginaUsuarios([]))
     if (path === "/api/admin/freemium/bloqueios") return json(paginaUsuarios([BLOQUEIO]))
     desconhecidas.push(`leitura GET ${path}`)
     return json({ detail: "sem mock" }, 500)
@@ -104,7 +104,7 @@ test.describe("Admin, etapa 7 (API mockada)", () => {
     await expect.poll(() => ultima("/api/admin/usuarios")?.query.get("papel")).toBe("ADMIN")
   })
 
-  test("acoes de usuario: toda destrutiva pede confirmacao e excluir exige o e-mail", async ({ page }) => {
+  test("acoes de usuario: toda destrutiva pede confirmacao e a exclusao e pela tela LGPD", async ({ page }) => {
     const { escritas } = await preparar(page)
     await page.goto("/admin/usuarios")
     await page.getByRole("button", { name: "Detalhes" }).click()
@@ -121,15 +121,11 @@ test.describe("Admin, etapa 7 (API mockada)", () => {
       await page.getByRole("button", { name: "Cancelar" }).click()
     }
 
-    await drawer.getByRole("button", { name: "Excluir usuário" }).click()
-    const confirmar = page.getByRole("dialog").filter({ hasText: "Excluir usuário?" }).getByRole("button", { name: "Excluir usuário" })
-    await expect(confirmar).toBeDisabled()
-    await page.getByLabel(/Digite/).fill("ana@exemplo.com")
-    await expect(confirmar).toBeEnabled()
+    // excluir saiu da ficha: o atalho leva à tela LGPD com o e-mail no state, nunca na URL
+    await drawer.getByRole("button", { name: "Dados do titular (LGPD)" }).click()
+    await expect(page).toHaveURL(/\/admin\/lgpd$/)
+    await expect(page.getByLabel("E-mail do titular")).toHaveValue("ana@exemplo.com")
+    expect(page.url()).not.toContain("ana")
     expect(escritas()).toHaveLength(0)
-    await confirmar.click()
-    await expect.poll(() => escritas().map((c) => `${c.method} ${c.path}`)).toEqual([
-      "DELETE /api/admin/usuarios/7",
-    ])
   })
 })

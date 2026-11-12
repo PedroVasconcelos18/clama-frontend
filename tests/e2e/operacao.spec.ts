@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs"
 import { test, expect, type APIRequestContext, type Page } from "@playwright/test"
 
 /**
- * Operação (onda 7a) contra o backend REAL: relatório de repasse, quitação em lote, ledger e tarefas.
+ * Operação (ondas 7a e 7b) contra o backend REAL: relatório de repasse, quitação em lote, ledger, tarefas, LGPD e métricas.
  * Rodar: `MERCADOPAGO_SIMULADO=1 tests/e2e/suporte/rodar-conta.sh tests/e2e/operacao.spec.ts`.
  * As doações seguem o caminho de `pedido.spec.ts` (Pix simulado por WireMock, webhook assinado aqui).
  */
@@ -196,4 +196,63 @@ test("6. tarefa mensal: próximo dia 28 às 10:00, simulação no histórico, ex
 test("7. dashboard: tarefas em dia", async () => {
   await admin.goto("/admin")
   await expect(admin.getByText("Tarefas: tudo em dia")).toBeVisible()
+})
+
+// ---- 7b: LGPD e métricas (a Maria foi doadora no passo 1; o passo 10 a exclui) ----
+
+async function buscarTitular(email: string) {
+  await admin.goto("/admin/lgpd")
+  await admin.getByLabel("E-mail do titular").fill(email)
+  await admin.getByRole("button", { name: "Buscar" }).click()
+  await expect(admin.getByLabel("Prévia")).toBeVisible()
+}
+
+test("8. LGPD: a prévia da Maria conta o pedido com pagamento como anonimizado", async () => {
+  await buscarTitular(MARIA.email)
+  await expect(admin.getByText("1 pedido será anonimizado (tem pagamento)")).toBeVisible()
+  await expect(admin.getByText(/0 pedidos serão apagados/)).toBeVisible()
+})
+
+test("9. o JSON exportado tem o nome completo e a seção de compartilhamento", async () => {
+  await buscarTitular(MARIA.email)
+  const bytes = await baixar(admin, () => admin.getByRole("button", { name: "Exportar dados (JSON)" }).click())
+  const json = JSON.parse(bytes.toString("utf8"))
+  expect(bytes.toString("utf8")).toContain("Maria Silva Santos")
+  expect(json.pedidos[0].nome).toBe(MARIA.nome)
+  expect(Array.isArray(json.compartilhamento)).toBe(true)
+  expect(json.compartilhamento.length).toBeGreaterThan(0)
+})
+
+test("10. excluir digitando o e-mail; o relatório mostra (sem nome) no lugar de Maria S.", async () => {
+  await buscarTitular(MARIA.email)
+  await admin.getByRole("button", { name: "Excluir dados" }).click()
+  const confirmar = admin.getByRole("dialog").getByRole("button", { name: "Excluir dados" })
+  await expect(confirmar).toBeDisabled()
+  await admin.getByLabel(/Digite/).fill(MARIA.email)
+  await expect(confirmar).toBeEnabled()
+  await confirmar.click()
+  await expect(admin.getByText(/1 anonimizado/)).toBeVisible()
+
+  await escolherPeriodoDeHoje()
+  await expect(admin.getByText("TOTAL (2 doações)")).toBeVisible()
+  await expect(admin.getByText("(sem nome)")).toBeVisible()
+  await expect(admin.getByText("Maria S.")).toHaveCount(0)
+})
+
+test("11. a ficha de outro usuário leva a /admin/lgpd com o e-mail preenchido e a URL sem ele", async () => {
+  await admin.goto("/admin/usuarios")
+  await admin.getByRole("row").filter({ hasText: "cliente@clama.test" }).getByRole("button", { name: "Detalhes" }).click()
+  await admin.getByRole("dialog", { name: "Detalhes do usuário" }).getByRole("button", { name: "Dados do titular (LGPD)" }).click()
+  await expect(admin).toHaveURL(/\/admin\/lgpd$/)
+  await expect(admin.getByLabel("E-mail do titular")).toHaveValue("cliente@clama.test")
+  expect(admin.url()).not.toContain("cliente")
+  expect(admin.url()).not.toContain("@")
+})
+
+test("12. dashboard: 2 pagos e a latência", async () => {
+  await admin.goto("/admin")
+  const valor = (titulo: string) => admin.getByText(titulo, { exact: true }).locator("xpath=following-sibling::*[1]")
+  await expect(valor("Pagos")).toHaveText("2")
+  await expect(valor("Faturamento")).toContainText("2,00")
+  await expect(valor("Latência do pedido (p50 / p90)")).toHaveText(/\d+ s|\d+,\d min/)
 })

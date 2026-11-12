@@ -25,7 +25,7 @@ export default function PedidosListPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const [q, setQ] = useState("")
   const [qBusca, setQBusca] = useState("") // q com debounce
-  const [status, setStatus] = useState("")
+  const [status, setStatus] = useState(searchParams.get("status") ?? "") // o cartão "em erro agora" do dashboard liga aqui
   const [de, setDe] = useState("")
   const [ate, setAte] = useState("")
   const [gratuito, setGratuito] = useState("")

@@ -16,6 +16,7 @@ import {
   FileSpreadsheet,
   ListChecks,
   ShieldBan,
+  ShieldCheck,
   Menu,
   X,
   LogOut,
@@ -42,6 +43,7 @@ const navItems = [
   { to: "/admin/tarefas", icon: ListChecks, label: "Tarefas" },
   { to: "/admin/webhooks", icon: Webhook, label: "Eventos do MP" },
   { to: "/admin/freemium", icon: ShieldBan, label: "Freemium" },
+  { to: "/admin/lgpd", icon: ShieldCheck, label: "LGPD" },
 ]
 
 export default function AdminLayout() {

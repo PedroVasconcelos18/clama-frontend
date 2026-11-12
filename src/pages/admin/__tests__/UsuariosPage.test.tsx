@@ -114,7 +114,7 @@ describe("UsuariosPage", () => {
     await userEvent.click(await screen.findByRole("button", { name: "Detalhes" }))
     expect(await screen.findByText("Identidade")).toBeTruthy()
     expect(screen.queryByText("Acesso")).toBeNull()
-    expect(screen.queryByRole("button", { name: "Excluir usuário" })).toBeNull()
+    expect(screen.queryByRole("button", { name: "Dados do titular (LGPD)" })).toBeNull()
   })
 
   it("superusuario ve as acoes de escrita no detalhe", async () => {
@@ -125,6 +125,6 @@ describe("UsuariosPage", () => {
       </MemoryRouter>,
     )
     await userEvent.click(await screen.findByRole("button", { name: "Detalhes" }))
-    expect(await screen.findByRole("button", { name: "Excluir usuário" })).toBeTruthy()
+    expect(await screen.findByRole("button", { name: "Dados do titular (LGPD)" })).toBeTruthy()
   })
 })

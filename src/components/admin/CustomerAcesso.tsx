@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { useNavigate } from "react-router-dom"
 import { toast } from "sonner"
 import { useApi } from "@/hooks/useApi"
 import { useSessao } from "@/contexts/SessaoContext"
@@ -16,23 +17,22 @@ import {
 import { PastoralAlert } from "@/components/utility/PastoralAlert"
 import type { UsuarioAdmin } from "@/types/usuario-admin"
 
-type Acao = "admin" | "ativo" | "senha" | "excluir"
+type Acao = "admin" | "ativo" | "senha"
 
 /**
  * Seção "Acesso" do drawer. O drawer só a mostra a SUPERUSUARIO (o servidor também recusa os demais com 403).
- * Toda ação passa por um Dialog de confirmação.
+ * Toda ação passa por um Dialog de confirmação; a exclusão de dados é na tela LGPD.
  */
 export function CustomerAcesso({
   customer,
   onChanged,
-  onDeleted,
 }: {
   customer: UsuarioAdmin
   /** Depois de PATCH ou senha: o drawer e a lista recarregam. */
   onChanged: () => void
-  onDeleted: () => void
 }) {
   const { fetchApi } = useApi()
+  const navigate = useNavigate()
   const { usuario } = useSessao()
   const propria = usuario != null && usuario.id === customer.id
   const ehAdmin = customer.papel === "ADMIN"
@@ -40,7 +40,6 @@ export function CustomerAcesso({
   const [acao, setAcao] = useState<Acao | null>(null)
   const [senha, setSenha] = useState("")
   const [confirma, setConfirma] = useState("")
-  const [emailDigitado, setEmailDigitado] = useState("")
   const [erro, setErro] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
@@ -49,13 +48,11 @@ export function CustomerAcesso({
     setAcao(null)
     setSenha("")
     setConfirma("")
-    setEmailDigitado("")
   }
 
   function abrir(a: Acao) {
     setSenha("")
     setConfirma("")
-    setEmailDigitado("")
     setErro(null)
     setAcao(a)
   }
@@ -84,7 +81,6 @@ export function CustomerAcesso({
     })
 
   const senhaOk = senha.length > 0 && senha === confirma
-  const emailOk = emailDigitado.trim().toLowerCase() === customer.email.toLowerCase()
 
   return (
     <section>
@@ -104,14 +100,9 @@ export function CustomerAcesso({
         <Button variant="outline" size="sm" onClick={() => abrir("senha")}>
           Definir senha
         </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          disabled={propria}
-          onClick={() => abrir("excluir")}
-          className="border-red-400/40 text-red-300 hover:bg-red-400/10"
-        >
-          Excluir usuário
+        {/* O e-mail vai no state do router, nunca na URL (D12). */}
+        <Button variant="outline" size="sm" onClick={() => navigate("/admin/lgpd", { state: { email: customer.email } })}>
+          Dados do titular (LGPD)
         </Button>
       </div>
 
@@ -217,42 +208,6 @@ export function CustomerAcesso({
             </>
           )}
 
-          {acao === "excluir" && (
-            <>
-              <DialogHeader>
-                <DialogTitle>Excluir usuário?</DialogTitle>
-                <DialogDescription>
-                  Isto não tem volta: a conta e as sessões dela deixam de existir.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-2">
-                <Label htmlFor="acesso-email">
-                  Digite <strong>{customer.email}</strong> para confirmar
-                </Label>
-                <Input
-                  id="acesso-email"
-                  value={emailDigitado}
-                  onChange={(e) => setEmailDigitado(e.target.value)}
-                  autoComplete="off"
-                />
-              </div>
-              {erro && <PastoralAlert variant="error">{erro}</PastoralAlert>}
-              <Rodape
-                busy={busy}
-                disabled={!emailOk}
-                danger
-                onCancel={fechar}
-                label="Excluir usuário"
-                onOk={() =>
-                  executar(async () => {
-                    await fetchApi(url, { method: "DELETE", showToast: false })
-                    toast.success(`${customer.email} excluído.`)
-                    onDeleted()
-                  })
-                }
-              />
-            </>
-          )}
         </DialogContent>
       </Dialog>
     </section>
@@ -262,14 +217,12 @@ export function CustomerAcesso({
 function Rodape({
   busy,
   disabled,
-  danger,
   label,
   onCancel,
   onOk,
 }: {
   busy: boolean
   disabled?: boolean
-  danger?: boolean
   label: string
   onCancel: () => void
   onOk: () => void
@@ -282,7 +235,6 @@ function Rodape({
       <Button
         onClick={onOk}
         disabled={busy || disabled}
-        className={danger ? "bg-red-500/80 text-white hover:bg-red-500" : undefined}
       >
         {busy ? "Aguarde…" : label}
       </Button>
