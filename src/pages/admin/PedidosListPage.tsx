@@ -64,22 +64,22 @@ export default function PedidosListPage() {
         <span className="text-sm text-clama-cream/60">{totalCount} no total</span>
       </div>
 
+      <div className="space-y-2">
       <div className="flex flex-wrap gap-3 items-end">
         <div className="flex-1 min-w-[220px] max-w-md">
-          <div className="relative">
+          <Label htmlFor="ped-q" className={ROTULO}>Buscar</Label>
+          <div className="relative mt-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-clama-cream/40" />
             <Input
+              id="ped-q"
               aria-label="Buscar pedidos"
+              aria-describedby="ped-q-ajuda"
               placeholder="E-mail, CPF/CNPJ ou início do id"
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              className="pl-9 bg-clama-night border-clama-gold/30 text-clama-cream placeholder:text-clama-cream/40"
+              className="h-9 pl-9 bg-clama-night border-clama-gold/30 text-clama-cream placeholder:text-clama-cream/40"
             />
           </div>
-          <p className="mt-1 text-xs text-clama-cream/50">
-            Busque pelo e-mail exato, pelo CPF/CNPJ exato ou pelo começo do id do pedido. Nome não entra na busca
-            (é cifrado).
-          </p>
         </div>
 
         <div>
@@ -111,6 +111,10 @@ export default function PedidosListPage() {
             <option value="false">Só pagos</option>
           </select>
         </div>
+      </div>
+      <p id="ped-q-ajuda" className="text-xs text-clama-cream/50">
+        Busque pelo e-mail exato, pelo CPF/CNPJ exato ou pelo começo do id do pedido. Nome não entra na busca (é cifrado).
+      </p>
       </div>
 
       {error && <PastoralAlert variant="error">{error}</PastoralAlert>}
