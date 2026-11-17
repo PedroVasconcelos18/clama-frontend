@@ -5,9 +5,9 @@ import { describe, it, expect } from "vitest";
 
 import Confirmado from "../Confirmado";
 
-function renderAt(path: string) {
+function renderAt(path: string, state?: unknown) {
   return render(
-    <MemoryRouter initialEntries={[path]}>
+    <MemoryRouter initialEntries={[state ? { pathname: path, state } : path]}>
       <SessaoProvider>
       <Confirmado />
     </SessaoProvider>
@@ -60,5 +60,15 @@ describe("Confirmado (/confirmado)", () => {
       name: /Fazer um novo pedido/i,
     });
     expect(novoPedidoBtn).toBeInTheDocument();
+  });
+
+  it("sem pedido_id mas com o e-mail no state: 'Confira seu e-mail'", () => {
+    renderAt("/confirmado", { email: "maria@example.com" });
+    expect(screen.getByRole("heading", { name: /confira seu e-mail/i })).toBeInTheDocument();
+    expect(screen.getByText(/maria@example\.com/)).toBeInTheDocument();
+    const texto = screen.getByText(/Enviamos um link/).textContent ?? "";
+    expect(texto).toMatch(/24 horas/);
+    expect(texto).toMatch(/spam/i);
+    expect(screen.queryByText(/link inválido/i)).toBeNull();
   });
 });

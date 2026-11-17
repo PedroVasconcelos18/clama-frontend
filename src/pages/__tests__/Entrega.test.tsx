@@ -4,6 +4,7 @@ import { MemoryRouter, Routes, Route, useLocation } from "react-router-dom"
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest"
 
 import Entrega from "../Entrega"
+import { reaisParaCentavos } from "@/lib/formatters"
 import { mockApiFetch, usuarioFixture } from "@/test/sessao"
 import { SessaoProvider } from "@/contexts/SessaoContext"
 import { PastoralApiError } from "@/lib/api"
@@ -37,7 +38,12 @@ const METAS = { percentual: 50, de: "2026-11-28", ate: "2026-12-27", instituicoe
 
 function Local() {
   const l = useLocation()
-  return <p data-testid="local">{l.pathname + l.search}</p>
+  return (
+    <>
+      <p data-testid="local">{l.pathname + l.search}</p>
+      <p data-testid="state">{JSON.stringify(l.state)}</p>
+    </>
+  )
 }
 
 function renderEntrega() {
@@ -55,13 +61,14 @@ function renderEntrega() {
 
 type Post = { path: string; corpo: Record<string, unknown> }
 
-function mockar(opts: { usuario?: object; erro?: PastoralApiError; metas?: unknown } = {}) {
+function mockar(opts: { usuario?: object; erro?: PastoralApiError; metas?: unknown; statusDoPedido?: string } = {}) {
   const posts: Post[] = []
   mockApiFetch({
     usuario: opts.usuario,
     outras: (path, init) => {
       if (path === "/api/instituicoes") return INSTS
       if (path === "/api/metas") return opts.metas ?? METAS
+      if (path.startsWith("/api/pedidos/ped-") && !init?.method) return { status: opts.statusDoPedido ?? "AGUARDANDO_PAGAMENTO" }
       if (init?.method === "POST") {
         posts.push({ path, corpo: JSON.parse(String(init.body)) })
         if (opts.erro) throw opts.erro
@@ -168,6 +175,8 @@ describe("Entrega", () => {
     await waitFor(() => expect(screen.getByRole("button", { name: /enviar/i })).toBeEnabled())
     await enviar()
     await waitFor(() => expect(screen.getByTestId("local")).toHaveTextContent("/confirmado"))
+    expect(screen.getByTestId("state")).toHaveTextContent('{"email":"maria@example.com"}')
+    expect(screen.getByTestId("local")).not.toHaveTextContent("maria")
     expect(posts[0]!.path).toBe("/api/freemium/pedidos")
     expect(posts[0]!.corpo).toMatchObject({
       tema: "luto",
@@ -288,5 +297,61 @@ describe("Entrega", () => {
     renderEntrega()
     fireEvent.click(await screen.findByRole("link", { name: /editar/i }))
     expect(await screen.findByTestId("local")).toHaveTextContent("/")
+  })
+  it("pago idêntico em até 24h reusa o pedido: um POST só", async () => {
+    const posts = mockar()
+    const { unmount } = renderEntrega()
+    await screen.findByLabelText(/nome/i)
+    await preencher()
+    await escolher(/R\$\s?25/)
+    await userEvent.click(await screen.findByRole("radio", { name: /Casa Alfa/ }))
+    await enviar()
+    await waitFor(() => expect(screen.getByTestId("local")).toHaveTextContent("/confirmacao?pedido_id=ped-1"))
+    unmount()
+
+    salvarRascunho({ tema: "luto", texto: "Perdi minha mãe", risco: false })
+    renderEntrega()
+    await screen.findByLabelText(/nome/i)
+    await preencher()
+    await escolher(/R\$\s?25/)
+    await userEvent.click(await screen.findByRole("radio", { name: /Casa Alfa/ }))
+    await enviar()
+    await waitFor(() => expect(screen.getByTestId("local")).toHaveTextContent("/confirmacao?pedido_id=ped-1"))
+    expect(posts).toHaveLength(1)
+  })
+
+  it("pedido já pago não é reusado: cria outro", async () => {
+    const posts = mockar({ statusDoPedido: "PAGO" })
+    const { unmount } = renderEntrega()
+    await screen.findByLabelText(/nome/i)
+    await preencher()
+    await escolher(/R\$\s?25/)
+    await userEvent.click(await screen.findByRole("radio", { name: /Casa Alfa/ }))
+    await enviar()
+    await waitFor(() => expect(screen.getByTestId("local")).toHaveTextContent("ped-1"))
+    unmount()
+    salvarRascunho({ tema: "luto", texto: "Perdi minha mãe", risco: false })
+    renderEntrega()
+    await screen.findByLabelText(/nome/i)
+    await preencher()
+    await escolher(/R\$\s?25/)
+    await userEvent.click(await screen.findByRole("radio", { name: /Casa Alfa/ }))
+    await enviar()
+    await waitFor(() => expect(posts).toHaveLength(2))
+  })
+})
+
+describe("reaisParaCentavos", () => {
+  it.each([
+    ["12,50", 1250],
+    ["12.50", 1250],
+    ["5.5", 550],
+    ["1.234,56", 123456],
+    ["1,234.56", 123456],
+    ["12", 1200],
+    ["", 0],
+    ["abc", 0],
+  ])("%s -> %s", (entrada, esperado) => {
+    expect(reaisParaCentavos(entrada)).toBe(esperado)
   })
 })

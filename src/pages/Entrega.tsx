@@ -16,13 +16,13 @@ import { buscarMetas, type Metas } from "@/lib/api/metas"
 import { corpoDoPedido, criarDoacaoAnonima } from "@/lib/api/doacoes"
 import { criarPedidoGratuito } from "@/lib/api/freemium"
 import { Turnstile, getTurnstileSiteKey, type TurnstileInstance } from "@/lib/captcha/turnstile"
-import { formatCurrency, maskCpfCnpj } from "@/lib/formatters"
+import { formatCurrency, maskCpfCnpj, reaisParaCentavos } from "@/lib/formatters"
 import { OFERTAS } from "@/lib/ofertas"
 import { limparRascunho, lerRascunho, type Rascunho } from "@/lib/rascunho"
 import { pedidoSchema, type PedidoFormData, type PedidoFormInput } from "@/lib/schemas/pedido"
 import { TEMAS } from "@/lib/temas"
 import type { Instituicao } from "@/types/instituicao.types"
-import type { PedidoCriado } from "@/types/pedido-status.types"
+import type { PedidoCriado, StatusPublico } from "@/types/pedido-status.types"
 
 const MSG_INSTITUICAO = "Escolha a instituição que vai receber a sua parte da contribuição."
 const MSG_LIVRE = "O valor mínimo é R$ 1,00. Se preferir, escolha Gratuito."
@@ -32,10 +32,36 @@ const campo = "w-full rounded-[10px] border-[1.5px] border-clama-cream-warm bg-w
 const rotulo = "mb-1 block text-xs font-semibold uppercase tracking-wide text-clama-night/80"
 const erroCls = "mt-1 text-sm text-red-700"
 
-// "12,50" -> 1250
-const reaisParaCentavos = (s: string) => {
-  const n = parseFloat(s.replace(/[^\d,.]/g, "").replace(/\./g, "").replace(",", "."))
-  return n > 0 ? Math.round(n * 100) : 0
+// Reuso do pedido pago (24h, mesmo prazo do Pix): só {id, assinatura SHA-256, criadoEm}, sem dado pessoal.
+const CHAVE_PAGO = "clama:pedido-pago"
+const REUSO_MS = 24 * 60 * 60 * 1000
+type PedidoPago = { id: string; assinatura: string; criadoEm: number }
+
+async function assinaturaDe(conteudo: unknown): Promise<string> {
+  if (!globalThis.crypto?.subtle) return "" // sem SubtleCrypto, sem reuso
+  const hash = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(JSON.stringify(conteudo)))
+  return Array.from(new Uint8Array(hash), (b) => b.toString(16).padStart(2, "0")).join("")
+}
+
+function lerPedidoPago(): PedidoPago | null {
+  try {
+    return JSON.parse(localStorage.getItem(CHAVE_PAGO) ?? "null")
+  } catch {
+    return null
+  }
+}
+
+// Mesmo conteúdo, criado há menos de 24h e ainda aguardando pagamento: devolve o id. Falha de rede sobe.
+async function pedidoReaproveitavel(assinatura: string): Promise<string | null> {
+  const salvo = lerPedidoPago()
+  if (!salvo || !assinatura || salvo.assinatura !== assinatura || !(Date.now() - salvo.criadoEm < REUSO_MS)) return null
+  try {
+    const atual = await apiFetch<StatusPublico>(`/api/pedidos/${salvo.id}`, { showToast: false })
+    return atual.status === "AGUARDANDO_PAGAMENTO" ? salvo.id : null
+  } catch (err) {
+    if ((err as PastoralApiError).httpStatus === 404) return null
+    throw err
+  }
 }
 
 export default function Entrega() {
@@ -73,6 +99,14 @@ function EntregaForm({ rascunho }: { rascunho: Rascunho }) {
     buscarMetas().then(setMetas, () => {}) // sem metas, as barras ficam em zero e o texto sem percentual
   }, [])
 
+  // DEV: o widget invisível às vezes não emite o token em ambiente local (Cloudflare bloqueado, e2e).
+  // A API em dev aceita qualquer token não vazio. Nunca roda em build de produção.
+  useEffect(() => {
+    if (!import.meta.env.DEV) return
+    const t = setTimeout(() => setToken((atual) => atual || "dev-fallback-token"), 1500)
+    return () => clearTimeout(t)
+  }, [])
+
   // O logado vem com nome e e-mail da sessão (a sessão chega depois do primeiro render).
   useEffect(() => {
     if (!usuario) return
@@ -108,20 +142,30 @@ function EntregaForm({ rascunho }: { rascunho: Rascunho }) {
     const corpo = pago ? { ...base, valorCentavos: valor, instituicao: instId ?? undefined } : base
     try {
       let id: string | undefined
-      if (usuario) {
-        const r = await fetchApi<PedidoCriado>(pago ? "/api/pedidos" : "/api/pedidos/gratuito", {
-          method: "POST",
-          body: JSON.stringify(corpo),
-          showToast: false,
-        })
-        id = r.id
-      } else if (pago) {
-        id = (await criarDoacaoAnonima(corpo, token)).id
+      if (pago) {
+        // Reuso: o token do Turnstile nem é gasto quando o pedido já existe.
+        const assinatura = await assinaturaDe({ corpo, usuarioId: usuario?.id ?? null })
+        id = (await pedidoReaproveitavel(assinatura)) ?? undefined
+        if (!id) {
+          id = usuario
+            ? (await fetchApi<PedidoCriado>("/api/pedidos", { method: "POST", body: JSON.stringify(corpo), showToast: false })).id
+            : (await criarDoacaoAnonima(corpo, token)).id
+          try {
+            localStorage.setItem(CHAVE_PAGO, JSON.stringify({ id, assinatura, criadoEm: Date.now() }))
+          } catch {
+            /* sem storage, sem reuso */
+          }
+        }
+      } else if (usuario) {
+        id = (
+          await fetchApi<PedidoCriado>("/api/pedidos/gratuito", { method: "POST", body: JSON.stringify(corpo), showToast: false })
+        ).id
       } else {
         await criarPedidoGratuito(corpo, token) // double opt-in: o link vai por e-mail
       }
       limparRascunho()
-      navigate(id ? `/confirmacao?pedido_id=${id}` : "/confirmado")
+      if (id) navigate(`/confirmacao?pedido_id=${id}`)
+      else navigate("/confirmado", { state: { email: dados.email } }) // só em memória, nunca na URL
     } catch (err) {
       const e = err as PastoralApiError
       if (e.code === "conta_existente") {
