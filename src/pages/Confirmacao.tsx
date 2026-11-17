@@ -116,7 +116,10 @@ export default function Confirmacao() {
   const [searchParams] = useSearchParams();
   const pedidoId = searchParams.get("pedido_id");
   // O token de senha chega só pelo state do router (nunca pela URL).
-  const tokenDeSenha = (useLocation().state as { tokenDeSenha?: string | null } | null)?.tokenDeSenha;
+  const estado = useLocation().state as { tokenDeSenha?: string | null } | null;
+  const tokenDeSenha = estado?.tokenDeSenha;
+  // Veio da confirmação do freemium (a chave existe) e a conta já tinha senha: o token é null.
+  const jaTemConta = estado !== null && "tokenDeSenha" in estado && !tokenDeSenha;
 
   const [pedido, setPedido] = useState<StatusPublico | null>(null);
   const [pix, setPix] = useState<PixDoPedido | null>(null);
@@ -402,7 +405,7 @@ export default function Confirmacao() {
             )}
 
             {status && !["AGUARDANDO_PAGAMENTO", "AGUARDANDO_CONFIRMACAO_EMAIL", "CONFIRMACAO_EXPIRADA", "ERRO"].includes(status) && (
-              <ConviteDeSenha tokenDeSenha={tokenDeSenha} />
+              <ConviteDeSenha tokenDeSenha={tokenDeSenha} jaTemConta={jaTemConta} />
             )}
 
             {/* Verse Card */}

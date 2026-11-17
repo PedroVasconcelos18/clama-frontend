@@ -17,10 +17,10 @@ export function StickyNav({ onCtaClick, showCta = true }: StickyNavProps) {
       onCtaClick();
       return;
     }
-    // Autenticado → área logada (aba Novo pedido) em vez da LP.
+    // Autenticado → o clamor nasce na home.
     // Anônimo → ancora da LP (form gratuito).
     if (isAuthenticated) {
-      navigate("/conta?tab=novo");
+      navigate("/");
       return;
     }
     navigate("/#fazer-pedido");

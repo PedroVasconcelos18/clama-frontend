@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react"
-import { Link, useNavigate, useSearchParams } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
 import {
   Calendar,
   Check,
@@ -21,11 +21,16 @@ import { buildWhatsAppShareUrl } from "@/components/clama/WhatsAppShareButton"
 import { cn } from "@/lib/utils"
 import type { PedidoDaConta } from "@/types/pedido-customer.types"
 import { formatCurrency } from "@/lib/formatters"
+import { TEMAS } from "@/lib/temas"
+
+// TODO(T11): trocar pelo tipo gerado do OpenAPI (GET /api/conta/pedidos ganha `tema`)
+type PedidoComTema = PedidoDaConta & { tema?: string | null }
 
 /**
- * Área logada do customer — redesign conta-design.
+ * "Sua jornada" (v2): a área logada do customer, só com "Meus clamores" e a conta (o menu do SiteHeader).
+ * O clamor novo nasce na home (link "Fazer um clamor"). Redesign conta-design.
  *
- * Mantém toda a lógica original: auth gate, tab em `?tab=`, fetch de pedidos
+ * Mantém a lógica original: auth gate, fetch de pedidos
  * com debounce de filtro de data, expand da oração entregue. O visual segue os
  * mockups (clama-docs/conta-design): saudação com vela, abas integradas no
  * card, cards de pedido com coluna de data, badges de 7 estados, oração
@@ -37,26 +42,10 @@ import { formatCurrency } from "@/lib/formatters"
  * substituídas pela NOTA explicativa do próprio mockup. "Compartilhar" no
  * expandido reusa `buildWhatsAppShareUrl` (lógica de share de oração existente).
  */
-type TabId = "historico" | "novo"
-
 export default function MinhaConta() {
   const navigate = useNavigate()
-  const [searchParams, setSearchParams] = useSearchParams()
   const { usuario, carregando: isLoading } = useSessao()
   const isAuthenticated = !!usuario
-
-  const rawTab = searchParams.get("tab")
-  const activeTab: TabId = rawTab === "novo" ? "novo" : "historico"
-
-  const setTab = useCallback(
-    (tab: TabId) => {
-      const next = new URLSearchParams(searchParams)
-      if (tab === "historico") next.delete("tab")
-      else next.set("tab", tab)
-      setSearchParams(next, { replace: true })
-    },
-    [searchParams, setSearchParams],
-  )
 
   useEffect(() => {
     if (isLoading) return
@@ -101,16 +90,13 @@ export default function MinhaConta() {
             <div className="flex items-start justify-between gap-6">
               <div>
                 <p className="font-sans text-[0.68rem] font-semibold uppercase tracking-[0.24em] text-clama-gold-soft">
-                  Sua área no Clama
+                  Olá, {primeiroNome}
                 </p>
                 <h1 className="mt-3 font-serif text-[2rem] leading-[1.1] text-clama-cream md:text-[2.6rem]">
-                  Olá,{" "}
-                  <span className="italic text-clama-gold">{primeiroNome}</span>.
+                  Sua <span className="italic text-clama-gold">jornada</span>
                 </h1>
                 <p className="mt-3 max-w-md text-[0.9rem] leading-relaxed text-clama-cream/55">
-                  Aqui ficam todos os seus clamores — os que já foram
-                  respondidos, os que estão sendo escritos, e os que ainda vão
-                  nascer.
+                  Aqui ficam os seus clamores e as orações que você recebeu.
                 </p>
               </div>
               <span
@@ -121,44 +107,19 @@ export default function MinhaConta() {
               </span>
             </div>
 
-            <nav
-              className="mt-7 flex items-center gap-1 border-t border-clama-gold/12 pt-1"
-              role="tablist"
-              aria-label="Seções da minha conta"
-            >
-              <TabButton
-                id="historico"
-                active={activeTab === "historico"}
-                onClick={() => setTab("historico")}
+            <div className="mt-7 border-t border-clama-gold/12 py-4">
+              <Link
+                to="/"
+                className="inline-block rounded-full bg-clama-gold px-5 py-2.5 font-sans text-sm font-bold text-clama-night hover:bg-[#e8b530]"
               >
-                Histórico
-              </TabButton>
-              <span aria-hidden className="h-1 w-1 rotate-45 bg-clama-gold/40" />
-              <TabButton
-                id="novo"
-                active={activeTab === "novo"}
-                onClick={() => setTab("novo")}
-              >
-                Novo pedido
-              </TabButton>
-            </nav>
+                Fazer um clamor
+              </Link>
+            </div>
           </div>
         </section>
 
         <main className="mt-8">
-          {activeTab === "historico" && (
-            <div role="tabpanel" id="panel-historico">
-              <HistoricoTab
-                onGoToNovo={() => setTab("novo")}
-                primeiroNome={primeiroNome}
-              />
-            </div>
-          )}
-          {activeTab === "novo" && (
-            <div role="tabpanel" id="panel-novo">
-              <NovoPedidoTab />
-            </div>
-          )}
+          <HistoricoTab primeiroNome={primeiroNome} />
           <ComentariosDoBlog />
         </main>
       </div>
@@ -168,46 +129,13 @@ export default function MinhaConta() {
 
 // ---------------------------------------------------------------------------
 
-interface TabButtonProps {
-  id: TabId
-  active: boolean
-  onClick: () => void
-  children: React.ReactNode
-}
-
-function TabButton({ id, active, onClick, children }: TabButtonProps) {
-  return (
-    <button
-      role="tab"
-      id={`tab-${id}`}
-      aria-controls={`panel-${id}`}
-      aria-selected={active}
-      onClick={onClick}
-      className={cn(
-        "-mb-px border-b-2 px-4 py-3 font-sans text-[0.92rem] font-semibold transition-colors",
-        active
-          ? "border-clama-gold text-clama-gold"
-          : "border-transparent text-clama-cream/55 hover:text-clama-cream",
-      )}
-    >
-      {children}
-    </button>
-  )
-}
-
 // ---------------------------------------------------------------------------
 // HISTÓRICO
 // ---------------------------------------------------------------------------
 
-function HistoricoTab({
-  onGoToNovo,
-  primeiroNome,
-}: {
-  onGoToNovo: () => void
-  primeiroNome: string
-}) {
+function HistoricoTab({ primeiroNome }: { primeiroNome: string }) {
   const { fetchApi } = useApi()
-  const [pedidos, setPedidos] = useState<PedidoDaConta[] | null>(null)
+  const [pedidos, setPedidos] = useState<PedidoComTema[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [expandedId, setExpandedId] = useState<string | null>(null)
 
@@ -222,7 +150,7 @@ function HistoricoTab({
       if (to) params.set("to", to)
       const qs = params.toString()
       const url = `/api/conta/pedidos${qs ? `?${qs}` : ""}`
-      const data = await fetchApi<PedidoDaConta[]>(url, {
+      const data = await fetchApi<PedidoComTema[]>(url, {
         method: "GET",
         showToast: false,
       })
@@ -249,6 +177,9 @@ function HistoricoTab({
 
   return (
     <div>
+      <h2 className="mb-4 font-serif text-[1.4rem] text-clama-cream">
+        Meus clamores
+      </h2>
       {/* Filtro — toolbar compacta */}
       <section
         className="rounded-2xl border border-clama-gold/15 bg-clama-night-deep px-4 py-3"
@@ -336,7 +267,7 @@ function HistoricoTab({
       )}
 
       {!error && pedidos !== null && pedidos.length === 0 && (
-        <EmptyState onGoToNovo={onGoToNovo} hasFilters={temFiltros} />
+        <EmptyState hasFilters={temFiltros} />
       )}
 
       {!error && pedidos !== null && pedidos.length > 0 && (
@@ -359,36 +290,10 @@ function HistoricoTab({
 }
 
 // ---------------------------------------------------------------------------
-// NOVO PEDIDO — o clamor agora nasce na home (a T8 troca esta tela por "Sua jornada").
-// ---------------------------------------------------------------------------
-
-function NovoPedidoTab() {
-  return (
-    <section className="rounded-2xl border border-clama-gold/15 bg-clama-night-deep px-7 py-10 text-center md:px-10">
-      <h2 className="font-serif text-[1.7rem] leading-tight text-clama-cream md:text-[2rem]">
-        Conta o que tá no peito.
-      </h2>
-      <Link
-        to="/"
-        className="mt-6 inline-block rounded-full bg-clama-gold px-6 py-3 font-sans font-bold text-clama-night hover:bg-[#e8b530]"
-      >
-        Fazer um clamor
-      </Link>
-    </section>
-  )
-}
-
-// ---------------------------------------------------------------------------
 // ESTADO VAZIO
 // ---------------------------------------------------------------------------
 
-function EmptyState({
-  onGoToNovo,
-  hasFilters,
-}: {
-  onGoToNovo: () => void
-  hasFilters: boolean
-}) {
+function EmptyState({ hasFilters }: { hasFilters: boolean }) {
   if (hasFilters) {
     return (
       <div className="mt-6 rounded-2xl border border-clama-gold/15 bg-clama-night-deep px-6 py-12 text-center">
@@ -427,13 +332,12 @@ function EmptyState({
           Conta o que tá pesando — pode ser um luto, uma cura que demora, uma
           decisão difícil. A gente escreve uma oração só pra você.
         </p>
-        <button
-          type="button"
-          onClick={onGoToNovo}
+        <Link
+          to="/"
           className="mt-7 inline-flex items-center gap-2 rounded-full bg-clama-gold px-6 py-3 text-sm font-semibold text-clama-night transition-colors hover:bg-clama-gold-soft"
         >
-          Fazer meu primeiro pedido →
-        </button>
+          Fazer meu primeiro clamor →
+        </Link>
       </div>
     </div>
   )
@@ -537,7 +441,7 @@ function PedidoCard({
   expanded,
   onToggle,
 }: {
-  pedido: PedidoDaConta
+  pedido: PedidoComTema
   primeiroNome: string
   expanded: boolean
   onToggle: () => void
@@ -559,6 +463,7 @@ function PedidoCard({
   const titulo = pedido.gratuito
     ? "Oração gratuita"
     : pedido.plano || "Oração"
+  const rotuloDoTema = TEMAS.find((t) => t.id === pedido.tema)?.rotulo
   const podeExpandir = pedido.status === "ENVIADA" && !!pedido.oracaoGerada
 
   return (
@@ -592,6 +497,11 @@ function PedidoCard({
               <h3 className="font-serif text-[1.1rem] leading-tight text-clama-cream">
                 {titulo}
               </h3>
+              {rotuloDoTema && (
+                <p className="mt-1 font-sans text-[0.78rem] text-clama-gold-soft">
+                  {rotuloDoTema}
+                </p>
+              )}
               {!pedido.gratuito && pedido.valorCentavos != null && (
                 <p className="mt-1 font-sans text-[0.78rem] text-clama-cream/50">
                   {formatCurrency(pedido.valorCentavos)}

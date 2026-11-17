@@ -7,10 +7,10 @@ import PastoralAlert from "@/components/utility/PastoralAlert";
 
 /**
  * Convite para criar a senha na tela da oração. Com `tokenDeSenha` (freemium: a pessoa acabou de provar o
- * e-mail) a senha é definida ali mesmo; sem ele (pago anônimo) o link vai no e-mail da oração. Quem já
+ * e-mail) a senha é definida ali mesmo; sem ele (pago anônimo) o link vai no e-mail da oração; no freemium com `tokenDeSenha: null` (`jaTemConta`) a conta já tem senha. Quem já
  * tem sessão não vê nada. O token vem do state do router e nunca passa pela URL.
  */
-export function ConviteDeSenha({ tokenDeSenha }: { tokenDeSenha?: string | null }) {
+export function ConviteDeSenha({ tokenDeSenha, jaTemConta = false }: { tokenDeSenha?: string | null; jaTemConta?: boolean }) {
   const { usuario, carregando } = useSessao();
   const [senha, setSenha] = useState("");
   const [erro, setErro] = useState<string | null>(null);
@@ -76,6 +76,13 @@ export function ConviteDeSenha({ tokenDeSenha }: { tokenDeSenha?: string | null 
             Criar senha
           </button>
         </form>
+      ) : jaTemConta ? (
+        <p className="font-sans text-[#666] text-[0.95rem]">
+          Você já tem conta no Clama. Entre para guardar esta oração.{" "}
+          <Link to="/login" className="underline font-semibold">
+            Entrar
+          </Link>
+        </p>
       ) : (
         <p className="font-sans text-[#666] text-[0.95rem]">Enviamos no seu e-mail o link para criar sua senha.</p>
       )}

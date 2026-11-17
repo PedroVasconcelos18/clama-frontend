@@ -324,6 +324,14 @@ describe("Confirmacao", () => {
       expect(screen.queryByLabelText("Crie uma senha")).not.toBeInTheDocument()
     })
 
+    it("freemiumComContaJaExistenteMandaEntrar", async () => {
+      enviada()
+      abrir(`?pedido_id=${ID}`, { tokenDeSenha: null })
+      expect(await screen.findByText("Você já tem conta no Clama. Entre para guardar esta oração.")).toBeInTheDocument()
+      expect(screen.getByRole("link", { name: /entrar/i })).toHaveAttribute("href", "/login")
+      expect(screen.queryByText(/link para criar sua senha/)).not.toBeInTheDocument()
+    })
+
     it("logadoNaoVeConvite", async () => {
       usuario = { id: 1 }
       enviada()
