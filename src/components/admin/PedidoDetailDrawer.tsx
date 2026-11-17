@@ -12,6 +12,7 @@ import { PedidoEditForm } from "@/components/admin/PedidoEditForm"
 import { PEDIDO_STATUS_COLORS, rotuloDoStatus } from "@/lib/pedido-status"
 import { formatarDataHora } from "@/lib/datetime"
 import { formatCurrency } from "@/lib/formatters"
+import { TEMAS } from "@/lib/temas"
 import type { AdminPedidoDetalhe } from "@/types/admin.types"
 
 interface PedidoDetailDrawerProps {
@@ -156,6 +157,9 @@ export function PedidoDetailDrawer({ pedidoId, onClose, onChanged }: PedidoDetai
                 {rotuloDoStatus(pedido.status)}
               </span>
             )}
+            {pedido?.risco === true && (
+              <span className="px-2 py-1 text-xs rounded bg-red-500/20 text-red-400">Sinal de risco</span>
+            )}
             {pedido?.gratuito && (
               <span className="px-2 py-1 text-xs rounded bg-clama-gold/20 text-clama-gold">
                 Gratuito
@@ -217,6 +221,7 @@ export function PedidoDetailDrawer({ pedidoId, onClose, onChanged }: PedidoDetai
                     value={pedido.plano ? `${pedido.plano.nome} (${formatCurrency(pedido.plano.valorCentavos ?? 0)})` : "—"}
                   />
                   <Row label="Valor" value={formatCurrency(pedido.valorCentavos ?? 0)} />
+                  <Row label="Tema" value={TEMAS.find((t) => t.id === pedido.tema)?.rotulo ?? "—"} />
                   <Row label="Instituição" value={pedido.instituicao?.nome ?? "Nenhuma"} />
                   <Row label="Conta" value={pedido.usuarioId != null ? `#${pedido.usuarioId}` : "Sem conta"} />
                   <Row label="Criado em" value={formatarDataHora(pedido.criadoEm)} />

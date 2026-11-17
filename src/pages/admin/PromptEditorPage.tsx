@@ -15,12 +15,13 @@ type Versao = components["schemas"]["VersaoDePrompt"]
 type Conteudo = components["schemas"]["Prompt"]
 
 // Mesmos @Size do backend (Prompt no OpenAPI).
-const CAMPOS: { chave: keyof Conteudo; rotulo: string; max: number; linhas: number }[] = [
+// semUso: a v2 manda sempre a instrução com versículo; os outros três campos seguem no contrato.
+const CAMPOS: { chave: keyof Conteudo; rotulo: string; max: number; linhas: number; semUso?: boolean }[] = [
   { chave: "sistema", rotulo: "System prompt", max: 50000, linhas: 10 },
-  { chave: "simples", rotulo: "Instrução simples", max: 5000, linhas: 4 },
+  { chave: "simples", rotulo: "Instrução simples", max: 5000, linhas: 4, semUso: true },
   { chave: "comVersiculo", rotulo: "Instrução com versículo", max: 5000, linhas: 4 },
-  { chave: "comProfeciaEVersiculos", rotulo: "Instrução com profecia e versículos", max: 5000, linhas: 4 },
-  { chave: "gratuito", rotulo: "Instrução do plano gratuito", max: 5000, linhas: 4 },
+  { chave: "comProfeciaEVersiculos", rotulo: "Instrução com profecia e versículos", max: 5000, linhas: 4, semUso: true },
+  { chave: "gratuito", rotulo: "Instrução do plano gratuito", max: 5000, linhas: 4, semUso: true },
 ]
 const VAZIO: Conteudo = { sistema: "", simples: "", comVersiculo: "", comProfeciaEVersiculos: "", gratuito: "" }
 
@@ -143,6 +144,7 @@ export default function PromptEditorPage() {
         {CAMPOS.map((c) => (
           <div key={c.chave} className="space-y-1">
             <Label htmlFor={`campo-${c.chave}`}>{c.rotulo}</Label>
+            {c.semUso && <p className="text-xs text-yellow-400/80">Não usado desde a v2</p>}
             <Textarea
               id={`campo-${c.chave}`}
               rows={c.linhas}

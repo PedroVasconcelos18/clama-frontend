@@ -19,6 +19,7 @@ import {
 import { cn } from "@/lib/utils"
 import { Plus, Edit, Power, Filter } from "lucide-react"
 import { toast } from "sonner"
+import { reaisParaCentavos } from "@/lib/formatters"
 import { logoSrc, LOGO_FALLBACK_PATH } from "@/lib/instituicoes"
 import type { AdminInstituicao } from "@/types/admin.types"
 
@@ -33,7 +34,16 @@ const STATUS_FILTER_OPTIONS: { value: StatusFilter; label: string }[] = [
 const instituicaoSchema = z.object({
   nome: z.string().min(1, "Nome é obrigatório").max(120, "Nome muito longo"),
   ordem: z.coerce.number().int().min(0, "Ordem não pode ser negativa"),
+  causa: z.string().max(140, "Causa muito longa").optional(),
+  metaMensal: z.string().optional(),
+  custoUnidade: z.string().optional(),
+  unidade: z.string().max(40, "Unidade muito longa").optional(),
 })
+
+// Campo do formulário -> campo da API (valores em reais no formulário, centavos na API).
+const CAMPO_DA_API: Record<string, string> = { metaMensalCentavos: "metaMensal", custoUnidadeCentavos: "custoUnidade" }
+const emReais = (c?: number | null) => (c ? (c / 100).toFixed(2).replace(".", ",") : "")
+const centavosOuNull = (s?: string) => (s?.trim() ? reaisParaCentavos(s) || null : null)
 
 const LOGO_TIPOS = ["image/png", "image/jpeg", "image/gif", "image/webp"]
 const LOGO_MAX_BYTES = 250 * 1024
@@ -130,6 +140,10 @@ export default function InstituicoesPage() {
     reset({
       nome: "",
       ordem: instituicoes.length + 1,
+      causa: "",
+      metaMensal: "",
+      custoUnidade: "",
+      unidade: "",
     })
     setIsDialogOpen(true)
   }
@@ -141,6 +155,10 @@ export default function InstituicoesPage() {
     reset({
       nome: inst.nome,
       ordem: inst.ordem,
+      causa: inst.causa ?? "",
+      metaMensal: emReais(inst.metaMensalCentavos),
+      custoUnidade: emReais(inst.custoUnidadeCentavos),
+      unidade: inst.unidade ?? "",
     })
     setIsDialogOpen(true)
   }
@@ -160,23 +178,33 @@ export default function InstituicoesPage() {
 
   async function onSubmit(data: InstituicaoFormData) {
     let salva: AdminInstituicao
+    // TODO(T11): trocar pelo tipo gerado do OpenAPI. Os 4 campos vão sempre; null limpa.
+    const corpo = JSON.stringify({
+      nome: data.nome,
+      ordem: data.ordem,
+      causa: data.causa?.trim() || null,
+      metaMensalCentavos: centavosOuNull(data.metaMensal),
+      custoUnidadeCentavos: centavosOuNull(data.custoUnidade),
+      unidade: data.unidade?.trim() || null,
+    })
     try {
       // Criar e editar são JSON; a logo vai em uma segunda chamada (PUT multipart).
       salva = editingInstituicao
         ? await fetchApi<AdminInstituicao>(`/api/admin/instituicoes/${editingInstituicao.id}`, {
             method: "PATCH",
-            body: JSON.stringify(data),
+            body: corpo,
             showToast: false,
           })
         : await fetchApi<AdminInstituicao>("/api/admin/instituicoes", {
             method: "POST",
-            body: JSON.stringify(data),
+            body: corpo,
             showToast: false,
           })
     } catch (err) {
       if (!(err instanceof PastoralApiError)) return
       const campos = Object.entries(err.campos)
-      for (const [campo, mensagem] of campos) {
+      for (const [campoApi, mensagem] of campos) {
+        const campo = CAMPO_DA_API[campoApi] ?? campoApi
         if (campo in instituicaoSchema.shape) setFieldError(campo as keyof InstituicaoFormInput, { message: mensagem })
       }
       if (campos.length === 0) toast.error(err.pastoralMessage)
@@ -420,6 +448,27 @@ export default function InstituicoesPage() {
                 <p className="text-red-400 text-sm">{errors.ordem.message}</p>
               )}
             </div>
+
+            {([
+              ["causa", "Causa", "text"],
+              ["metaMensal", "Meta mensal (R$)", "text"],
+              ["custoUnidade", "Custo por unidade (R$)", "text"],
+              ["unidade", "Unidade", "text"],
+            ] as const).map(([campo, rotulo, tipo]) => (
+              <div key={campo} className="space-y-2">
+                <Label htmlFor={campo} className="text-clama-cream/80">
+                  {rotulo}
+                </Label>
+                <Input
+                  id={campo}
+                  type={tipo}
+                  inputMode={campo.startsWith("meta") || campo.startsWith("custo") ? "decimal" : undefined}
+                  {...register(campo)}
+                  className="bg-clama-night border-clama-gold/30 text-clama-cream"
+                />
+                {errors[campo] && <p className="text-red-400 text-sm">{errors[campo]?.message}</p>}
+              </div>
+            ))}
 
             <div className="flex gap-3 pt-4">
               <Button
