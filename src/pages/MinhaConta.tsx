@@ -16,7 +16,6 @@ import { PastoralApiError } from "@/lib/api"
 import LoadingSpinner from "@/components/utility/LoadingSpinner"
 import { PastoralAlert } from "@/components/utility/PastoralAlert"
 import { ComentariosDoBlog } from "@/components/clama/ComentariosDoBlog"
-import { PedidoSection } from "@/components/clama/PedidoSection"
 import { SiteHeader } from "@/components/clama/SiteHeader"
 import { buildWhatsAppShareUrl } from "@/components/clama/WhatsAppShareButton"
 import { cn } from "@/lib/utils"
@@ -360,35 +359,21 @@ function HistoricoTab({
 }
 
 // ---------------------------------------------------------------------------
-// NOVO PEDIDO — envólucro dark (PedidoSection é compartilhado com a LP,
-// então só integramos visualmente em vez de reescrevê-lo).
+// NOVO PEDIDO — o clamor agora nasce na home (a T8 troca esta tela por "Sua jornada").
 // ---------------------------------------------------------------------------
 
 function NovoPedidoTab() {
   return (
-    <section className="relative overflow-hidden rounded-2xl border border-clama-gold/15 bg-clama-night-deep">
-      <span
-        aria-hidden
-        className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-clama-gold/60 to-transparent"
-      />
-      <div className="border-b border-clama-gold/12 px-7 py-7 md:px-10">
-        <p className="font-sans text-[0.68rem] font-semibold uppercase tracking-[0.24em] text-clama-gold-soft">
-          Um novo pedido
-        </p>
-        <h2 className="mt-3 font-serif text-[1.7rem] leading-tight text-clama-cream md:text-[2rem]">
-          Conta o que tá no peito.{" "}
-          <span className="italic text-clama-gold">A gente cuida</span> do
-          resto.
-        </h2>
-        <p className="mt-3 max-w-lg text-[0.9rem] leading-relaxed text-clama-cream/55">
-          Pode ser uma palavra só, um nome, uma data, uma cura que demora.
-        </p>
-      </div>
-      {/*
-        Variante dark isolada: PedidoSection (compartilhado com a LP) recebe
-        theme="dark" — a LP continua usando o default "light", intacta.
-      */}
-      <PedidoSection theme="dark" />
+    <section className="rounded-2xl border border-clama-gold/15 bg-clama-night-deep px-7 py-10 text-center md:px-10">
+      <h2 className="font-serif text-[1.7rem] leading-tight text-clama-cream md:text-[2rem]">
+        Conta o que tá no peito.
+      </h2>
+      <Link
+        to="/"
+        className="mt-6 inline-block rounded-full bg-clama-gold px-6 py-3 font-sans font-bold text-clama-night hover:bg-[#e8b530]"
+      >
+        Fazer um clamor
+      </Link>
     </section>
   )
 }

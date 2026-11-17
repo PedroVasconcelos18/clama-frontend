@@ -71,7 +71,7 @@ export function SiteHeader({ active, onAfterLogout }: SiteHeaderProps) {
 
   return (
     <header className="border-b border-clama-gold/20 bg-clama-night">
-      <div className="max-w-5xl mx-auto px-6 py-5 flex items-center justify-between gap-4">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-5 flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
         <a
           href="/"
           className="font-serif text-clama-gold text-[1.4rem] font-bold tracking-wide"
@@ -80,7 +80,7 @@ export function SiteHeader({ active, onAfterLogout }: SiteHeaderProps) {
         </a>
 
         <nav
-          className="flex items-center gap-5"
+          className="flex flex-wrap items-center gap-x-4 gap-y-2"
           aria-label="Navegação principal"
         >
           {navLink("/", "Fazer um clamor", false)}
