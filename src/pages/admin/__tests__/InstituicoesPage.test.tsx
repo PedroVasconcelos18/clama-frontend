@@ -57,6 +57,17 @@ describe("InstituicoesPage", () => {
     })
   })
 
+  it.each([["Meta mensal (R$)", "0,00"], ["Meta mensal (R$)", "abc"], ["Custo por unidade (R$)", "0"], ["Custo por unidade (R$)", "abc"]])(
+    "%s com %s mostra erro e não envia", async (rotulo, valor) => {
+      render(<InstituicoesPage />)
+      await userEvent.click(await screen.findByRole("button", { name: /Nova Instituição/ }))
+      await userEvent.type(screen.getByLabelText("Nome"), "Nova")
+      await userEvent.type(screen.getByLabelText(rotulo), valor)
+      await userEvent.click(screen.getByRole("button", { name: "Salvar" }))
+      expect(await screen.findByText("Informe um valor maior que zero, ou deixe em branco.")).toBeTruthy()
+      expect(escritas()).toHaveLength(0)
+    })
+
   it("editar mostra as metas atuais e limpar o campo envia null", async () => {
     fetchApi.mockImplementation(async (_p: string, init?: RequestInit) =>
       init?.method ? { ...inst } : [{ ...inst, causa: "Renal", metaMensalCentavos: 100000, custoUnidadeCentavos: 25000, unidade: "sessão" }])

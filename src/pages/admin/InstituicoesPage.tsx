@@ -31,19 +31,23 @@ const STATUS_FILTER_OPTIONS: { value: StatusFilter; label: string }[] = [
   { value: "inativos", label: "Inativos" },
 ]
 
+const ERRO_VALOR = "Informe um valor maior que zero, ou deixe em branco."
+// Vazio limpa o campo (null); preenchido precisa valer mais que zero.
+const valorOuVazio = z.string().optional().refine((v) => !v?.trim() || reaisParaCentavos(v) > 0, ERRO_VALOR)
+
 const instituicaoSchema = z.object({
   nome: z.string().min(1, "Nome é obrigatório").max(120, "Nome muito longo"),
   ordem: z.coerce.number().int().min(0, "Ordem não pode ser negativa"),
   causa: z.string().max(140, "Causa muito longa").optional(),
-  metaMensal: z.string().optional(),
-  custoUnidade: z.string().optional(),
+  metaMensal: valorOuVazio,
+  custoUnidade: valorOuVazio,
   unidade: z.string().max(40, "Unidade muito longa").optional(),
 })
 
 // Campo do formulário -> campo da API (valores em reais no formulário, centavos na API).
 const CAMPO_DA_API: Record<string, string> = { metaMensalCentavos: "metaMensal", custoUnidadeCentavos: "custoUnidade" }
 const emReais = (c?: number | null) => (c ? (c / 100).toFixed(2).replace(".", ",") : "")
-const centavosOuNull = (s?: string) => (s?.trim() ? reaisParaCentavos(s) || null : null)
+const centavosOuNull = (s?: string) => (s?.trim() ? reaisParaCentavos(s) : null)
 
 const LOGO_TIPOS = ["image/png", "image/jpeg", "image/gif", "image/webp"]
 const LOGO_MAX_BYTES = 250 * 1024
