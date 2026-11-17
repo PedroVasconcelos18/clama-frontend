@@ -216,7 +216,7 @@ describe("Entrega", () => {
     await waitFor(() => expect(screen.getByLabelText(/nome/i)).toHaveValue("Pedro"))
     expect(screen.getByLabelText(/e-mail/i)).toHaveValue("fiel@example.com")
     await userEvent.type(screen.getByLabelText(/cpf/i), CPF)
-      await enviar()
+    await enviar()
     await waitFor(() => expect(screen.getByTestId("local")).toHaveTextContent("/confirmacao?pedido_id=ped-1"))
     expect(posts[0]!.path).toBe("/api/pedidos/gratuito")
     expect(posts[0]!.corpo).toMatchObject({ tema: "luto", pedidoOracao: "Perdi minha mãe", cpfCnpj: CPF, consentAceito: true })
@@ -229,7 +229,7 @@ describe("Entrega", () => {
     renderEntrega()
     await waitFor(() => expect(screen.getByLabelText(/nome/i)).toHaveValue("Pedro"))
     await userEvent.type(screen.getByLabelText(/cpf/i), CPF)
-      await escolher(/livre/i)
+    await escolher(/livre/i)
     await userEvent.type(screen.getByLabelText(/valor da contribuição/i), "12,50")
     await userEvent.click(await screen.findByRole("radio", { name: /Sem Meta/ }))
     await enviar()
@@ -260,7 +260,7 @@ describe("Entrega", () => {
     renderEntrega()
     await waitFor(() => expect(screen.getByLabelText(/nome/i)).toHaveValue("Pedro"))
     await userEvent.type(screen.getByLabelText(/cpf/i), CPF)
-      await enviar()
+    await enviar()
     expect(await screen.findByText("Hoje já recebemos o seu clamor. Volte amanhã.")).toBeInTheDocument()
     expect(lerRascunho()).not.toBeNull()
   })
@@ -293,6 +293,15 @@ describe("Entrega", () => {
     renderEntrega()
     await screen.findByLabelText(/nome/i)
     expect(screen.queryByRole("checkbox")).toBeNull()
+  })
+
+  it("rascunho de antes do aceite (sem consentAceito) volta ao clamor, sem apagar o texto", async () => {
+    localStorage.clear()
+    sessionStorage.setItem("clama:rascunho", JSON.stringify({ tema: "luto", texto: "Texto antigo", risco: false }))
+    mockar()
+    renderEntrega()
+    expect(await screen.findByTestId("local")).toHaveTextContent("/")
+    expect(lerRascunho()?.texto).toBe("Texto antigo")
   })
 
   it("Editar volta ao clamor", async () => {

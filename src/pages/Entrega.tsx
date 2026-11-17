@@ -64,9 +64,10 @@ async function pedidoReaproveitavel(assinatura: string): Promise<string | null> 
   }
 }
 
+// Rascunho sem aceite (de antes do consentimento na home) volta ao clamor, que o reaproveita preenchido.
 export default function Entrega() {
   const [rascunho] = useState(lerRascunho)
-  if (!rascunho || !rascunho.texto.trim()) return <Navigate to="/" replace />
+  if (!rascunho || !rascunho.texto.trim() || rascunho.consentAceito !== true) return <Navigate to="/" replace />
   return <EntregaForm rascunho={rascunho} />
 }
 

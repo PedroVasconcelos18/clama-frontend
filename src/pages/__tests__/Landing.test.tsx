@@ -55,6 +55,14 @@ describe("Landing", () => {
 
   afterEach(() => vi.restoreAllMocks())
 
+  it("rascunho antigo (sem aceite) volta com texto e tema preenchidos", () => {
+    sessionStorage.setItem("clama:rascunho", JSON.stringify({ tema: "luto", texto: "Texto antigo", risco: false }))
+    renderLanding()
+    expect(screen.getByRole("textbox")).toHaveValue("Texto antigo")
+    expect(screen.getByRole("button", { name: "Luto" })).toHaveAttribute("aria-pressed", "true")
+    expect(screen.getByRole("checkbox")).not.toBeChecked()
+  })
+
   it("clicar num tema mostra o guia dele", async () => {
     renderLanding()
     const luto = TEMAS.find((t) => t.id === "luto")!
