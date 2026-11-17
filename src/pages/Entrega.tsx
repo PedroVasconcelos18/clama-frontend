@@ -90,7 +90,7 @@ function EntregaForm({ rascunho }: { rascunho: Rascunho }) {
   const form = useForm<PedidoFormInput, unknown, PedidoFormData>({
     resolver: zodResolver(pedidoSchema),
     mode: "onTouched",
-    defaultValues: { nome: "", email: "", cpf_cnpj: "", consent_aceito: false },
+    defaultValues: { nome: "", email: "", cpf_cnpj: "" },
   })
   const { register, setValue, getValues, formState: { errors } } = form
 
@@ -232,18 +232,6 @@ function EntregaForm({ rascunho }: { rascunho: Rascunho }) {
                   })}
                 />
                 {errors.cpf_cnpj && <p className={erroCls}>{errors.cpf_cnpj.message}</p>}
-              </div>
-              <div>
-                <div className="flex items-start gap-3">
-                  <input id="consent" type="checkbox" className="mt-1 h-4 w-4 accent-clama-gold-soft" {...register("consent_aceito")} />
-                  <label htmlFor="consent" className="cursor-pointer text-sm leading-relaxed text-clama-night/80">
-                    Li e concordo com os{" "}
-                    <Link to="/termos" target="_blank" className="underline">Termos de Uso</Link> e a{" "}
-                    <Link to="/privacidade" target="_blank" className="underline">Política de Privacidade</Link>. Autorizo o uso
-                    do conteúdo do meu pedido exclusivamente para geração da oração.
-                  </label>
-                </div>
-                {errors.consent_aceito && <p className={erroCls}>{errors.consent_aceito.message}</p>}
               </div>
             </div>
 

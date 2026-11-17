@@ -86,7 +86,6 @@ async function preencher() {
   await userEvent.clear(screen.getByLabelText(/e-mail/i))
   await userEvent.type(screen.getByLabelText(/e-mail/i), "maria@example.com")
   await userEvent.type(screen.getByLabelText(/cpf/i), CPF)
-  await userEvent.click(screen.getByRole("checkbox"))
 }
 
 const enviar = () => userEvent.click(screen.getByRole("button", { name: /enviar|contribuir/i }))
@@ -102,7 +101,7 @@ describe("Entrega", () => {
   beforeEach(() => {
     localStorage.clear()
     limparRascunho()
-    salvarRascunho({ tema: "luto", texto: "Perdi minha mãe", risco: false })
+    salvarRascunho({ tema: "luto", texto: "Perdi minha mãe", risco: false, consentAceito: true })
   })
   afterEach(() => vi.restoreAllMocks())
 
@@ -118,7 +117,7 @@ describe("Entrega", () => {
     [true, true],
     [false, false],
   ])("risco %s: aviso do CVV visível = %s", async (risco, visivel) => {
-    salvarRascunho({ tema: null, texto: "texto", risco })
+    salvarRascunho({ tema: null, texto: "texto", risco, consentAceito: true })
     mockar()
     renderEntrega()
     await screen.findByLabelText(/nome/i)
@@ -217,8 +216,7 @@ describe("Entrega", () => {
     await waitFor(() => expect(screen.getByLabelText(/nome/i)).toHaveValue("Pedro"))
     expect(screen.getByLabelText(/e-mail/i)).toHaveValue("fiel@example.com")
     await userEvent.type(screen.getByLabelText(/cpf/i), CPF)
-    await userEvent.click(screen.getByRole("checkbox"))
-    await enviar()
+      await enviar()
     await waitFor(() => expect(screen.getByTestId("local")).toHaveTextContent("/confirmacao?pedido_id=ped-1"))
     expect(posts[0]!.path).toBe("/api/pedidos/gratuito")
     expect(posts[0]!.corpo).toMatchObject({ tema: "luto", pedidoOracao: "Perdi minha mãe", cpfCnpj: CPF, consentAceito: true })
@@ -231,8 +229,7 @@ describe("Entrega", () => {
     renderEntrega()
     await waitFor(() => expect(screen.getByLabelText(/nome/i)).toHaveValue("Pedro"))
     await userEvent.type(screen.getByLabelText(/cpf/i), CPF)
-    await userEvent.click(screen.getByRole("checkbox"))
-    await escolher(/livre/i)
+      await escolher(/livre/i)
     await userEvent.type(screen.getByLabelText(/valor da contribuição/i), "12,50")
     await userEvent.click(await screen.findByRole("radio", { name: /Sem Meta/ }))
     await enviar()
@@ -263,8 +260,7 @@ describe("Entrega", () => {
     renderEntrega()
     await waitFor(() => expect(screen.getByLabelText(/nome/i)).toHaveValue("Pedro"))
     await userEvent.type(screen.getByLabelText(/cpf/i), CPF)
-    await userEvent.click(screen.getByRole("checkbox"))
-    await enviar()
+      await enviar()
     expect(await screen.findByText("Hoje já recebemos o seu clamor. Volte amanhã.")).toBeInTheDocument()
     expect(lerRascunho()).not.toBeNull()
   })
@@ -292,6 +288,13 @@ describe("Entrega", () => {
     expect(await screen.findByText("Escolha uma instituição.")).toBeInTheDocument()
   })
 
+  it("não tem checkbox de consentimento (o aceite veio do clamor)", async () => {
+    mockar()
+    renderEntrega()
+    await screen.findByLabelText(/nome/i)
+    expect(screen.queryByRole("checkbox")).toBeNull()
+  })
+
   it("Editar volta ao clamor", async () => {
     mockar()
     renderEntrega()
@@ -309,7 +312,7 @@ describe("Entrega", () => {
     await waitFor(() => expect(screen.getByTestId("local")).toHaveTextContent("/confirmacao?pedido_id=ped-1"))
     unmount()
 
-    salvarRascunho({ tema: "luto", texto: "Perdi minha mãe", risco: false })
+    salvarRascunho({ tema: "luto", texto: "Perdi minha mãe", risco: false, consentAceito: true })
     renderEntrega()
     await screen.findByLabelText(/nome/i)
     await preencher()
@@ -330,7 +333,7 @@ describe("Entrega", () => {
     await enviar()
     await waitFor(() => expect(screen.getByTestId("local")).toHaveTextContent("ped-1"))
     unmount()
-    salvarRascunho({ tema: "luto", texto: "Perdi minha mãe", risco: false })
+    salvarRascunho({ tema: "luto", texto: "Perdi minha mãe", risco: false, consentAceito: true })
     renderEntrega()
     await screen.findByLabelText(/nome/i)
     await preencher()

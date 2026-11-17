@@ -8,12 +8,12 @@ afterEach(() => {
 
 describe("rascunho", () => {
   it("salva e lê", () => {
-    salvarRascunho({ tema: "luto", texto: "saudade", risco: false })
-    expect(lerRascunho()).toEqual({ tema: "luto", texto: "saudade", risco: false })
+    salvarRascunho({ tema: "luto", texto: "saudade", risco: false, consentAceito: true })
+    expect(lerRascunho()).toEqual({ tema: "luto", texto: "saudade", risco: false, consentAceito: true })
   })
 
   it("limpa", () => {
-    salvarRascunho({ tema: null, texto: "x", risco: null })
+    salvarRascunho({ tema: null, texto: "x", risco: null, consentAceito: true })
     limparRascunho()
     expect(lerRascunho()).toBeNull()
   })
@@ -25,7 +25,7 @@ describe("rascunho", () => {
     vi.spyOn(sessionStorage, "setItem").mockImplementation(() => {
       throw new Error("bloqueado")
     })
-    salvarRascunho({ tema: null, texto: "sem storage", risco: true })
-    expect(lerRascunho()).toEqual({ tema: null, texto: "sem storage", risco: true })
+    salvarRascunho({ tema: null, texto: "sem storage", risco: true, consentAceito: true })
+    expect(lerRascunho()).toEqual({ tema: null, texto: "sem storage", risco: true, consentAceito: true })
   })
 })

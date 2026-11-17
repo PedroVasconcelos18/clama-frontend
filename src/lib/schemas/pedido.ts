@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { isValidCpfOrCnpj } from "@/lib/validators/cpfCnpj";
 
-// O clamor (texto e tema) vem do rascunho; aqui só os dados da entrega.
+// O clamor (texto, tema e o aceite da política) vem do rascunho; aqui só os dados da entrega.
 export const pedidoSchema = z.object({
   nome: z
     .string()
@@ -22,9 +22,6 @@ export const pedidoSchema = z.object({
       message: "CPF ou CNPJ inválido — confira os dígitos.",
     })
     .transform((v) => v.replace(/\D/g, "")), // sem máscara no envio
-  consent_aceito: z.boolean().refine((v) => v === true, {
-    message: "Para enviar seu pedido, é preciso concordar com a política de privacidade.",
-  }),
 });
 
 export type PedidoFormInput = z.input<typeof pedidoSchema>;

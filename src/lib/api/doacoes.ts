@@ -17,7 +17,7 @@ export type CorpoDoPedido = Omit<NovoPedidoGerado, "idade" | "sexo" | "telefone"
  */
 export function corpoDoPedido(
   d: PedidoFormData,
-  clamor: { texto: string; tema: string | null },
+  clamor: { texto: string; tema: string | null; consentAceito: boolean },
 ): CorpoDoPedido {
   return {
     nome: d.nome,
@@ -25,7 +25,7 @@ export function corpoDoPedido(
     cpfCnpj: d.cpf_cnpj,
     pedidoOracao: clamor.texto,
     tema: clamor.tema ?? undefined,
-    consentAceito: d.consent_aceito,
+    consentAceito: clamor.consentAceito,
   };
 }
 

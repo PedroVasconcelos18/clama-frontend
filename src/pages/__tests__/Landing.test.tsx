@@ -62,9 +62,21 @@ describe("Landing", () => {
     expect(screen.getByText(luto.guia)).toBeInTheDocument()
   })
 
+  it("sem aceitar a política: mostra o erro e não chama a triagem", async () => {
+    renderLanding()
+    await userEvent.type(screen.getByRole("textbox"), "Minha casa está em pedaços")
+    fireEvent.click(screen.getByRole("button", { name: /continuar/i }))
+    expect(
+      await screen.findByText("Para enviar seu pedido, é preciso concordar com a política de privacidade."),
+    ).toBeInTheDocument()
+    expect(triarMock).not.toHaveBeenCalled()
+    expect(navigateMock).not.toHaveBeenCalled()
+  })
+
   it("Continuar com menos de 3 caracteres mostra o aviso e não chama a triagem", async () => {
     renderLanding()
     await userEvent.type(screen.getByRole("textbox"), "oi")
+    await userEvent.click(screen.getByRole("checkbox"))
     fireEvent.click(screen.getByRole("button", { name: /continuar/i }))
     expect(await screen.findByText(MSG_CURTA)).toBeInTheDocument()
     expect(triarMock).not.toHaveBeenCalled()
@@ -76,10 +88,11 @@ describe("Landing", () => {
     renderLanding()
     fireEvent.click(screen.getByRole("button", { name: "Família" }))
     await userEvent.type(screen.getByRole("textbox"), "Minha casa está em pedaços")
+    await userEvent.click(screen.getByRole("checkbox"))
     fireEvent.click(screen.getByRole("button", { name: /continuar/i }))
     await waitFor(() => expect(navigateMock).toHaveBeenCalledWith("/entrega"))
     expect(triarMock).toHaveBeenCalledWith("Minha casa está em pedaços")
-    expect(lerRascunho()).toEqual({ tema: "familia", texto: "Minha casa está em pedaços", risco: true })
+    expect(lerRascunho()).toEqual({ tema: "familia", texto: "Minha casa está em pedaços", risco: true, consentAceito: true })
   })
 
   it("mostra as instituições com meta real e sem barra para quem não tem meta", async () => {

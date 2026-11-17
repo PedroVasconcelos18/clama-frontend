@@ -1,5 +1,5 @@
 // O clamor entre "/" e "/entrega". sessionStorage quando dá; a memória cobre o storage bloqueado.
-export type Rascunho = { tema: string | null; texto: string; risco: boolean | null }
+export type Rascunho = { tema: string | null; texto: string; risco: boolean | null; consentAceito: boolean }
 
 const CHAVE = "clama:rascunho"
 let memoria: Rascunho | null = null

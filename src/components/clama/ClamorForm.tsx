@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { useNavigate } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
 import { AlertCircle } from "lucide-react"
 import { TEMAS, GUIA_PADRAO } from "@/lib/temas"
 import { triar } from "@/lib/api/triagem"
@@ -7,6 +7,7 @@ import { lerRascunho, salvarRascunho } from "@/lib/rascunho"
 import { cn } from "@/lib/utils"
 
 const MINIMO = 3
+const MSG_CONSENT = "Para enviar seu pedido, é preciso concordar com a política de privacidade."
 const MSG_CURTA = "Escreva ao menos algumas palavras. Pode ser uma frase só, do jeito que vier."
 
 /** O clamor: tema (opcional) e texto. Ao continuar, tria, guarda o rascunho e vai para a entrega. */
@@ -15,7 +16,9 @@ export function ClamorForm() {
   const [inicial] = useState(lerRascunho)
   const [tema, setTema] = useState<string | null>(inicial?.tema ?? null)
   const [texto, setTexto] = useState(inicial?.texto ?? "")
+  const [consent, setConsent] = useState(inicial?.consentAceito ?? false)
   const [erro, setErro] = useState(false)
+  const [erroConsent, setErroConsent] = useState(false)
   const [enviando, setEnviando] = useState(false)
 
   const guia = TEMAS.find((t) => t.id === tema)?.guia ?? GUIA_PADRAO
@@ -23,14 +26,13 @@ export function ClamorForm() {
   async function continuar(e: React.FormEvent) {
     e.preventDefault()
     const limpo = texto.trim()
-    if (limpo.length < MINIMO) {
-      setErro(true)
-      return
-    }
-    setErro(false)
+    setErro(limpo.length < MINIMO)
+    setErroConsent(!consent)
+    // Sem o aceite da política o texto não sai do aparelho (a triagem vai à IA).
+    if (limpo.length < MINIMO || !consent) return
     setEnviando(true)
     const risco = await triar(limpo) // nunca lança: null = falhou
-    salvarRascunho({ tema, texto: limpo, risco })
+    salvarRascunho({ tema, texto: limpo, risco, consentAceito: true })
     navigate("/entrega")
   }
 
@@ -82,6 +84,27 @@ export function ClamorForm() {
           <span>{MSG_CURTA}</span>
         </p>
       )}
+      <div>
+        <div className="flex items-start gap-3">
+          <input
+            id="consent"
+            type="checkbox"
+            checked={consent}
+            onChange={(e) => setConsent(e.target.checked)}
+            aria-describedby={erroConsent ? "erro-consent" : undefined}
+            className="mt-1 h-4 w-4 accent-clama-gold"
+          />
+          <label htmlFor="consent" className="cursor-pointer text-sm leading-relaxed text-clama-cream/75">
+            Li e concordo com os{" "}
+            <Link to="/termos" target="_blank" className="underline">Termos de Uso</Link> e a{" "}
+            <Link to="/privacidade" target="_blank" className="underline">Política de Privacidade</Link>. Autorizo o uso do
+            conteúdo do meu pedido exclusivamente para geração da oração personalizada.
+          </label>
+        </div>
+        {erroConsent && (
+          <p id="erro-consent" role="alert" className="mt-2 text-sm text-red-300">{MSG_CONSENT}</p>
+        )}
+      </div>
       <button
         type="submit"
         disabled={enviando}
