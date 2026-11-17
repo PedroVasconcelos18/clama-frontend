@@ -41,6 +41,12 @@ export function StickyNav({ onCtaClick, showCta = true }: StickyNavProps) {
         </Link>
 
         <div className="flex items-center gap-3">
+          <Link to="/" className="font-sans text-[0.82rem] font-semibold text-clama-cream/80 hover:text-clama-gold transition-colors px-3 py-2 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-clama-gold hidden sm:inline-block">
+            Fazer um clamor
+          </Link>
+          <Link to="/como-funciona" className="font-sans text-[0.82rem] font-semibold text-clama-cream/80 hover:text-clama-gold transition-colors px-3 py-2 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-clama-gold">
+            Como funciona
+          </Link>
           <a
             href="/blog"
             rel="external"
@@ -49,17 +55,13 @@ export function StickyNav({ onCtaClick, showCta = true }: StickyNavProps) {
             Blog
           </a>
 
-          {/* Link "Entrar" / "Minha conta" discreto à esquerda do CTA. */}
+          {/* "Entrar" / "Sua jornada" à esquerda do CTA. */}
           {isAuthenticated ? (
             <Link
               to="/conta"
               className="font-sans text-[0.82rem] font-semibold text-clama-cream/80 hover:text-clama-gold transition-colors px-3 py-2 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-clama-gold"
-              aria-label={`Minha conta (logada como ${usuario?.nomeCompleto?.split(" ")[0] || "amada"})`}
             >
-              <span className="hidden sm:inline">
-                Olá, {usuario?.nomeCompleto?.split(" ")[0] || "amada"}
-              </span>
-              <span className="sm:hidden">Minha conta</span>
+              Sua jornada
             </Link>
           ) : (
             <Link

@@ -83,8 +83,10 @@ export function SiteHeader({ active, onAfterLogout }: SiteHeaderProps) {
           className="flex items-center gap-5"
           aria-label="Navegação principal"
         >
+          {navLink("/", "Fazer um clamor", false)}
+          {navLink("/como-funciona", "Como funciona", false)}
           {navLink("/blog", "Blog", active === "blog", true)}
-          {navLink("/conta", "Conta", active === "conta")}
+          {mounted && isAuthenticated && navLink("/conta", "Sua jornada", active === "conta")}
 
           {mounted && isAuthenticated && !isLoading && (
             <div className="flex items-center gap-3 pl-3 ml-1 border-l border-clama-gold/20">

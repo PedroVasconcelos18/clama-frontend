@@ -69,4 +69,9 @@ describe("StickyNav", () => {
     fireEvent.click(screen.getByRole("button", { name: /fazer pedido/i }));
     expect(mockNavigate).toHaveBeenCalledWith("/#fazer-pedido");
   });
+
+  it("tem o link 'Como funciona' para /como-funciona", () => {
+    renderNav();
+    expect(screen.getByRole("link", { name: /como funciona/i })).toHaveAttribute("href", "/como-funciona");
+  });
 });
