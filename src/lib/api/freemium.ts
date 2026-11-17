@@ -4,7 +4,8 @@ import type { components } from "@/types/api-schema";
 
 type S = components["schemas"];
 export type PedidoFreemiumCriado = S["PedidoFreemiumCriado"];
-export type PedidoConfirmado = S["PedidoConfirmado"];
+// TODO(T11): trocar pelo tipo gerado do OpenAPI
+export type PedidoConfirmado = { id: string; status: "PAGO"; tokenDeSenha: string | null };
 
 /**
  * Fluxo freemium (Landing pública), com confirmação por e-mail:

@@ -63,12 +63,13 @@ describe("Confirmar (/confirmar)", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("clique no CTA dispara POST e navega pra /confirmado em sucesso", async () => {
+  it("clique no CTA dispara POST e navega pra /confirmacao em sucesso", async () => {
     const apiSpy = vi
       .spyOn(freemiumApi, "confirmarPedidoGratuito")
       .mockResolvedValue({
         id: "uuid-xyz",
         status: "PAGO",
+        tokenDeSenha: null,
       });
 
     renderAt("/confirmar#token=tk-1");
@@ -80,9 +81,25 @@ describe("Confirmar (/confirmar)", () => {
     await waitFor(() => expect(apiSpy).toHaveBeenCalledWith("tk-1"));
     await waitFor(() =>
       expect(navigateMock).toHaveBeenCalledWith(
-        "/confirmado?pedido_id=uuid-xyz",
-        { replace: true },
+        "/confirmacao?pedido_id=uuid-xyz",
+        { replace: true, state: { tokenDeSenha: null } },
       ),
+    );
+  });
+
+  it("sucesso com tokenDeSenha navega com o state e sem o token na URL", async () => {
+    vi.spyOn(freemiumApi, "confirmarPedidoGratuito").mockResolvedValue({
+      id: "uuid-xyz",
+      status: "PAGO",
+      tokenDeSenha: "tk-senha",
+    });
+    renderAt("/confirmar#token=tk-1");
+    fireEvent.click(screen.getByRole("button", { name: /Confirmar minha oração/i }));
+    await waitFor(() =>
+      expect(navigateMock).toHaveBeenCalledWith("/confirmacao?pedido_id=uuid-xyz", {
+        replace: true,
+        state: { tokenDeSenha: "tk-senha" },
+      }),
     );
   });
 
@@ -146,7 +163,7 @@ describe("Confirmar (/confirmar)", () => {
   it("tira o token da barra de endereço ao abrir e ainda confirma com ele (só em memória)", async () => {
     const apiSpy = vi
       .spyOn(freemiumApi, "confirmarPedidoGratuito")
-      .mockResolvedValue({ id: "uuid-1", status: "PAGO" });
+      .mockResolvedValue({ id: "uuid-1", status: "PAGO", tokenDeSenha: null });
     renderAt("/confirmar#token=tk-secreto");
 
     expect(window.location.hash).toBe("");
@@ -159,7 +176,7 @@ describe("Confirmar (/confirmar)", () => {
   it("link antigo com ?token= continua valendo e também é limpo da barra", async () => {
     const apiSpy = vi
       .spyOn(freemiumApi, "confirmarPedidoGratuito")
-      .mockResolvedValue({ id: "uuid-1", status: "PAGO" });
+      .mockResolvedValue({ id: "uuid-1", status: "PAGO", tokenDeSenha: null });
     renderAt("/confirmar?token=tk-antigo");
 
     expect(window.location.search).toBe("");
@@ -168,7 +185,7 @@ describe("Confirmar (/confirmar)", () => {
   });
 
   it("o POST vai a /api/freemium/confirmacao com o token no corpo", async () => {
-    const apiFetch = vi.spyOn(apiModule, "apiFetch").mockResolvedValue({ id: "u", status: "PAGO" });
+    const apiFetch = vi.spyOn(apiModule, "apiFetch").mockResolvedValue({ id: "u", status: "PAGO", tokenDeSenha: null });
     await freemiumApi.confirmarPedidoGratuito("tk-9");
     expect(apiFetch).toHaveBeenCalledWith("/api/freemium/confirmacao", {
       method: "POST",
