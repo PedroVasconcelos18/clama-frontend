@@ -7,8 +7,9 @@ import PastoralAlert from "@/components/utility/PastoralAlert";
 
 /**
  * Convite para criar a senha na tela da oração. Com `tokenDeSenha` (freemium: a pessoa acabou de provar o
- * e-mail) a senha é definida ali mesmo; sem ele (pago anônimo) o link vai no e-mail da oração; no freemium com `tokenDeSenha: null` (`jaTemConta`) a conta já tem senha. Quem já
- * tem sessão não vê nada. O token vem do state do router e nunca passa pela URL.
+ * e-mail) a senha é definida ali mesmo; sem ele (pago anônimo) o link vai no e-mail da oração, se a conta ainda não
+ * tem senha; no freemium com `tokenDeSenha: null` (`jaTemConta`) a conta pode já ter senha (ou a emissão falhou), então
+ * o texto é condicional nos dois casos. Quem já tem sessão não vê nada. O token vem do state do router e nunca passa pela URL.
  */
 export function ConviteDeSenha({ tokenDeSenha, jaTemConta = false }: { tokenDeSenha?: string | null; jaTemConta?: boolean }) {
   const { usuario, carregando } = useSessao();
@@ -78,13 +79,15 @@ export function ConviteDeSenha({ tokenDeSenha, jaTemConta = false }: { tokenDeSe
         </form>
       ) : jaTemConta ? (
         <p className="font-sans text-[#666] text-[0.95rem]">
-          Você já tem conta no Clama. Entre para guardar esta oração.{" "}
+          Se você já tem senha no Clama, entre para guardar esta oração.{" "}
           <Link to="/login" className="underline font-semibold">
             Entrar
           </Link>
         </p>
       ) : (
-        <p className="font-sans text-[#666] text-[0.95rem]">Enviamos no seu e-mail o link para criar sua senha.</p>
+        <p className="font-sans text-[#666] text-[0.95rem]">
+          Se você ainda não tem senha no Clama, o link para criar a sua vai junto com a oração no seu e-mail.
+        </p>
       )}
     </section>
   );

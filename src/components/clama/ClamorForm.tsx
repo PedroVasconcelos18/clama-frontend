@@ -95,10 +95,10 @@ export function ClamorForm() {
             className="mt-1 h-4 w-4 accent-clama-gold"
           />
           <label htmlFor="consent" className="cursor-pointer text-sm leading-relaxed text-clama-cream/75">
-            Li e concordo com os{" "}
-            <Link to="/termos" target="_blank" className="underline">Termos de Uso</Link> e a{" "}
-            <Link to="/privacidade" target="_blank" className="underline">Política de Privacidade</Link>. Autorizo o uso do
-            conteúdo do meu pedido exclusivamente para geração da oração personalizada.
+            Li e concordo com a{" "}
+            <Link to="/privacidade" target="_blank" className="underline">Política de Privacidade</Link>. Meu texto é usado
+            para preparar minha oração e, com ajuda de IA, para identificar sinais de risco e, se for o caso, mostrar o
+            contato do CVV.
           </label>
         </div>
         {erroConsent && (

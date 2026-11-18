@@ -359,8 +359,6 @@ export default function Login() {
         </ul>
         <p className="text-center text-clama-cream/40 text-xs mt-6">
           Para fazer um clamor e receber a oração, você não precisa de conta.
-          <br />
-          Usamos seus dados só para entregar suas orações e cuidar da sua conta.
         </p>
       </div>
 

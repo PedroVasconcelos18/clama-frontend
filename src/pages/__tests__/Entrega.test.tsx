@@ -109,7 +109,7 @@ describe("Entrega", () => {
     limparRascunho()
     mockar()
     renderEntrega()
-    expect(await screen.findByTestId("local")).toHaveTextContent("/")
+    await waitFor(() => expect(screen.getByTestId("local")).toHaveTextContent(/^\/$/))
   })
 
   it.each([
@@ -239,13 +239,13 @@ describe("Entrega", () => {
     SEM_CAMPOS_ANTIGOS(posts[0]!.corpo)
   })
 
-  it("valor livre abaixo de R$ 1 não envia", async () => {
+  it.each(["0,50", "-100"])("valor livre %s (abaixo de R$ 1 ou negativo) não envia", async (digitado) => {
     const posts = mockar()
     renderEntrega()
     await screen.findByLabelText(/nome/i)
     await preencher()
     await escolher(/livre/i)
-    await userEvent.type(screen.getByLabelText(/valor da contribuição/i), "0,50")
+    await userEvent.type(screen.getByLabelText(/valor da contribuição/i), digitado)
     await userEvent.click(await screen.findByRole("radio", { name: /Casa Alfa/ }))
     await enviar()
     expect(await screen.findByText(/valor mínimo é R\$ 1,00/)).toBeInTheDocument()
@@ -300,7 +300,7 @@ describe("Entrega", () => {
     sessionStorage.setItem("clama:rascunho", JSON.stringify({ tema: "luto", texto: "Texto antigo", risco: false }))
     mockar()
     renderEntrega()
-    expect(await screen.findByTestId("local")).toHaveTextContent("/")
+    await waitFor(() => expect(screen.getByTestId("local")).toHaveTextContent(/^\/$/))
     expect(lerRascunho()?.texto).toBe("Texto antigo")
   })
 
@@ -308,7 +308,7 @@ describe("Entrega", () => {
     mockar()
     renderEntrega()
     fireEvent.click(await screen.findByRole("link", { name: /editar/i }))
-    expect(await screen.findByTestId("local")).toHaveTextContent("/")
+    await waitFor(() => expect(screen.getByTestId("local")).toHaveTextContent(/^\/$/))
   })
   it("pago idêntico em até 24h reusa o pedido: um POST só", async () => {
     const posts = mockar()
@@ -355,12 +355,16 @@ describe("Entrega", () => {
 
 describe("reaisParaCentavos", () => {
   it.each([
-    ["12,50", 1250],
+    ["1.000", 100000],
+    ["10.000", 1000000],
+    ["1.234.567", 123456700],
     ["12.50", 1250],
     ["5.5", 550],
+    ["12,50", 1250],
     ["1.234,56", 123456],
     ["1,234.56", 123456],
     ["12", 1200],
+    ["-100", 0],
     ["", 0],
     ["abc", 0],
   ])("%s -> %s", (entrada, esperado) => {

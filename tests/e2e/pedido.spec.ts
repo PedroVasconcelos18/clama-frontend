@@ -117,7 +117,7 @@ test("doação anônima: tema, texto, R$ 25 para a instituição, Pix pago e a o
   await expect(page.getByText("Escrita com ajuda de IA a partir das suas palavras.")).toBeVisible()
   await expect(page.getByText(`00020126-e2e-copia-e-cola-${DOADORA.cpf}`)).toHaveCount(0)
   // pago anônimo (decisão 1): sem senha na tela, o link vai no e-mail da oração
-  await expect(page.getByText("Enviamos no seu e-mail o link para criar sua senha.")).toBeVisible()
+  await expect(page.getByText("Se você ainda não tem senha no Clama, o link para criar a sua vai junto com a oração no seu e-mail.")).toBeVisible()
 })
 
 test("admin acha o pedido pelo e-mail exato e marca o repasse como transferido", async () => {

@@ -320,16 +320,16 @@ describe("Confirmacao", () => {
     it("pagoAnonimoSemTokenMostraAvisoDoEmail", async () => {
       enviada()
       abrir()
-      expect(await screen.findByText("Enviamos no seu e-mail o link para criar sua senha.")).toBeInTheDocument()
+      expect(await screen.findByText("Se você ainda não tem senha no Clama, o link para criar a sua vai junto com a oração no seu e-mail.")).toBeInTheDocument()
       expect(screen.queryByLabelText("Crie uma senha")).not.toBeInTheDocument()
     })
 
     it("freemiumComContaJaExistenteMandaEntrar", async () => {
       enviada()
       abrir(`?pedido_id=${ID}`, { tokenDeSenha: null })
-      expect(await screen.findByText("Você já tem conta no Clama. Entre para guardar esta oração.")).toBeInTheDocument()
+      expect(await screen.findByText("Se você já tem senha no Clama, entre para guardar esta oração.")).toBeInTheDocument()
       expect(screen.getByRole("link", { name: /entrar/i })).toHaveAttribute("href", "/login")
-      expect(screen.queryByText(/link para criar sua senha/)).not.toBeInTheDocument()
+      expect(screen.queryByText(/link para criar a sua/)).not.toBeInTheDocument()
     })
 
     it("logadoNaoVeConvite", async () => {

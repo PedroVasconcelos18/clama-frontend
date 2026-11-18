@@ -74,13 +74,13 @@ export function maskTelefoneBR(value: string): string {
   return `(${ddd}) ${rest.slice(0, 5)}-${rest.slice(5)}`;
 }
 
-// "12,50" e "12.50" -> 1250; "1.234,56" e "1,234.56" -> 123456. Um separador só é o decimal;
-// com os dois, vale o último; o mesmo separador repetido ("1.234.567") é milhar.
+// pt-BR: "," é sempre o decimal; só pontos, cada um seguido de 3 dígitos ("1.000", "1.234.567"), é milhar;
+// senão o último separador é o decimal ("12.50", "1.234,56", "1,234.56"). Com "-" ou sem número: 0 (inválido).
 export function reaisParaCentavos(s: string): number {
+  if (s.includes("-")) return 0
   const t = s.replace(/[^\d,.]/g, "")
-  const i = Math.max(t.lastIndexOf(","), t.lastIndexOf("."))
-  const antes = i < 0 ? t : t.slice(0, i)
-  const decimal = i >= 0 && !antes.includes(t[i]!) ? t.slice(i + 1) : ""
-  const n = parseFloat(`${(i >= 0 && !decimal ? t : antes).replace(/\D/g, "")}.${decimal || "0"}`)
+  const i = /^\d+(\.\d{3})+$/.test(t) ? -1 : Math.max(t.lastIndexOf(","), t.lastIndexOf("."))
+  const inteiro = (i < 0 ? t : t.slice(0, i)).replace(/\D/g, "")
+  const n = parseFloat(`${inteiro || "0"}.${(i < 0 ? "" : t.slice(i + 1)) || "0"}`)
   return n > 0 ? Math.round(n * 100) : 0
 }

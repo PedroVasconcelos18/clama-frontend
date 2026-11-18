@@ -314,4 +314,11 @@ describe("Login (/login)", () => {
     expect(screen.getByText(/Esqueci minha senha/i)).toBeTruthy()
     expect(document.body.textContent).not.toMatch(/WhatsApp|mural|caminho/i)
   })
+
+  it("o rodapé não promete uso restrito dos dados (a Política cobre)", () => {
+    mockApiFetch({})
+    renderLogin("/login")
+    expect(screen.getByText(/você não precisa de conta/)).toBeTruthy()
+    expect(document.body.textContent).not.toMatch(/Usamos seus dados/)
+  })
 })

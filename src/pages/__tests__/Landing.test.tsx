@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from "@testing-library/react"
+import { render, screen, fireEvent, waitFor, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { MemoryRouter } from "react-router-dom"
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest"
@@ -61,6 +61,17 @@ describe("Landing", () => {
     expect(screen.getByRole("textbox")).toHaveValue("Texto antigo")
     expect(screen.getByRole("button", { name: "Luto" })).toHaveAttribute("aria-pressed", "true")
     expect(screen.getByRole("checkbox")).not.toBeChecked()
+  })
+
+  it("o aceite nomeia a triagem com IA e o CVV, com link para a Política", () => {
+    renderLanding()
+    const rotulo = document.querySelector<HTMLElement>('label[for="consent"]')!
+    expect(rotulo.textContent).toBe(
+      "Li e concordo com a Política de Privacidade. Meu texto é usado para preparar minha oração e, com ajuda de IA, para identificar sinais de risco e, se for o caso, mostrar o contato do CVV.",
+    )
+    const link = within(rotulo).getByRole("link", { name: "Política de Privacidade" })
+    expect(link).toHaveAttribute("href", "/privacidade")
+    expect(link).toHaveAttribute("target", "_blank")
   })
 
   it("clicar num tema mostra o guia dele", async () => {

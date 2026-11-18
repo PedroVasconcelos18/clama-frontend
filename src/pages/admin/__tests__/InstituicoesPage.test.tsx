@@ -57,7 +57,7 @@ describe("InstituicoesPage", () => {
     })
   })
 
-  it.each([["Meta mensal (R$)", "0,00"], ["Meta mensal (R$)", "abc"], ["Custo por unidade (R$)", "0"], ["Custo por unidade (R$)", "abc"]])(
+  it.each([["Meta mensal (R$)", "0,00"], ["Meta mensal (R$)", "abc"], ["Meta mensal (R$)", "-100"], ["Custo por unidade (R$)", "0"], ["Custo por unidade (R$)", "abc"]])(
     "%s com %s mostra erro e não envia", async (rotulo, valor) => {
       render(<InstituicoesPage />)
       await userEvent.click(await screen.findByRole("button", { name: /Nova Instituição/ }))
