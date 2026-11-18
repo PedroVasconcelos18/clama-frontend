@@ -1,12 +1,10 @@
 import { apiFetch } from "@/lib/api"
+import type { components } from "@/types/api-schema"
 
-// TODO(T11): trocar pelo tipo gerado do OpenAPI
-export type Metas = {
-  percentual: number
-  de: string // AAAA-MM-DD
-  ate: string // AAAA-MM-DD
-  instituicoes: { instituicaoId: number; arrecadadoCentavos: number }[]
-}
+type S = components["schemas"]
+
+// O springdoc marca tudo como opcional, mas a API devolve todos os campos. `de` e `ate`: AAAA-MM-DD.
+export type Metas = Required<Omit<S["Metas"], "instituicoes">> & { instituicoes: Required<S["Arrecadado"]>[] }
 
 export function buscarMetas(): Promise<Metas> {
   return apiFetch<Metas>("/api/metas", { showToast: false })

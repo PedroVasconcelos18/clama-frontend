@@ -182,7 +182,7 @@ export default function InstituicoesPage() {
 
   async function onSubmit(data: InstituicaoFormData) {
     let salva: AdminInstituicao
-    // TODO(T11): trocar pelo tipo gerado do OpenAPI. Os 4 campos vão sempre; null limpa.
+    // Os 4 campos de meta vão sempre; null limpa.
     const corpo = JSON.stringify({
       nome: data.nome,
       ordem: data.ordem,

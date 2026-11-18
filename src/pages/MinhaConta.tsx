@@ -23,8 +23,6 @@ import type { PedidoDaConta } from "@/types/pedido-customer.types"
 import { formatCurrency } from "@/lib/formatters"
 import { TEMAS } from "@/lib/temas"
 
-// TODO(T11): trocar pelo tipo gerado do OpenAPI (GET /api/conta/pedidos ganha `tema`)
-type PedidoComTema = PedidoDaConta & { tema?: string | null }
 
 /**
  * "Sua jornada" (v2): a área logada do customer, só com "Meus clamores" e a conta (o menu do SiteHeader).
@@ -135,7 +133,7 @@ export default function MinhaConta() {
 
 function HistoricoTab({ primeiroNome }: { primeiroNome: string }) {
   const { fetchApi } = useApi()
-  const [pedidos, setPedidos] = useState<PedidoComTema[] | null>(null)
+  const [pedidos, setPedidos] = useState<PedidoDaConta[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [expandedId, setExpandedId] = useState<string | null>(null)
 
@@ -150,7 +148,7 @@ function HistoricoTab({ primeiroNome }: { primeiroNome: string }) {
       if (to) params.set("to", to)
       const qs = params.toString()
       const url = `/api/conta/pedidos${qs ? `?${qs}` : ""}`
-      const data = await fetchApi<PedidoComTema[]>(url, {
+      const data = await fetchApi<PedidoDaConta[]>(url, {
         method: "GET",
         showToast: false,
       })
@@ -441,7 +439,7 @@ function PedidoCard({
   expanded,
   onToggle,
 }: {
-  pedido: PedidoComTema
+  pedido: PedidoDaConta
   primeiroNome: string
   expanded: boolean
   onToggle: () => void

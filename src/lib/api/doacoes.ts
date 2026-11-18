@@ -3,12 +3,8 @@ import type { PedidoFormData } from "@/lib/schemas/pedido";
 import type { components } from "@/types/api-schema";
 import type { PedidoCriado } from "@/types/pedido-status.types";
 
-type NovoPedidoGerado = components["schemas"]["NovoPedido"];
-
-// TODO(T11): trocar pelo tipo gerado do OpenAPI (sem idade, sexo e telefone; com tema)
-export type CorpoDoPedido = Omit<NovoPedidoGerado, "idade" | "sexo" | "telefone"> & {
-  tema?: string;
-};
+/** O front da v2 não envia idade, sexo nem telefone (ainda aceitos pela API). */
+export type CorpoDoPedido = Omit<components["schemas"]["NovoPedido"], "idade" | "sexo" | "telefone">;
 
 /**
  * Corpo comum de `POST /api/pedidos`, `/api/pedidos/gratuito`, `/api/doacoes` e

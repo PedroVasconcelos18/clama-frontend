@@ -1,6 +1,7 @@
 import { createHmac, randomUUID } from "node:crypto"
 import { readFileSync } from "node:fs"
 import { test, expect, type APIRequestContext, type Page } from "@playwright/test"
+import { clamar, contribuir, identificar } from "./suporte/clamor"
 
 /**
  * Operação (ondas 7a e 7b) contra o backend REAL: relatório de repasse, quitação em lote, ledger, tarefas, LGPD e métricas.
@@ -43,8 +44,6 @@ test.afterAll(async () => {
   await admin?.context().close()
 })
 
-const campo = (page: Page, name: string) => page.locator(`#fazer-pedido [name="${name}"]`)
-
 async function aprovarNoMercadoPago(request: APIRequestContext, mpId: string, pedidoId: string, centavos: number) {
   const r = await request.post(`${WIREMOCK}/__admin/mappings`, {
     data: {
@@ -71,23 +70,12 @@ async function webhookAssinado(request: APIRequestContext, mpId: string) {
   })
 }
 
-/** Doação anônima de R$ 1,00 até o pedido pago (mesmo caminho do pedido.spec.ts). */
+/** Doação anônima de R$ 1,00 (Livre) até o pedido pago, pelo fluxo da v2 (mesmo caminho do pedido.spec.ts). */
 async function doarEPagar(page: Page, request: APIRequestContext, d: typeof MARIA) {
-  await page.route("https://challenges.cloudflare.com/**", (r) => r.fulfill({ contentType: "text/javascript", body: "" }))
-  await page.goto("/")
-  await campo(page, "nome").fill(d.nome)
-  await campo(page, "email").fill(d.email)
-  await campo(page, "cpf_cnpj").fill(d.cpf)
-  await campo(page, "idade").fill("40")
-  await campo(page, "sexo").selectOption("feminino")
-  await page.locator("#consent_aceito_gratuito").check()
-  await expect(page.getByRole("radio", { name: /^Livre/ })).toHaveAttribute("aria-checked", "true")
-  const trigger = page.locator("#instituicao")
-  await trigger.scrollIntoViewIfNeeded()
-  await trigger.click()
-  await page.getByRole("option", { name: new RegExp(INSTITUICAO) }).click()
-  await expect(campo(page, "turnstile_token")).not.toHaveValue("")
-  await page.getByRole("button", { name: "Contribuir e receber minha oração" }).click()
+  await clamar(page, "Pela minha família.")
+  await identificar(page, d)
+  await contribuir(page, "Livre", INSTITUICAO, "1")
+  await page.getByRole("button", { name: "Contribuir com R$ 1,00 e enviar" }).click()
   await expect(page).toHaveURL(/\/confirmacao\?pedido_id=[0-9a-f-]{36}$/)
   const pedidoId = new URL(page.url()).searchParams.get("pedido_id")!
   await expect(page.getByText(`00020126-e2e-copia-e-cola-${d.cpf}`)).toBeVisible()

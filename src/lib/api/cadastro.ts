@@ -1,9 +1,7 @@
 import { apiFetch } from "@/lib/api"
+import type { components } from "@/types/api-schema"
 
-// TODO(T11): trocar pelo tipo gerado do OpenAPI
-interface CadastroResposta {
-  mensagem: string
-}
+type CadastroResposta = components["schemas"]["MensagemPastoral"]
 
 /**
  * `POST /api/auth/cadastro` (anônimo, CSRF, Turnstile). A API responde sempre a mesma mensagem pastoral,
@@ -15,5 +13,5 @@ export async function cadastrar(nome: string, email: string, turnstileToken: str
     body: JSON.stringify({ nome, email, turnstileToken }),
     showToast: false,
   })
-  return r.mensagem
+  return r.mensagemPastoral ?? ""
 }

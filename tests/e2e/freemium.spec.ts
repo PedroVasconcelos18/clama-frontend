@@ -1,12 +1,14 @@
 import { readFileSync } from "node:fs"
 import { test, expect, type Page } from "@playwright/test"
+import { clamar, identificar } from "./suporte/clamor"
 
 /**
  * Freemium (oração gratuita sem conta) contra o backend REAL, com a Claude simulada por WireMock; e-mail só no log da API.
  * Rodar: `MERCADOPAGO_SIMULADO=1 tests/e2e/suporte/rodar-conta.sh tests/e2e/freemium.spec.ts`.
  *
  * Os links vêm do log da API (perfil local sem RESEND_API_KEY): "E-mail local para <destino>: <assunto>\n<texto>".
- * O ponto crítico é a ordem: nenhum "defina sua senha" antes da confirmação do e-mail.
+ * O ponto crítico é a ordem: nenhum "defina sua senha" antes da confirmação do e-mail. Confirmado o e-mail, a senha
+ * é criada na própria tela da oração (decisão 2: a confirmação devolve o token de senha).
  */
 
 const SENHA = "Senha-de-teste-123"
@@ -34,37 +36,26 @@ function linkNosEmails(destino: string, caminho: string): string | null {
   return null
 }
 
-// O FormControl do projeto é um <div>: o rótulo não aponta para o campo, então vai pelo name.
-const campo = (page: Page, name: string) => page.locator(`#fazer-pedido [name="${name}"]`)
-
-/** O widget real do Turnstile vem da Cloudflare; aqui ele não carrega e o fallback de dev preenche o token. */
-async function semCloudflare(page: Page) {
-  await page.route("https://challenges.cloudflare.com/**", (r) => r.fulfill({ contentType: "text/javascript", body: "" }))
-}
-
-/** Landing anônima, card Gratuito, formulário SEM telefone. */
+/** Home → clamor → entrega anônima, oferta Gratuito (o padrão), formulário sem idade, sexo nem telefone. */
 async function pedirGratis(page: Page, pessoa: { nome: string; email: string }) {
-  await semCloudflare(page)
-  await page.goto("/")
-  await page.getByRole("radio", { name: /Gratuito/ }).click()
-  await campo(page, "nome").fill(pessoa.nome)
-  await campo(page, "email").fill(pessoa.email)
-  await campo(page, "cpf_cnpj").fill(PESSOA.cpf)
-  await campo(page, "idade").fill("40")
-  await campo(page, "sexo").selectOption("feminino")
-  await page.locator("#consent_aceito_gratuito").check()
-  await expect(campo(page, "turnstile_token")).not.toHaveValue("")
-  await expect(page.getByText("Telefone (opcional)")).toBeVisible()
+  await clamar(page, "Pela minha família, que anda distante.", "Família")
+  await identificar(page, { ...pessoa, cpf: PESSOA.cpf })
+  await expect(page.getByRole("radio", { name: "Gratuito" })).toHaveAttribute("aria-checked", "true")
+  await expect(page.locator('[name="telefone"], [name="idade"], [name="sexo"]')).toHaveCount(0)
   const resposta = page.waitForResponse((r) => r.url().endsWith("/api/freemium/pedidos") && r.request().method() === "POST")
-  await page.getByRole("button", { name: "Receber minha oração gratuita" }).click()
+  await page.getByRole("button", { name: "Enviar meu clamor" }).click()
   return resposta
 }
 
 test("1 e 2: pedido gratuito sem telefone mostra 'Confira seu e-mail' e a API não manda 'definir senha' antes da confirmação", async ({ page }) => {
   const resposta = await pedirGratis(page, PESSOA)
   expect((await resposta).status()).toBe(201)
-  expect(JSON.parse((await resposta).request().postData()!)).not.toHaveProperty("deviceHash")
+  const corpo = JSON.parse((await resposta).request().postData()!)
+  expect(corpo).not.toHaveProperty("deviceHash")
+  expect(corpo).toMatchObject({ tema: "familia", consentAceito: true })
+  await expect(page).toHaveURL(/\/confirmado$/) // o e-mail vai no state, nunca na URL
   await expect(page.getByRole("heading", { name: "Confira seu e-mail" })).toBeVisible()
+  await expect(page.getByText(PESSOA.email)).toBeVisible()
 
   // o e-mail de confirmação sai pelo job; só depois dele faz sentido afirmar a ausência do outro
   await expect.poll(() => linkNosEmails(PESSOA.email, "/confirmar"), { timeout: 20_000 }).not.toBeNull()
@@ -75,25 +66,21 @@ test("1 e 2: pedido gratuito sem telefone mostra 'Confira seu e-mail' e a API n�
   expect(readFileSync(process.env.API_LOG!, "utf8")).not.toContain("/definir-senha")
 })
 
-test("3: o link do e-mail tira o token da URL, confirma, e a oração chega (ENVIADA)", async ({ page }) => {
+test("3 e 4: o link tira o token da URL e confirma; a oração vem na tela, a senha nasce ali e o login funciona", async ({ page }) => {
   await page.goto(linkDeConfirmacao)
   await expect.poll(() => new URL(page.url()).hash.includes("token")).toBe(false)
   await page.getByRole("button", { name: "Confirmar minha oração" }).click()
-  await expect(page).toHaveURL(/\/confirmado\?pedido_id=[0-9a-f-]{36}$/)
-  await expect(page.getByText(/chega no seu e-mail/)).toContainText("criar sua senha")
-  await page.getByRole("link", { name: "Acompanhar minha oração" }).click()
-  await expect(page).toHaveURL(/\/confirmacao\?pedido_id=/)
+  await expect(page).toHaveURL(/\/confirmacao\?pedido_id=[0-9a-f-]{36}$/)
   await expect(page.getByRole("heading", { name: "Sua oração já está aí!" })).toBeVisible({ timeout: 40_000 })
-  await expect(page.getByText(ORACAO_PADRAO)).toBeVisible()
-})
+  await expect(page.getByText(ORACAO_PADRAO, { exact: true })).toBeVisible()
+  await expect(page.getByText("Escrita com ajuda de IA a partir das suas palavras.")).toBeVisible()
 
-test("4: só agora existe o link 'definir senha'; ele cria a senha e o login funciona", async ({ page }) => {
-  await expect.poll(() => linkNosEmails(PESSOA.email, "/definir-senha"), { timeout: 20_000 }).not.toBeNull()
-  await page.goto(linkNosEmails(PESSOA.email, "/definir-senha")!)
-  await expect.poll(() => new URL(page.url()).hash.includes("token")).toBe(false)
-  await page.getByLabel("Nova senha", { exact: true }).fill(NOVA_SENHA)
-  await page.getByLabel("Confirmar nova senha").fill(NOVA_SENHA)
-  await page.getByRole("button", { name: "Definir senha" }).click()
+  // a senha na hora, com o token da confirmação (vale mesmo depois de o e-mail da oração sair: decisão 3)
+  await page.getByLabel("Crie uma senha").fill(NOVA_SENHA)
+  await page.getByRole("button", { name: "Criar senha" }).click()
+  const criada = page.getByText("Senha criada — agora é só entrar.")
+  await expect(criada).toBeVisible()
+  await criada.getByRole("link", { name: "Entrar" }).click()
   await expect(page).toHaveURL(/\/login$/)
 
   await page.getByLabel("E-mail").fill(PESSOA.email)
@@ -102,6 +89,8 @@ test("4: só agora existe o link 'definir senha'; ele cria a senha e o login fun
   await expect(entrar).toBeEnabled()
   await entrar.click()
   await expect(page).toHaveURL(/\/conta$/)
+  await expect(page.getByRole("heading", { name: /Sua\s+jornada/ })).toBeVisible()
+  await expect(page.getByText("Família", { exact: true })).toBeVisible()
 })
 
 test("5: o mesmo e-mail de novo vai ao /login com a mensagem e o 'Esqueci minha senha' em destaque", async ({ page }) => {

@@ -4,8 +4,8 @@ import type { components } from "@/types/api-schema";
 
 type S = components["schemas"];
 export type PedidoFreemiumCriado = S["PedidoFreemiumCriado"];
-// TODO(T11): trocar pelo tipo gerado do OpenAPI
-export type PedidoConfirmado = { id: string; status: "PAGO"; tokenDeSenha: string | null };
+/** `tokenDeSenha` é null quando a conta já tem senha (o record da API não marca @Nullable, o contrato não diz). */
+export type PedidoConfirmado = Omit<S["PedidoConfirmado"], "tokenDeSenha"> & { tokenDeSenha?: string | null };
 
 /**
  * Fluxo freemium (Landing pública), com confirmação por e-mail:

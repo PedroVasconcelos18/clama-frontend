@@ -261,7 +261,7 @@ describe("Login (/login)", () => {
 
   describe("aba Criar conta", () => {
     it("envia nome, e-mail e Turnstile e mostra a mensagem da API", async () => {
-      const spy = mockApiFetch({ outras: () => ({ mensagem: "Se o e-mail for novo, enviamos o link." }) })
+      const spy = mockApiFetch({ outras: () => ({ mensagemPastoral: "Se o e-mail for novo, enviamos o link." }) })
       renderLogin("/login")
       fireEvent.click(screen.getByRole("tab", { name: "Criar conta" }))
       fireEvent.change(screen.getByLabelText("Como podemos te chamar?"), { target: { value: "Maria" } })

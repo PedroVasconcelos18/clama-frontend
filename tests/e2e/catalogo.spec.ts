@@ -1,10 +1,13 @@
 import { test, expect, type Browser, type Page } from "@playwright/test"
+import { clamar } from "./suporte/clamor"
 
 /**
  * Catálogo (planos e instituições) contra o backend REAL (clama-api, perfil local, Postgres em container).
  * Rodar: `tests/e2e/suporte/rodar-conta.sh tests/e2e/catalogo.spec.ts`.
  *
- * As listas públicas têm Cache-Control de 60 s: cada conferência da landing usa um contexto novo (cache vazio).
+ * As listas públicas têm Cache-Control de 60 s (as metas, 5 min): cada conferência da home usa um contexto novo
+ * (cache vazio). Na v2 a home não lê mais os planos (os valores sugeridos são fixos no front) e mostra as instituições
+ * em "Metas do mês", só leitura; a escolha da instituição acontece na /entrega.
  */
 
 const SENHA = "Senha-de-teste-123"
@@ -41,18 +44,24 @@ async function landing(browser: Browser) {
   return { page, fechar: () => ctx.close() }
 }
 
-async function abrirSelectDeInstituicao(page: Page) {
-  const trigger = page.locator("#instituicao")
-  await trigger.scrollIntoViewIfNeeded()
-  await expect(trigger).toBeEnabled()
-  await trigger.click()
-}
+/** O cartão da instituição em "Metas do mês" (home). */
+const naHome = (page: Page, nome: string) => page.getByRole("listitem").filter({ hasText: nome })
 
-async function criarInstituicao(nome: string, logo?: { name: string; mimeType: string; buffer: Buffer }) {
+async function criarInstituicao(
+  nome: string,
+  logo?: { name: string; mimeType: string; buffer: Buffer },
+  meta?: { causa: string; metaMensal: string; custoUnidade: string; unidade: string },
+) {
   await admin.goto("/admin/instituicoes")
   await admin.getByRole("button", { name: /Nova Instituição/ }).click()
   await admin.getByLabel("Nome").fill(nome)
   if (logo) await admin.getByLabel("Logo").setInputFiles(logo)
+  if (meta) {
+    await admin.getByLabel("Causa").fill(meta.causa)
+    await admin.getByLabel("Meta mensal (R$)").fill(meta.metaMensal)
+    await admin.getByLabel("Custo por unidade (R$)").fill(meta.custoUnidade)
+    await admin.getByLabel("Unidade", { exact: true }).fill(meta.unidade)
+  }
   await admin.getByRole("button", { name: "Salvar" }).click()
 }
 
@@ -66,7 +75,7 @@ test("sem sessão, /admin/planos leva ao login", async ({ browser }) => {
   await ctx.close()
 })
 
-test("admin cria um plano e ele aparece na landing", async ({ browser }) => {
+test("admin cria um plano (só relatório na v2: a home não mostra planos)", async ({ browser }) => {
   await admin.goto("/admin/planos")
   await admin.getByRole("button", { name: /Novo Plano/ }).click()
   await admin.getByLabel("Nome").fill("Plano E2E")
@@ -77,8 +86,8 @@ test("admin cria um plano e ele aparece na landing", async ({ browser }) => {
   await expect(cartao(admin, "Plano E2E").getByText("R$ 12,34")).toBeVisible()
 
   const { page, fechar } = await landing(browser)
-  await expect(page.getByRole("radio", { name: /Plano E2E|R\$\s*12,34/ })).toBeVisible()
-  await expect(page.getByText("Criado pelo teste")).toBeVisible()
+  await expect(page.getByRole("heading", { name: "Três passos, sem pressa" })).toBeVisible()
+  await expect(page.getByText("Criado pelo teste")).toHaveCount(0)
   await fechar()
 })
 
@@ -97,30 +106,54 @@ test("edita a descrição do plano gratuito, que só tem nome e descrição edit
   await expect(cartao(admin, "Gratuito").getByText("Descrição nova do gratuito")).toBeVisible()
 })
 
-test("instituição com logo PNG aparece no select da landing, com a imagem carregada", async ({ browser }) => {
+test("instituição com logo PNG aparece em Metas do mês na home, com a imagem carregada e sem barra", async ({ browser }) => {
   await criarInstituicao("Casa E2E", { name: "logo.png", mimeType: "image/png", buffer: PNG })
   await expect(admin.getByRole("heading", { name: "Casa E2E" })).toBeVisible()
 
   const { page, fechar } = await landing(browser)
-  await abrirSelectDeInstituicao(page)
-  const opcao = page.getByRole("option", { name: /Casa E2E/ })
-  await expect(opcao).toBeVisible()
-  const img = opcao.locator("img")
+  const casa = naHome(page, "Casa E2E")
+  await expect(casa).toBeVisible()
+  const img = casa.locator("img")
   await expect.poll(() => img.evaluate((i: HTMLImageElement) => i.complete && i.naturalWidth > 0)).toBe(true)
   await expect(img).toHaveAttribute("src", /\/api\/instituicoes\/\d+\/logo\?v=/)
+  await expect(casa.getByRole("progressbar")).toHaveCount(0) // sem meta, sem barra
   await fechar()
 })
 
-test("desativar some da landing e reativar volta", async ({ browser }) => {
+test("a instituição com meta mostra a barra na home e na entrega", async ({ browser }) => {
+  await criarInstituicao("Casa com Meta", undefined, {
+    causa: "Cestas básicas para famílias do bairro",
+    metaMensal: "1.000,00",
+    custoUnidade: "50,00",
+    unidade: "cestas",
+  })
+  await expect(admin.getByRole("heading", { name: "Casa com Meta" })).toBeVisible()
+
+  const { page, fechar } = await landing(browser)
+  const casa = naHome(page, "Casa com Meta")
+  await expect(casa).toContainText("Cestas básicas para famílias do bairro")
+  await expect(casa.getByRole("progressbar", { name: "Meta de Casa com Meta: 0%" })).toBeVisible()
+  await expect(casa).toContainText(/R\$\s*0,00 de R\$\s*1\.000,00/)
+  await expect(casa).toContainText("0 de 20 cestas")
+
+  // na entrega, o mesmo cartão vira a escolha da instituição, com o percentual que vem de /api/metas
+  await clamar(page, "Pelas famílias do bairro.")
+  await page.getByRole("radiogroup", { name: "Escolha sua contribuição" }).getByRole("radio", { name: "R$ 12" }).click()
+  await expect(page.getByText(/^\d+% da sua contribuição vai para a instituição/)).toBeVisible()
+  const escolha = page.getByRole("radiogroup", { name: "Instituição parceira" }).getByRole("radio", { name: /Casa com Meta/ })
+  await expect(escolha.getByRole("progressbar")).toBeVisible()
+  await fechar()
+})
+
+test("desativar some da home e reativar volta", async ({ browser }) => {
   await admin.goto("/admin/instituicoes")
   await cartao(admin, "Casa E2E").getByRole("button", { name: "Desativar" }).click()
   await admin.getByRole("dialog").getByRole("button", { name: "Desativar" }).click()
   await expect(cartao(admin, "Casa E2E").getByText("Inativo")).toBeVisible()
 
   let l = await landing(browser)
-  await abrirSelectDeInstituicao(l.page)
-  await expect(l.page.getByRole("option", { name: "Sem instituição" })).toBeVisible()
-  await expect(l.page.getByRole("option", { name: /Casa E2E/ })).toHaveCount(0)
+  await expect(naHome(l.page, "Casa com Meta")).toBeVisible()
+  await expect(naHome(l.page, "Casa E2E")).toHaveCount(0)
   await l.fechar()
 
   await cartao(admin, "Casa E2E").getByRole("button", { name: "Ativar" }).click()
@@ -128,8 +161,7 @@ test("desativar some da landing e reativar volta", async ({ browser }) => {
   await expect(cartao(admin, "Casa E2E").getByText("Inativo")).toHaveCount(0)
 
   l = await landing(browser)
-  await abrirSelectDeInstituicao(l.page)
-  await expect(l.page.getByRole("option", { name: /Casa E2E/ })).toBeVisible()
+  await expect(naHome(l.page, "Casa E2E")).toBeVisible()
   await l.fechar()
 })
 

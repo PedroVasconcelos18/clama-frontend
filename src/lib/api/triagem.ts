@@ -1,7 +1,7 @@
 import { apiFetch } from "@/lib/api"
+import type { components } from "@/types/api-schema"
 
-// TODO(T11): trocar pelo tipo gerado do OpenAPI
-type RespostaTriagem = { risco: boolean | null }
+type RespostaTriagem = components["schemas"]["ResultadoDaTriagem"]
 
 const LIMITE_MS = 12_000
 
