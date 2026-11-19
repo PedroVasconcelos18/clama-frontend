@@ -23,6 +23,7 @@ const ORACAO_PROMPT_NOVO = "Oração do prompt novo do E2E. Amém."
 test.describe.configure({ mode: "serial" })
 
 let admin: Page
+let instituicaoId = 0 // o pago exige instituição (v2)
 
 test.beforeAll(async ({ browser }) => {
   if (!WIREMOCK || !CLAUDE || !SEGREDO) throw new Error("Rode com MERCADOPAGO_SIMULADO=1 tests/e2e/suporte/rodar-conta.sh")
@@ -34,6 +35,13 @@ test.beforeAll(async ({ browser }) => {
   await admin.getByLabel("Senha", { exact: true }).fill(SENHA)
   await botao.click()
   await expect(admin).toHaveURL(/\/admin$/)
+  await admin.goto("/admin/instituicoes")
+  await admin.getByRole("button", { name: /Nova Instituição/ }).click()
+  await admin.getByLabel("Nome").fill("Casa da Oração E2E")
+  await admin.getByRole("button", { name: "Salvar" }).click()
+  await expect(admin.getByRole("heading", { name: "Casa da Oração E2E" })).toBeVisible()
+  const lista: { id: number; nome: string }[] = await (await admin.request.get("/api/instituicoes")).json()
+  instituicaoId = lista.find((i) => i.nome === "Casa da Oração E2E")!.id
 })
 
 test.afterAll(async () => {
@@ -63,7 +71,8 @@ async function doar(request: APIRequestContext, cpfCnpj: string, email: string, 
   const r = await request.post("/api/doacoes", {
     headers,
     data: {
-      nome: "Maria Oração", email, cpfCnpj, pedidoOracao, valorCentavos: 100, consentAceito: true,
+      nome: "Maria Oração", email, cpfCnpj, pedidoOracao, tema: "familia", valorCentavos: 100, instituicao: instituicaoId,
+      consentAceito: true,
       turnstileToken: "token-e2e",
     },
   })
@@ -109,6 +118,10 @@ test("doação paga: a confirmação mostra a oração gerada pela Claude simula
   await pagar(request, cpfDoacao, id)
   await expect(page.getByRole("heading", { name: "Sua oração já está aí!" })).toBeVisible({ timeout: 30_000 })
   await expect(page.getByText(ORACAO_PADRAO, { exact: true })).toBeVisible()
+  await expect(page.getByText("Escrita com ajuda de IA a partir das suas palavras.")).toBeVisible()
+  // a triagem do pedido (job triar-pedido) rodou contra a Claude simulada: SEM_RISCO
+  await expect.poll(async () => (await detalheAdmin(id)).risco, { timeout: 15_000 }).toBe(false)
+  expect((await detalheAdmin(id)).tema).toBe("familia")
 })
 
 test("crédito esgotado leva o pedido a ERRO e a confirmação mostra a mensagem pastoral", async ({ page, request }) => {

@@ -740,6 +740,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/auth/cadastro": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["cadastrar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/auth/esqueci-senha": {
         parameters: {
             query?: never;
@@ -980,6 +996,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/metas": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["metas"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/pedidos": {
         parameters: {
             query?: never;
@@ -1060,6 +1092,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/triagem": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["triar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/webhooks/mercadopago": {
         parameters: {
             query?: never;
@@ -1111,6 +1159,12 @@ export interface components {
             /** @enum {string} */
             papel?: "CLIENTE" | "ADMIN" | "SUPERUSUARIO";
         };
+        Arrecadado: {
+            /** Format: int64 */
+            arrecadadoCentavos?: number;
+            /** Format: int64 */
+            instituicaoId?: number;
+        };
         AuditoriaDoLedgerAdmin: {
             achados?: components["schemas"]["AchadoDoLedger"][];
             /** Format: int32 */
@@ -1151,6 +1205,9 @@ export interface components {
         };
         BuscaLgpd: {
             email: string;
+        };
+        Clamor: {
+            texto: string;
         };
         CobrancaDoPedido: {
             /** Format: date-time */
@@ -1309,19 +1366,31 @@ export interface components {
         };
         InstituicaoAdmin: {
             ativo?: boolean;
+            causa?: string;
+            /** Format: int64 */
+            custoUnidadeCentavos?: number;
             /** Format: int64 */
             id?: number;
             logoUrl?: string;
+            /** Format: int64 */
+            metaMensalCentavos?: number;
             nome?: string;
             /** Format: int32 */
             ordem?: number;
             temLogo?: boolean;
+            unidade?: string;
         };
         InstituicaoPublica: {
+            causa?: string;
+            /** Format: int64 */
+            custoUnidadeCentavos?: number;
             /** Format: int64 */
             id?: number;
             logoUrl?: string;
+            /** Format: int64 */
+            metaMensalCentavos?: number;
             nome?: string;
+            unidade?: string;
         };
         Item: {
             /** Format: date-time */
@@ -1355,11 +1424,26 @@ export interface components {
         MensagemPastoral: {
             mensagemPastoral?: string;
         };
+        Metas: {
+            /** Format: date */
+            ate?: string;
+            /** Format: date */
+            de?: string;
+            instituicoes?: components["schemas"]["Arrecadado"][];
+            /** Format: int32 */
+            percentual?: number;
+        };
         MudancaDeInstituicao: {
             ativo?: boolean;
+            causa?: string;
+            /** Format: int64 */
+            custoUnidadeCentavos?: number;
+            /** Format: int64 */
+            metaMensalCentavos?: number;
             nome?: string;
             /** Format: int32 */
             ordem?: number;
+            unidade?: string;
         };
         MudancaDePlano: {
             ativo?: boolean;
@@ -1377,9 +1461,15 @@ export interface components {
             nome?: string | null;
         };
         NovaInstituicao: {
+            causa?: string;
+            /** Format: int64 */
+            custoUnidadeCentavos?: number;
+            /** Format: int64 */
+            metaMensalCentavos?: number;
             nome: string;
             /** Format: int32 */
             ordem?: number;
+            unidade?: string;
         };
         NovaSenhaDoAdmin: {
             senha: string;
@@ -1402,6 +1492,7 @@ export interface components {
             plano?: number;
             sexo?: string;
             telefone?: string;
+            tema?: string;
             turnstileToken?: string;
             /** Format: int64 */
             valorCentavos?: number;
@@ -1503,10 +1594,12 @@ export interface components {
             pedidoOracao?: string | null;
             plano?: components["schemas"]["Plano"];
             repasse?: components["schemas"]["RepasseDoPedido"];
+            risco?: boolean | null;
             sexo?: string | null;
             /** @enum {string} */
             status?: "AGUARDANDO_PAGAMENTO" | "PAGO" | "GERANDO_ORACAO" | "ORACAO_GERADA" | "ENVIADA" | "AGUARDANDO_NOVA_TENTATIVA" | "ERRO" | "AGUARDANDO_CONFIRMACAO_EMAIL" | "CONFIRMACAO_EXPIRADA";
             telefone?: string | null;
+            tema?: string | null;
             /** Format: int32 */
             tentativas?: number;
             ultimoErro?: string | null;
@@ -1534,6 +1627,7 @@ export interface components {
             id?: string;
             /** @enum {string} */
             status?: "AGUARDANDO_PAGAMENTO" | "PAGO" | "GERANDO_ORACAO" | "ORACAO_GERADA" | "ENVIADA" | "AGUARDANDO_NOVA_TENTATIVA" | "ERRO" | "AGUARDANDO_CONFIRMACAO_EMAIL" | "CONFIRMACAO_EXPIRADA";
+            tokenDeSenha?: string;
         };
         PedidoCriado: {
             /** Format: date-time */
@@ -1557,19 +1651,22 @@ export interface components {
             plano?: string;
             /** @enum {string} */
             status?: "AGUARDANDO_PAGAMENTO" | "PAGO" | "GERANDO_ORACAO" | "ORACAO_GERADA" | "ENVIADA" | "AGUARDANDO_NOVA_TENTATIVA" | "ERRO" | "AGUARDANDO_CONFIRMACAO_EMAIL" | "CONFIRMACAO_EXPIRADA";
+            tema?: string;
             /** Format: int64 */
             valorCentavos?: number;
         };
+        PedidoDeCadastro: {
+            /** Format: email */
+            email: string;
+            nome: string;
+            turnstileToken?: string;
+        };
         PedidoDeExemplo: {
-            /** @enum {string|null} */
-            complexidade?: "SIMPLES" | "COM_VERSICULO" | "COM_PROFECIA_E_VERSICULOS" | null;
             /** Format: int32 */
             idade?: number | null;
             nome?: string | null;
             pedidoOracao?: string | null;
             sexo?: string | null;
-            /** @enum {string|null} */
-            tipo?: "COMUM" | "GRATUITO" | "VALOR_LIVRE" | null;
             /** Format: int64 */
             versaoId?: number | null;
         };
@@ -1769,6 +1866,9 @@ export interface components {
             pedidosAnonimizados?: number;
             /** Format: int32 */
             pedidosApagados?: number;
+        };
+        ResultadoDaTriagem: {
+            risco?: boolean | null;
         };
         Resumo: {
             /** Format: date */
@@ -3295,6 +3395,30 @@ export interface operations {
             };
         };
     };
+    cadastrar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PedidoDeCadastro"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["MensagemPastoral"];
+                };
+            };
+        };
+    };
     esqueci: {
         parameters: {
             query?: never;
@@ -3637,6 +3761,26 @@ export interface operations {
             };
         };
     };
+    metas: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["Metas"];
+                };
+            };
+        };
+    };
     criar: {
         parameters: {
             query?: never;
@@ -3745,6 +3889,30 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["PlanoPublico"][];
+                };
+            };
+        };
+    };
+    triar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Clamor"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ResultadoDaTriagem"];
                 };
             };
         };

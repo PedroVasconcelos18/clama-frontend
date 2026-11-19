@@ -52,6 +52,14 @@ describe("PedidoDetailDrawer", () => {
     expect(screen.getByText("payment · PROCESSADO")).toBeTruthy()
   })
 
+  it.each([[true, true], [false, false], [null, false]])("risco %s: etiqueta Sinal de risco = %s", async (risco, aparece) => {
+    fetchApi.mockResolvedValue({ ...detalhe, risco, tema: "luto" })
+    render(<PedidoDetailDrawer pedidoId={ID} onClose={vi.fn()} />)
+    await screen.findByText("ana@x.com")
+    expect(!!screen.queryByText("Sinal de risco")).toBe(aparece)
+    expect(screen.getByText("Luto")).toBeTruthy()
+  })
+
   const botoes = () => ({
     gratuidade: screen.queryByRole("button", { name: /Conceder gratuidade/ }),
     reenvio: screen.queryByRole("button", { name: /Reenviar oração/ }),

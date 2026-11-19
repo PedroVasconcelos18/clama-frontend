@@ -1,0 +1,16 @@
+{
+  "priority": 1,
+  "request": {
+    "method": "POST", "urlPath": "/v1/messages",
+    "bodyPatterns": [{ "matchesJsonPath": { "expression": "$.system", "contains": "responde com UMA palavra" } }]
+  },
+  "response": {
+    "status": 200,
+    "headers": { "Content-Type": "application/json" },
+    "jsonBody": {
+      "id": "msg_e2e_triagem", "type": "message", "role": "assistant", "model": "claude-sonnet-4-6",
+      "content": [{ "type": "text", "text": "SEM_RISCO" }],
+      "stop_reason": "end_turn", "stop_sequence": null, "usage": { "input_tokens": 300, "output_tokens": 3 }
+    }
+  }
+}

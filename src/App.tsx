@@ -3,10 +3,12 @@ import { Routes, Route, Navigate } from "react-router-dom"
 import { Toaster } from "@/components/ui/sonner"
 import { ProtectedRoute } from "@/components/admin/ProtectedRoute"
 import Landing from "@/pages/Landing"
+import Entrega from "@/pages/Entrega"
 import Confirmar from "@/pages/Confirmar"
 import Confirmado from "@/pages/Confirmado"
 import Confirmacao from "@/pages/Confirmacao"
 import Privacidade from "@/pages/Privacidade"
+import ComoFunciona from "@/pages/ComoFunciona"
 import Termos from "@/pages/Termos"
 import NotFound from "@/pages/NotFound"
 import DevShowcase from "@/pages/_DevShowcase"
@@ -47,9 +49,11 @@ export default function App() {
       <Routes>
         {/* Public routes */}
         <Route path="/" element={<Landing />} />
+        <Route path="/entrega" element={<Entrega />} />
         <Route path="/confirmar" element={<Confirmar />} />
         <Route path="/confirmado" element={<Confirmado />} />
         <Route path="/confirmacao" element={<Confirmacao />} />
+        <Route path="/como-funciona" element={<ComoFunciona />} />
         <Route path="/privacidade" element={<Privacidade />} />
         <Route path="/termos" element={<Termos />} />
         <Route path="/_dev/showcase" element={<DevShowcase />} />

@@ -69,4 +69,16 @@ describe("StickyNav", () => {
     fireEvent.click(screen.getByRole("button", { name: /fazer pedido/i }));
     expect(mockNavigate).toHaveBeenCalledWith("/#fazer-pedido");
   });
-});
+
+  it("tem o link 'Como funciona' para /como-funciona", () => {
+    renderNav();
+    expect(screen.getByRole("link", { name: /como funciona/i })).toHaveAttribute("href", "/como-funciona");
+  });
+
+  it("'Fazer um clamor' fica visível no celular (sem hidden) e o menu quebra linha em vez de estourar", () => {
+    const { container } = renderNav()
+    const link = screen.getByRole("link", { name: /fazer um clamor/i })
+    expect(link.className).not.toMatch(/\bhidden\b/)
+    expect(container.querySelector("nav > div > div")!.className).toMatch(/flex-wrap/)
+  })
+})

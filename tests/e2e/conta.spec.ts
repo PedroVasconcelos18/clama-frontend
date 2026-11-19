@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs"
 import { test, expect, type Page } from "@playwright/test"
+import { clamar, contribuir, identificar } from "./suporte/clamor"
 
 /**
  * Conta e usuários contra o backend REAL (clama-api, perfil local, Postgres em container).
@@ -33,9 +34,9 @@ async function entrar(page: Page, rota: string, email: string, senha = SENHA) {
   await botao.click()
 }
 
-function linkDoEmail(para: string): string | null {
+function linkDoEmail(para: string, caminho = "/redefinir-senha"): string | null {
   const log = readFileSync(process.env.API_LOG!, "utf8")
-  const m = log.match(new RegExp(`E-mail local para ${para}[\\s\\S]*?(http\\S*/redefinir-senha#token=[\\w-]+)`))
+  const m = log.match(new RegExp(`E-mail local para ${para}[\\s\\S]*?(http\\S*${caminho}#token=[\\w-]+)`))
   return m ? m[1] : null
 }
 
@@ -95,6 +96,48 @@ test("esqueci a senha: link do e-mail, token sai da URL, nova senha entra", asyn
 
   await entrar(page, "/login", ESQUECI, NOVA_SENHA)
   await expect(page).toHaveURL(/\/conta$/)
+})
+
+test("criar conta: link de definir senha no e-mail, entrar e o clamor aparece em Sua jornada", async ({ page }) => {
+  const email = `nova-${Date.now()}@clama.test`
+  await page.goto("/login")
+  await page.getByRole("tab", { name: "Criar conta" }).click()
+  await page.getByLabel("Como podemos te chamar?").fill("Joana Nova")
+  await page.getByLabel("E-mail").fill(email)
+  const criar = page.getByRole("button", { name: "Criar minha conta" })
+  await expect(criar).toBeEnabled() // o fallback DEV do Turnstile preenche o token
+  await criar.click()
+  // a mensagem da API (igual para e-mail novo e existente) toma o lugar do formulário
+  await expect(page.getByText(/Se este e-mail puder ser usado, você vai receber em instantes um link/)).toBeVisible()
+  await expect(page.getByLabel("Como podemos te chamar?")).toHaveCount(0)
+
+  await expect.poll(() => linkDoEmail(email, "/definir-senha"), { timeout: 15_000 }).not.toBeNull()
+  await page.goto(linkDoEmail(email, "/definir-senha")!)
+  await expect.poll(() => new URL(page.url()).hash.includes("token")).toBe(false)
+  await page.getByLabel("Nova senha", { exact: true }).fill(NOVA_SENHA)
+  await page.getByLabel("Confirmar nova senha").fill(NOVA_SENHA)
+  await page.getByRole("button", { name: "Definir senha" }).click()
+  await expect(page).toHaveURL(/\/login$/)
+
+  await entrar(page, "/login", email, NOVA_SENHA)
+  await expect(page).toHaveURL(/\/conta$/)
+  await expect(page.getByRole("heading", { name: /Sua\s+jornada/ })).toBeVisible()
+  await expect(page.getByText("Olá, Joana").first()).toBeVisible()
+
+  // o clamor logado (gratuito: um por dia) volta para a jornada com o tema e a oração
+  await clamar(page, "Pela paz no meu trabalho.", "Trabalho e sustento")
+  await identificar(page, { cpf: "52998224725" })
+  await expect(page.getByLabel("E-mail")).toHaveValue(email)
+  await contribuir(page, "Gratuito")
+  await page.getByRole("button", { name: "Enviar meu clamor" }).click()
+  await expect(page).toHaveURL(/\/confirmacao\?pedido_id=[0-9a-f-]{36}$/)
+  await expect(page.getByRole("heading", { name: "Sua oração já está aí!" })).toBeVisible({ timeout: 30_000 })
+
+  await page.goto("/conta")
+  await expect(page.getByText("1 pedido", { exact: true })).toBeVisible()
+  await expect(page.getByText("Trabalho e sustento", { exact: true })).toBeVisible()
+  await page.getByRole("button", { name: /Ver oração/ }).click()
+  await expect(page.getByText("Senhor, guarda esta família com o Teu cuidado. Amém.")).toBeVisible()
 })
 
 const NOVO_ADMIN = `novo-admin-${Date.now()}@clama.test`

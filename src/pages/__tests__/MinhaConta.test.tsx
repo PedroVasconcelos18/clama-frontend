@@ -19,6 +19,7 @@ const PEDIDOS = [
     valorCentavos: 2500,
     gratuito: false,
     criadoEm: "2026-11-10T15:00:00Z",
+    tema: "luto",
   },
   {
     id: "aaaaaaaa-0000-0000-0000-000000000002",
@@ -28,6 +29,7 @@ const PEDIDOS = [
     gratuito: true,
     criadoEm: "2026-11-09T15:00:00Z",
     oracaoGerada: "Senhor, ouve.",
+    tema: null,
   },
 ]
 
@@ -84,5 +86,30 @@ describe("MinhaConta — histórico", () => {
     await userEvent.click(await screen.findByRole("button", { name: "Apagar comentário" }))
     await waitFor(() => expect(screen.queryByText("Seus comentários no blog")).toBeNull())
     expect(spy.mock.calls.some(([p, i]) => p === "/api/conta/comentarios/5" && i?.method === "DELETE")).toBe(true)
+  })
+
+  it("o título é Sua jornada, com Meus clamores, o rótulo do tema e a oração de quem está ENVIADA", async () => {
+    mockApiFetch({
+      usuario: usuarioFixture,
+      outras: (path) => (path === "/api/conta/pedidos" ? PEDIDOS : []),
+    })
+    abrir()
+    expect(await screen.findByRole("heading", { level: 1, name: /Sua jornada/ })).toBeInTheDocument()
+    expect(screen.getByRole("heading", { name: "Meus clamores" })).toBeInTheDocument()
+    expect(await screen.findByText("Luto")).toBeInTheDocument()
+    await userEvent.click(screen.getByRole("button", { name: /Ver oração/ }))
+    expect(screen.getByText("Senhor, ouve.")).toBeInTheDocument()
+  })
+
+  it("não há aba Novo pedido: há um link Fazer um clamor para /", async () => {
+    mockApiFetch({
+      usuario: usuarioFixture,
+      outras: (path) => (path === "/api/conta/pedidos" ? PEDIDOS : []),
+    })
+    abrir()
+    await screen.findByText("Luto")
+    expect(screen.queryByRole("tab")).toBeNull()
+    expect(screen.queryByText("Novo pedido")).toBeNull()
+    expect(screen.getByRole("link", { name: /Fazer um clamor/ })).toHaveAttribute("href", "/")
   })
 })

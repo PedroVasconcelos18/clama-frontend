@@ -18,6 +18,8 @@ export interface PagedModel<T> {
 // Derivados do contrato gerado; o springdoc marca tudo como opcional, mas a API devolve todos os campos.
 export type AdminPlano = Required<components["schemas"]["PlanoAdmin"]>
 
-export type AdminInstituicao = Omit<Required<components["schemas"]["InstituicaoAdmin"]>, "logoUrl"> & {
-  logoUrl: string | null
+// Os campos de meta vêm null quando a instituição não tem meta.
+type CamposDeMeta = "logoUrl" | "causa" | "metaMensalCentavos" | "custoUnidadeCentavos" | "unidade"
+export type AdminInstituicao = Omit<Required<S["InstituicaoAdmin"]>, CamposDeMeta> & {
+  [K in CamposDeMeta]: S["InstituicaoAdmin"][K] | null
 }

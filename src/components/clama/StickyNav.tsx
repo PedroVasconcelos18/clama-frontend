@@ -17,10 +17,10 @@ export function StickyNav({ onCtaClick, showCta = true }: StickyNavProps) {
       onCtaClick();
       return;
     }
-    // Autenticado → área logada (aba Novo pedido) em vez da LP.
+    // Autenticado → o clamor nasce na home.
     // Anônimo → ancora da LP (form gratuito).
     if (isAuthenticated) {
-      navigate("/conta?tab=novo");
+      navigate("/");
       return;
     }
     navigate("/#fazer-pedido");
@@ -28,11 +28,11 @@ export function StickyNav({ onCtaClick, showCta = true }: StickyNavProps) {
 
   return (
     <nav
-      className="sticky top-0 z-50 bg-[rgba(26,10,46,0.97)] py-[0.9rem] px-6"
+      className="sticky top-0 z-50 bg-[rgba(26,10,46,0.97)] py-[0.9rem] px-4 sm:px-6"
       role="navigation"
       aria-label="Principal"
     >
-      <div className="max-w-6xl mx-auto flex items-center justify-between">
+      <div className="max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-y-1">
         <Link
           to="/"
           className="font-serif text-[1.4rem] font-bold text-clama-gold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-clama-gold rounded"
@@ -40,31 +40,33 @@ export function StickyNav({ onCtaClick, showCta = true }: StickyNavProps) {
           Clama
         </Link>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center justify-end gap-x-1 gap-y-1">
+          <Link to="/" className="font-sans text-[0.82rem] font-semibold text-clama-cream/80 hover:text-clama-gold transition-colors px-2 sm:px-3 py-2 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-clama-gold">
+            Fazer um clamor
+          </Link>
+          <Link to="/como-funciona" className="font-sans text-[0.82rem] font-semibold text-clama-cream/80 hover:text-clama-gold transition-colors px-2 sm:px-3 py-2 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-clama-gold">
+            Como funciona
+          </Link>
           <a
             href="/blog"
             rel="external"
-            className="font-sans text-[0.82rem] font-semibold text-clama-cream/80 hover:text-clama-gold transition-colors px-3 py-2 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-clama-gold"
+            className="font-sans text-[0.82rem] font-semibold text-clama-cream/80 hover:text-clama-gold transition-colors px-2 sm:px-3 py-2 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-clama-gold"
           >
             Blog
           </a>
 
-          {/* Link "Entrar" / "Minha conta" discreto à esquerda do CTA. */}
+          {/* "Entrar" / "Sua jornada" à esquerda do CTA. */}
           {isAuthenticated ? (
             <Link
               to="/conta"
-              className="font-sans text-[0.82rem] font-semibold text-clama-cream/80 hover:text-clama-gold transition-colors px-3 py-2 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-clama-gold"
-              aria-label={`Minha conta (logada como ${usuario?.nomeCompleto?.split(" ")[0] || "amada"})`}
+              className="font-sans text-[0.82rem] font-semibold text-clama-cream/80 hover:text-clama-gold transition-colors px-2 sm:px-3 py-2 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-clama-gold"
             >
-              <span className="hidden sm:inline">
-                Olá, {usuario?.nomeCompleto?.split(" ")[0] || "amada"}
-              </span>
-              <span className="sm:hidden">Minha conta</span>
+              Sua jornada
             </Link>
           ) : (
             <Link
               to="/login"
-              className="font-sans text-[0.82rem] font-semibold text-clama-cream/80 hover:text-clama-gold transition-colors px-3 py-2 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-clama-gold"
+              className="font-sans text-[0.82rem] font-semibold text-clama-cream/80 hover:text-clama-gold transition-colors px-2 sm:px-3 py-2 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-clama-gold"
             >
               Entrar
             </Link>

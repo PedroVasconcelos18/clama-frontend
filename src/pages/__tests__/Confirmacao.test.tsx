@@ -1,6 +1,6 @@
 import { act, render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
-import { MemoryRouter } from "react-router-dom"
+import { MemoryRouter, Route, Routes } from "react-router-dom"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 import Confirmacao from "../Confirmacao"
@@ -9,6 +9,9 @@ import { PastoralApiError } from "@/lib/api"
 
 vi.mock("@/components/clama/StickyNav", () => ({ StickyNav: () => null }))
 vi.mock("@/components/clama/Footer", () => ({ Footer: () => null }))
+
+let usuario: unknown = null
+vi.mock("@/contexts/SessaoContext", () => ({ useSessao: () => ({ usuario, carregando: false }) }))
 
 const ID = "12345678-aaaa-bbbb-cccc-1234567890ab"
 const PIX = {
@@ -23,10 +26,13 @@ let pix: () => Promise<unknown>
 const mockSpy = () => vi.spyOn(apiModule, "apiFetch")
 let spy: ReturnType<typeof mockSpy>
 
-function abrir(query = `?pedido_id=${ID}`) {
+function abrir(query = `?pedido_id=${ID}`, state?: unknown) {
   return render(
-    <MemoryRouter initialEntries={[`/confirmacao${query}`]}>
-      <Confirmacao />
+    <MemoryRouter initialEntries={[{ pathname: "/confirmacao", search: query, state }]}>
+      <Routes>
+        <Route path="/confirmacao" element={<Confirmacao />} />
+        <Route path="/login" element={<p>tela de login</p>} />
+      </Routes>
     </MemoryRouter>,
   )
 }
@@ -38,6 +44,7 @@ const chamadas = (metodo: string, caminho: string) =>
 
 describe("Confirmacao", () => {
   beforeEach(() => {
+    usuario = null
     status = { id: ID, status: "AGUARDANDO_PAGAMENTO", valorCentavos: 1000 }
     pix = () => Promise.resolve(PIX)
     spy = mockSpy().mockImplementation(async (path: string, init?: RequestInit) => {
@@ -247,5 +254,91 @@ describe("Confirmacao", () => {
     await userEvent.click(screen.getByRole("button", { name: "Atualizar" }))
     await waitFor(() => expect(gets()).toBe(181))
     expect(screen.getByText("Atualizando status...")).toBeInTheDocument()
+  })
+
+  describe("oração na tela e senha na hora", () => {
+    const enviada = () => {
+      status = { id: ID, status: "ENVIADA", oracaoGerada: "Senhor, ouve o clamor." }
+    }
+
+    it("oracaoEnviadaMostraTextoEAvisoDeIa", async () => {
+      enviada()
+      const imprimir = vi.spyOn(window, "print").mockImplementation(() => {})
+      abrir()
+      const oracao = await screen.findByText("Senhor, ouve o clamor.")
+      expect(oracao.closest("[data-imprimir]")).not.toBeNull()
+      expect(screen.getByText("Escrita com ajuda de IA a partir das suas palavras.")).toBeInTheDocument()
+      await userEvent.click(screen.getByRole("button", { name: "Baixar em PDF" }))
+      expect(imprimir).toHaveBeenCalledOnce()
+      expect(screen.getAllByRole("link", { name: /whatsapp/i }).length).toBeGreaterThan(0)
+      expect(document.body.textContent).not.toMatch(/Marta|intercessor/i)
+    })
+
+    it("a espera nao fala de intercessor nem de mural", async () => {
+      status.status = "PAGO"
+      abrir()
+      expect(
+        await screen.findByText(
+          "Estamos preparando sua oração. Ela também chega no seu e-mail. Pode fechar esta página, nada se perde.",
+        ),
+      ).toBeInTheDocument()
+      expect(document.body.textContent).not.toMatch(/Marta|intercessor|mural|quem também clamou/i)
+    })
+
+    it("conviteComTokenDefineSenha", async () => {
+      enviada()
+      spy.mockImplementation(async (path: string) => {
+        if (path === "/api/auth/redefinicao-de-senha") return { mensagem: "ok" } as never
+        return { ...status } as never
+      })
+      abrir(`?pedido_id=${ID}`, { tokenDeSenha: "tk-tela" })
+      await userEvent.type(await screen.findByLabelText("Crie uma senha"), "senha-forte-123")
+      await userEvent.click(screen.getByRole("button", { name: "Criar senha" }))
+      expect(await screen.findByText("Senha criada — agora é só entrar.")).toBeInTheDocument()
+      expect(screen.getByRole("link", { name: /entrar/i })).toHaveAttribute("href", "/login")
+      const chamada = spy.mock.calls.find(([p]) => p === "/api/auth/redefinicao-de-senha")!
+      expect(JSON.parse((chamada[1] as RequestInit).body as string)).toEqual({
+        token: "tk-tela",
+        novaSenha: "senha-forte-123",
+      })
+    })
+
+    it("erro ao definir a senha mostra a mensagem do servidor e mantem o formulario", async () => {
+      enviada()
+      spy.mockImplementation(async (path: string) => {
+        if (path === "/api/auth/redefinicao-de-senha")
+          throw new PastoralApiError("Erro", "link_invalido", "Esse link não é mais válido.", 400)
+        return { ...status } as never
+      })
+      abrir(`?pedido_id=${ID}`, { tokenDeSenha: "tk-velho" })
+      await userEvent.type(await screen.findByLabelText("Crie uma senha"), "senha-forte-123")
+      await userEvent.click(screen.getByRole("button", { name: "Criar senha" }))
+      expect(await screen.findByText("Esse link não é mais válido.")).toBeInTheDocument()
+      expect(screen.getByLabelText("Crie uma senha")).toBeInTheDocument()
+    })
+
+    it("pagoAnonimoSemTokenMostraAvisoDoEmail", async () => {
+      enviada()
+      abrir()
+      expect(await screen.findByText("Se você ainda não tem senha no Clama, o link para criar a sua vai junto com a oração no seu e-mail.")).toBeInTheDocument()
+      expect(screen.queryByLabelText("Crie uma senha")).not.toBeInTheDocument()
+    })
+
+    it("freemiumComContaJaExistenteMandaEntrar", async () => {
+      enviada()
+      abrir(`?pedido_id=${ID}`, { tokenDeSenha: null })
+      expect(await screen.findByText("Se você já tem senha no Clama, entre para guardar esta oração.")).toBeInTheDocument()
+      expect(screen.getByRole("link", { name: /entrar/i })).toHaveAttribute("href", "/login")
+      expect(screen.queryByText(/link para criar a sua/)).not.toBeInTheDocument()
+    })
+
+    it("logadoNaoVeConvite", async () => {
+      usuario = { id: 1 }
+      enviada()
+      abrir(`?pedido_id=${ID}`, { tokenDeSenha: "tk" })
+      await screen.findByText("Senhor, ouve o clamor.")
+      expect(screen.queryByLabelText("Crie uma senha")).not.toBeInTheDocument()
+      expect(screen.queryByText(/link para criar sua senha/)).not.toBeInTheDocument()
+    })
   })
 })

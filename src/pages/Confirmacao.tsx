@@ -1,12 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useLocation, useSearchParams } from "react-router-dom";
 
 import { apiFetch, PastoralApiError } from "@/lib/api";
 import { formatarDataHora } from "@/lib/datetime";
 import type { PixDoPedido, StatusPedido, StatusPublico } from "@/types/pedido-status.types";
 import {
-  MSG_CONFIRMACAO_EMAIL,
-  MSG_GERANDO_ORACAO,
   MSG_ORACAO_ENVIADA_EMAIL,
   MSG_REAGENDADO,
   MSG_ERRO_DEFINITIVO,
@@ -14,10 +12,13 @@ import {
 
 import { StickyNav } from "@/components/clama/StickyNav";
 import { Footer } from "@/components/clama/Footer";
+import { ConviteDeSenha } from "@/components/clama/ConviteDeSenha";
 import { WhatsAppShareButton } from "@/components/clama/WhatsAppShareButton";
 import PastoralAlert from "@/components/utility/PastoralAlert";
 import LoadingSpinner from "@/components/utility/LoadingSpinner";
 
+const MSG_PREPARANDO =
+  "Estamos preparando sua oração. Ela também chega no seu e-mail. Pode fechar esta página, nada se perde.";
 const POLL_INTERVAL_MS = 5000;
 // ~15 min: enquanto aguarda o pagamento Pix e a oração, seguimos consultando o status.
 const MAX_POLL_ATTEMPTS = 180;
@@ -66,7 +67,7 @@ function getStatusMessage(status: StatusPedido | undefined, pastoralMessage?: st
     case "ORACAO_GERADA":
       return {
         title: "Seu clamor foi recebido",
-        message: MSG_CONFIRMACAO_EMAIL,
+        message: MSG_PREPARANDO,
         isComplete: false,
         isError: false,
         isWaiting: false,
@@ -98,7 +99,7 @@ function getStatusMessage(status: StatusPedido | undefined, pastoralMessage?: st
     default:
       return {
         title: "Seu clamor foi recebido",
-        message: MSG_GERANDO_ORACAO,
+        message: MSG_PREPARANDO,
         isComplete: false,
         isError: false,
         isWaiting: false,
@@ -114,6 +115,11 @@ function getStatusMessage(status: StatusPedido | undefined, pastoralMessage?: st
 export default function Confirmacao() {
   const [searchParams] = useSearchParams();
   const pedidoId = searchParams.get("pedido_id");
+  // O token de senha chega só pelo state do router (nunca pela URL).
+  const estado = useLocation().state as { tokenDeSenha?: string | null } | null;
+  const tokenDeSenha = estado?.tokenDeSenha;
+  // Veio da confirmação do freemium (a chave existe) e a conta já tinha senha: o token é null.
+  const jaTemConta = estado !== null && "tokenDeSenha" in estado && !tokenDeSenha;
 
   const [pedido, setPedido] = useState<StatusPublico | null>(null);
   const [pix, setPix] = useState<PixDoPedido | null>(null);
@@ -292,11 +298,6 @@ export default function Confirmacao() {
             ) : (
               <p className="font-sans text-[#666] text-[0.95rem] leading-relaxed mb-8">
                 {statusInfo.message}
-                {!statusInfo.isComplete && (
-                  <>
-                    {" "}Enquanto aguarda, respire e se coloque em silêncio.
-                  </>
-                )}
               </p>
             )}
 
@@ -377,16 +378,34 @@ export default function Confirmacao() {
               </div>
             )}
 
-            {/* Prayer Card — só após entrega */}
+            {/* Prayer Card — só após entrega; é o que a impressão (PDF) leva */}
             {status === "ENVIADA" && oracaoGerada && (
-              <div className="border border-clama-gold/40 rounded-xl p-6 bg-[#fffbee] mb-6 text-left">
+              <div data-imprimir className="border border-clama-gold/40 rounded-xl p-6 bg-[#fffbee] mb-3 text-left">
                 <p className="font-sans text-clama-accent text-[0.78rem] tracking-[1px] uppercase mb-3">
                   Sua oração
                 </p>
-                <p className="font-serif text-clama-night text-[1rem] leading-relaxed whitespace-pre-line">
+                <p className="font-display text-clama-night text-[1.05rem] leading-relaxed whitespace-pre-line">
                   {oracaoGerada}
                 </p>
+                <p className="font-sans text-[#888] text-[0.78rem] mt-4">
+                  Escrita com ajuda de IA a partir das suas palavras.
+                </p>
               </div>
+            )}
+            {status === "ENVIADA" && oracaoGerada && (
+              <div className="mb-6">
+                <button
+                  type="button"
+                  onClick={() => window.print()}
+                  className="font-sans text-[0.85rem] text-clama-night underline"
+                >
+                  Baixar em PDF
+                </button>
+              </div>
+            )}
+
+            {status && !["AGUARDANDO_PAGAMENTO", "AGUARDANDO_CONFIRMACAO_EMAIL", "CONFIRMACAO_EXPIRADA", "ERRO"].includes(status) && (
+              <ConviteDeSenha tokenDeSenha={tokenDeSenha} jaTemConta={jaTemConta} />
             )}
 
             {/* Verse Card */}

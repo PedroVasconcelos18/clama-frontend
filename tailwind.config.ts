@@ -66,6 +66,8 @@ export default {
         "clama-card": "16px",
       },
       fontFamily: {
+        display: ["\"DM Serif Display\"", "Georgia", "serif"],
+        verse: ["\"Cormorant Garamond\"", "Georgia", "serif"],
         serif: ["Georgia", '"Times New Roman"', "serif"],
         sans: ["-apple-system", '"Helvetica Neue"', "Arial", "sans-serif"],
       },

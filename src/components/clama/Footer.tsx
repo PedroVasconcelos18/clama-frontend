@@ -121,6 +121,9 @@ export function Footer() {
         O Clama é uma plataforma de conteúdo de apoio espiritual motivacional.
         Não é uma instituição religiosa ou serviço de aconselhamento profissional.
       </p>
+      <p className="mt-3 font-sans text-[0.72rem] text-white/50 leading-relaxed max-w-[520px] mx-auto">
+        Se você está pensando em tirar a própria vida, ligue para o CVV: 188, gratuito, 24 horas, ou converse pelo chat em cvv.org.br. Em perigo agora, ligue 192 (SAMU).
+      </p>
 
       {/* Copyright */}
       <p className="mt-4 font-sans text-[0.7rem] text-white/30">

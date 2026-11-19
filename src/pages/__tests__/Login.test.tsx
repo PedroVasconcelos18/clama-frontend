@@ -8,6 +8,21 @@ import { mockApiFetch, usuarioFixture } from "@/test/sessao"
 import * as apiModule from "@/lib/api"
 import { PastoralApiError } from "@/lib/api"
 
+vi.mock("@/lib/captcha/turnstile", async () => {
+  const { forwardRef, useEffect } = await import("react")
+  return {
+    getTurnstileSiteKey: () => "chave",
+    Turnstile: forwardRef(function Turnstile({ onSuccess }: { onSuccess: (t: string) => void }) {
+      useEffect(() => {
+        const t = setTimeout(() => onSuccess("token-turnstile"), 0)
+        return () => clearTimeout(t)
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+      }, [])
+      return null
+    }),
+  }
+})
+
 const navigateMock = vi.fn()
 
 vi.mock("react-router-dom", async () => {
@@ -242,5 +257,68 @@ describe("Login (/login)", () => {
     await waitFor(() => {
       expect(navigateMock).toHaveBeenCalledWith("/conta", { replace: true })
     })
+  })
+
+  describe("aba Criar conta", () => {
+    it("envia nome, e-mail e Turnstile e mostra a mensagem da API", async () => {
+      const spy = mockApiFetch({ outras: () => ({ mensagemPastoral: "Se o e-mail for novo, enviamos o link." }) })
+      renderLogin("/login")
+      fireEvent.click(screen.getByRole("tab", { name: "Criar conta" }))
+      fireEvent.change(screen.getByLabelText("Como podemos te chamar?"), { target: { value: "Maria" } })
+      fireEvent.change(screen.getByLabelText("E-mail"), { target: { value: "maria@example.com" } })
+      await waitFor(() =>
+        expect((screen.getByRole("button", { name: "Criar minha conta" }) as HTMLButtonElement).disabled).toBe(false),
+      )
+      fireEvent.click(screen.getByRole("button", { name: "Criar minha conta" }))
+
+      expect(await screen.findByText("Se o e-mail for novo, enviamos o link.")).toBeTruthy()
+      const chamada = spy.mock.calls.find(([p]) => p === "/api/auth/cadastro")!
+      expect(JSON.parse((chamada[1] as RequestInit).body as string)).toEqual({
+        nome: "Maria",
+        email: "maria@example.com",
+        turnstileToken: "token-turnstile",
+      })
+    })
+
+    it("não tem campo de senha", () => {
+      mockApiFetch({})
+      renderLogin("/login")
+      fireEvent.click(screen.getByRole("tab", { name: "Criar conta" }))
+      expect(screen.queryByLabelText(/senha/i)).toBeNull()
+      expect(screen.queryByText(/Esqueci minha senha/i)).toBeNull()
+    })
+
+    it("mostra o erro pastoral da API", async () => {
+      mockApiFetch({
+        outras: () => {
+          throw new PastoralApiError("Erro", "email_descartavel", "Use um e-mail que você acessa.", 400)
+        },
+      })
+      renderLogin("/login")
+      fireEvent.click(screen.getByRole("tab", { name: "Criar conta" }))
+      fireEvent.change(screen.getByLabelText("Como podemos te chamar?"), { target: { value: "Maria" } })
+      fireEvent.change(screen.getByLabelText("E-mail"), { target: { value: "maria@example.com" } })
+      await waitFor(() =>
+        expect((screen.getByRole("button", { name: "Criar minha conta" }) as HTMLButtonElement).disabled).toBe(false),
+      )
+      fireEvent.click(screen.getByRole("button", { name: "Criar minha conta" }))
+      expect(await screen.findByText("Use um e-mail que você acessa.")).toBeTruthy()
+    })
+  })
+
+  it("a aba Já tenho conta é a inicial, com login e Esqueci minha senha", () => {
+    mockApiFetch({})
+    renderLogin("/login")
+    expect(screen.getByRole("tab", { name: "Já tenho conta" }).getAttribute("aria-selected")).toBe("true")
+    expect(screen.getByLabelText("Senha")).toBeTruthy()
+    expect(screen.getByText(/Esqueci minha senha/i)).toBeTruthy()
+    expect(document.body.textContent).not.toMatch(/WhatsApp|mural|caminho/i)
+  })
+
+  it("o rodapé não promete uso restrito dos dados (a Política cobre)", () => {
+    mockApiFetch({})
+    renderLogin("/login")
+    expect(screen.getByText(/você não precisa de conta/)).toBeTruthy()
+    expect(document.body.textContent).not.toMatch(/Usamos seus dados/)
   })
 })

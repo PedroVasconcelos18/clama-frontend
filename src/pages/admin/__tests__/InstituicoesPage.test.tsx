@@ -44,6 +44,44 @@ describe("InstituicoesPage", () => {
     expect((i2.body as FormData).get("logo")).toBeInstanceOf(File)
   })
 
+  it("salvar com meta R$ 1.000,00 envia metaMensalCentavos 100000 e campo vazio vira null", async () => {
+    render(<InstituicoesPage />)
+    await userEvent.click(await screen.findByRole("button", { name: /Nova Instituição/ }))
+    await userEvent.type(screen.getByLabelText("Nome"), "Nova")
+    await userEvent.type(screen.getByLabelText("Causa"), "Hemodiálise")
+    await userEvent.type(screen.getByLabelText("Meta mensal (R$)"), "1.000,00")
+    await userEvent.click(screen.getByRole("button", { name: "Salvar" }))
+    await waitFor(() => expect(escritas()).toHaveLength(1))
+    expect(JSON.parse(escritas()[0]![1].body)).toMatchObject({
+      causa: "Hemodiálise", metaMensalCentavos: 100000, custoUnidadeCentavos: null, unidade: null,
+    })
+  })
+
+  it.each([["Meta mensal (R$)", "0,00"], ["Meta mensal (R$)", "abc"], ["Meta mensal (R$)", "-100"], ["Custo por unidade (R$)", "0"], ["Custo por unidade (R$)", "abc"]])(
+    "%s com %s mostra erro e não envia", async (rotulo, valor) => {
+      render(<InstituicoesPage />)
+      await userEvent.click(await screen.findByRole("button", { name: /Nova Instituição/ }))
+      await userEvent.type(screen.getByLabelText("Nome"), "Nova")
+      await userEvent.type(screen.getByLabelText(rotulo), valor)
+      await userEvent.click(screen.getByRole("button", { name: "Salvar" }))
+      expect(await screen.findByText("Informe um valor maior que zero, ou deixe em branco.")).toBeTruthy()
+      expect(escritas()).toHaveLength(0)
+    })
+
+  it("editar mostra as metas atuais e limpar o campo envia null", async () => {
+    fetchApi.mockImplementation(async (_p: string, init?: RequestInit) =>
+      init?.method ? { ...inst } : [{ ...inst, causa: "Renal", metaMensalCentavos: 100000, custoUnidadeCentavos: 25000, unidade: "sessão" }])
+    render(<InstituicoesPage />)
+    await userEvent.click(await screen.findByRole("button", { name: /Editar/ }))
+    expect((screen.getByLabelText("Meta mensal (R$)") as HTMLInputElement).value).toBe("1000,00")
+    await userEvent.clear(screen.getByLabelText("Meta mensal (R$)"))
+    await userEvent.click(screen.getByRole("button", { name: "Salvar" }))
+    await waitFor(() => expect(escritas()).toHaveLength(1))
+    expect(JSON.parse(escritas()[0]![1].body)).toMatchObject({
+      causa: "Renal", metaMensalCentavos: null, custoUnidadeCentavos: 25000, unidade: "sessão",
+    })
+  })
+
   it("sem arquivo, so a chamada JSON", async () => {
     render(<InstituicoesPage />)
     await userEvent.click(await screen.findByRole("button", { name: /Nova Instituição/ }))

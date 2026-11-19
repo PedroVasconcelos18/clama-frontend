@@ -31,7 +31,7 @@ export default function Confirmar() {
     setSubmitting(true);
     try {
       const res = await confirmarPedidoGratuito(token);
-      navigate(`/confirmado?pedido_id=${res.id}`, { replace: true });
+      navigate(`/confirmacao?pedido_id=${res.id}`, { replace: true, state: { tokenDeSenha: res.tokenDeSenha ?? null } });
     } catch (err) {
       if (err instanceof PastoralApiError) {
         setErro(err.pastoralMessage);

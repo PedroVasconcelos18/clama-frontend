@@ -46,6 +46,14 @@ describe("PromptEditorPage", () => {
     expect(JSON.parse(init.body)).toEqual({ ...conteudo, sistema: "SISTEMA V2" })
   })
 
+  it("os 3 campos sem uso ganham o aviso e a previa nao tem seletor de complexidade", async () => {
+    render(<PromptEditorPage />)
+    await screen.findByText("Padrão")
+    expect(screen.getAllByText("Não usado desde a v2")).toHaveLength(3)
+    await userEvent.click(within(linha("Padrão")).getByRole("button", { name: "Prévia" }))
+    expect(within(screen.getByRole("dialog")).queryByRole("combobox")).toBeNull()
+  })
+
   it("ativar pede confirmacao e chama /{id}/ativacao", async () => {
     render(<PromptEditorPage />)
     await screen.findByText("Padrão")

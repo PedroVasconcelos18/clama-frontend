@@ -1,4 +1,4 @@
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useLocation, useSearchParams } from "react-router-dom";
 
 import { StickyNav } from "@/components/clama/StickyNav";
 import { Footer } from "@/components/clama/Footer";
@@ -13,6 +13,24 @@ import PastoralAlert from "@/components/utility/PastoralAlert";
 export default function Confirmado() {
   const [searchParams] = useSearchParams();
   const pedidoId = searchParams.get("pedido_id");
+  // Freemium: o e-mail chega só pelo state do router (nunca pela URL).
+  const email = (useLocation().state as { email?: string } | null)?.email;
+
+  if (!pedidoId && email) {
+    return (
+      <div className="min-h-screen bg-white">
+        <StickyNav />
+        <main className="max-w-[480px] mx-auto px-6 py-12 text-center">
+          <h1 className="font-display text-[1.7rem] text-clama-night mb-3">Confira seu e-mail</h1>
+          <p className="font-sans text-[#666] text-[0.95rem] leading-relaxed mb-8">
+            Enviamos um link de confirmação para <strong>{email}</strong>. Ele vale por 24 horas. Se não encontrar,
+            olhe a caixa de spam.
+          </p>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
 
   if (!pedidoId) {
     return (
@@ -53,14 +71,14 @@ export default function Confirmado() {
           </span>
         </div>
 
-        <h1 className="font-serif text-[1.7rem] text-clama-night mb-3">
+        <h1 className="font-display text-[1.7rem] text-clama-night mb-3">
           Sua oração está sendo preparada
         </h1>
 
         <p className="font-sans text-[#666] text-[0.95rem] leading-relaxed mb-8">
           Sua oração chega no seu e-mail em instantes. Se for a sua primeira
-          vez, você também recebe um e-mail para criar sua senha. Enquanto
-          aguarda, respire e se coloque em silêncio.
+          vez, o e-mail leva o link para criar sua senha. Pode fechar esta
+          página, nada se perde.
         </p>
 
         <div className="border border-[#e0d8f0] rounded-xl p-5 bg-clama-cream mb-8">
